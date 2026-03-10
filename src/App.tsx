@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 
 import{initializeApp}from'firebase/app';
 import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut as fbSignOut,onAuthStateChanged}from'firebase/auth';
-import{getFirestore,doc,getDoc,setDoc}from'firebase/firestore';
+import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
 import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight } from "lucide-react";
@@ -1314,7 +1314,7 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
   );
 }
 
-function GeneratedAuditsPage({audits,setAudits,setAuditData,auditData,pages,setView}){
+function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditData,pages,setView}){
   var [activeAudit,setActiveAudit]=useState(audits.length>0?audits[audits.length-1].id:null);
   var [added,setAdded]=useState({});
   var isMobile=useWidth()<768;
@@ -1343,7 +1343,7 @@ function GeneratedAuditsPage({audits,setAudits,setAuditData,auditData,pages,setV
               <div style={{fontSize:11,color:C.grey6}}>{a.date}</div>
             </button>
             <div style={{padding:"0 12px 10px"}}>
-              <button onClick={function(){var rem=audits.filter(function(x){return x.id!==a.id;});setAudits(rem);if(activeAudit===a.id)setActiveAudit(rem.length>0?rem[rem.length-1].id:null);}} style={{background:"transparent",color:"#CC0000",border:"1px solid #FFAAAA",borderRadius:6,padding:"2px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>Delete</button>
+              <button onClick={function(){var rem=audits.filter(function(x){return x.id!==a.id;});setAudits(rem);if(onDeleteAudit)onDeleteAudit(a.id);if(activeAudit===a.id)setActiveAudit(rem.length>0?rem[rem.length-1].id:null);}} style={{background:"transparent",color:"#CC0000",border:"1px solid #FFAAAA",borderRadius:6,padding:"2px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>Delete</button>
             </div>
           </div>
         );})}
@@ -2026,13 +2026,12 @@ export default function App(){
   var [activePersonaId,setActivePersonaId]=useState(null);
   var [activePersonaForJourney,setActivePersonaForJourney]=useState(null);
   var [showAddAction,setShowAddAction]=useState(false);
-  var [generatedAudits,setGeneratedAudits]=useState(function(){try{var s=localStorage.getItem("gwi_generated_audits");return s?JSON.parse(s):[];}catch(e){return [];}});
+  var [generatedAudits,setGeneratedAudits]=useState([]);
   var isMobile=useWidth()<768;
   var [_user,_setUser]=useState(null);
   var [_authLoading,_setAuthLoading]=useState(true);
   var [_loginError,_setLoginError]=useState(null);
-  useEffect(function(){try{localStorage.setItem("gwi_generated_audits",JSON.stringify(generatedAudits));}catch(e){};},[generatedAudits]);
-  useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()){var d=snap.data();if(d.auditData)setAuditData(d.auditData);}});}else{_setUser(null);}_setAuthLoading(false);});},[]);
+  useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()){var d=snap.data();if(d.auditData)setAuditData(d.auditData);}});getDocs(collection(_db,"users",u.uid,"generatedAudits")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});arr.sort(function(a,b){return a.id<b.id?-1:1;});setGeneratedAudits(arr);});}else{_setUser(null);}_setAuthLoading(false);});},[]);
   useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[auditData,_user]);
   function _handleLogin(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}signInWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/user-not-found'?'Invalid email or password.':'Sign-in failed. Try again.');});}
   function _handleRegister(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}if(password.length<6){_setLoginError('Password must be at least 6 characters.');return;}createUserWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/email-already-in-use'?'Account already exists. Try signing in.':err.code==='auth/weak-password'?'Password must be at least 6 characters.':'Registration failed. Try again.');});}
@@ -2069,8 +2068,8 @@ export default function App(){
         {view==="flows"&&<UserFlowsPage setView={setView}/>}
         {view==="audit"&&<AuditPage personas={personas} pages={pages} auditData={auditData} setAuditData={setAuditData} onAddAction={function(){setShowAddAction(true);}}/>}
         {view==="analytics"&&<AnalyticsPage/>}
-        {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
-        {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
+        {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit);setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
+        {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id));}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
         {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} journeys={journeys} setJourneys={setJourneys}/>}
       </div>
       {showAddAction&&<AddActionModal auditData={auditData} setAuditData={setAuditData} pages={pages} onClose={function(){setShowAddAction(false);}}/>}
