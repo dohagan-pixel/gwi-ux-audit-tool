@@ -451,24 +451,15 @@ function GA4Uploader({selectedPage,onDataParsed,onClear,parsedData}){
 
       var sourceRows=pageRows.length>0?pageRows:rows;
       var metricCols=headers.filter(function(h){return h&&!/page.?path|landing|url|dimension|date|segment/i.test(h);});
-      var summary={};
-      metricCols.forEach(function(col){
-        var vals=sourceRows.map(function(r){return r[col];}).filter(function(v){return typeof v==="number"&&!isNaN(v);});
-        if(vals.length>0){
-          var sum=vals.reduce(function(a,b){return a+b;},0);
-          summary[col]=Math.round((vals.length>1?sum:vals[0])*100)/100;
-        }
-      });
-
       var matchedPage=pageRows.length>0;
       var isEventLevel=headers.some(function(h){return /event.?name|event.?count/i.test(h);});
+      var summary={};
+      metricCols.forEach(function(col){var vals=sourceRows.map(function(r){return r[col];}).filter(function(v){return typeof v==="number"&&!isNaN(v);});if(vals.length>0){var sum=vals.reduce(function(a,b){return a+b;},0);summary[col]=Math.round((vals.length>1?sum:vals[0])*100)/100;}});
 
-      var dataStr="GA4 DATA"+(matchedPage?" for "+selectedPage:" (site-wide)")+":\n";
-      dataStr+="Rows: "+rows.length+" | Columns: "+headers.join(", ")+"\n";
-      dataStr+="Path column: "+(pathCol||"not detected")+"\n\n";
-      Object.keys(summary).forEach(function(k){dataStr+=k+": "+summary[k]+"\n";});
-      dataStr+="\nData sample:\n";
-      sourceRows.slice(0,10).forEach(function(r){
+      var dataStr="GA4 DATA"+(matchedPage?" for "+selectedPage:" (site-wide)")+" — "+sourceRows.length+" rows:\n";
+      dataStr+="Columns: "+headers.join(", ")+"\n\n";
+      dataStr+="DATA ROWS:\n";
+      sourceRows.slice(0,20).forEach(function(r){
         dataStr+=headers.map(function(k){return k+": "+r[k];}).join(" | ")+"\n";
       });
 
@@ -1575,30 +1566,40 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
     var lifecycleCtx="";
     stages.forEach(function(s){lifecycleCtx+="- "+s.label+": Goal: "+s.gwi_goal+". Anxiety: "+s.anxiety+".\n";});
 
-    var p="You are a senior UX strategist producing a professional audit report for gwi.com. Your output must be specific, data-grounded, and actionable — never generic UX advice.\n\n";
+    var p="You are a senior UX strategist producing a professional audit report for gwi.com.\n\n";
+    p+="ABSOLUTE RULE — NO GENERIC ADVICE: Every single sentence must be grounded in the data provided. Never write vague statements.\n";
+    p+="BAD (forbidden): 'Enhance scroll engagement — content below the fold has low engagement.'\n";
+    p+="GOOD (required): 'Email sends 1,371 sessions but only 3.8% engage and avg time is 1.1s — subscribers expect content, not a product homepage. Fix: add trending content above the fold. Target: Email engagement from 3.8% to 15%+.'\n\n";
+
+    if(hasGa4){p+="=== GA4 ANALYTICS DATA ===\n"+ga4Data.text+"\n=== END GA4 DATA ===\n\n";}
+    if(hasCsvFiles){p+="=== UPLOADED DATA FILES ===\n";csvFiles.forEach(function(f){p+="\nFile: "+f.name+"\n"+f.text.slice(0,5000)+(f.text.length>5000?"\n[truncated]":"")+"\n";});p+="=== END DATA FILES ===\n\n";}
+    if(hasHeatmaps){p+="=== HEATMAP IMAGES ATTACHED ===\nRed/orange = high engagement, blue/grey = low. For scroll heatmaps: identify the EXACT element where warm turns cold — that is the scroll cutoff. List every important element (CTAs, logos, testimonials, pricing) below it. For click heatmaps: name every click cluster and every interactive element with no clicks.\n=== END HEATMAP NOTES ===\n\n";}
+
+    if(hasGa4||hasCsvFiles){
+      p+="PRE-ANALYSIS — COMPLETE THIS FIRST, BEFORE WRITING ANY SECTION:\n";
+      p+="Read the data above carefully and list your top 5 findings:\n";
+      p+="FINDING 1: [channel/metric name] — [exact number] — [what this means for UX]\n";
+      p+="FINDING 2: ...\nFINDING 3: ...\nFINDING 4: ...\nFINDING 5: ...\n";
+      p+="Each of these 5 findings MUST appear by name and number in the report sections below.\n\n";
+    }
+
     p+="PAGE BEING AUDITED: "+pageLabel+"\n\n";
     p+="PERSONAS:\n"+personaCtx+"\n";
     p+="LIFECYCLE STAGES:\n"+lifecycleCtx+"\n";
 
-    if(hasGa4||hasCsvFiles){p+="RULE — DATA GROUNDING: Real behavioural data is provided below. Every claim and recommendation MUST cite a specific number from it. Never write 'users are not engaging' — write 'Email traffic (1,371 sessions) engages at 3.8%'. Vague statements are not acceptable.\n\n";}
-    if(hasHeatmaps){p+="RULE — HEATMAP READING: Heatmap images are attached. Red/orange = high engagement, blue/grey = low. For scroll heatmaps: identify the EXACT element where warm turns cold — that is the scroll cutoff. List every important element (CTAs, logos, testimonials, pricing) that sits below it. For click heatmaps: name every click cluster and every interactive element with no clicks.\n\n";}
-
     p+="PRODUCE ALL SECTIONS BELOW IN THIS EXACT ORDER — DO NOT SKIP ANY:\n\n";
-    p+="## Executive Summary\n3-4 paragraphs. Open with the overall engagement number and what it means in plain language. Describe the worst-performing channel specifically (name it, cite its rate). "+(hasHeatmaps?"Summarise what the heatmap reveals structurally. ":"")+"Close with one sentence naming the single core problem this page is failing to solve.\n\n";
+    p+="## Executive Summary\n3-4 paragraphs. Open with the overall engagement number and what it means. Describe the single worst-performing channel by name with its exact rate. "+(hasHeatmaps?"Summarise what the heatmap reveals structurally. ":"")+"Close with one sentence naming the core problem.\n\n";
 
-    if(hasGa4||hasCsvFiles){p+="## Data Summary\nReproduce channel performance as a markdown table: Channel | Sessions | Eng. Rate | Avg. Eng. Time. Then write 4-6 Key Data Observations as bullet points — each MUST open with the specific metric.\n\n";}
-    if(hasHeatmaps){p+="## Heatmap Observations\nThree sub-sections: **Scroll behaviour** (identify the warm/cold transition, name the cutoff element, list everything below it), **Click behaviour** (name every click cluster, flag confusion clicks and missing clicks on key CTAs), **Mouse movement** (where attention concentrates and where it drops).\n\n";}
+    if(hasGa4||hasCsvFiles){p+="## Data Summary\nReproduce each channel as a markdown table row: Channel | Sessions | Eng. Rate | Avg. Eng. Time. Use the exact numbers from the data. Then write 4-6 Key Data Observations — each MUST open with the specific metric and number.\n\n";}
+    if(hasHeatmaps){p+="## Heatmap Observations\n**Scroll behaviour:** identify the warm/cold transition point, name the cutoff element, list everything below it.\n**Click behaviour:** name every click cluster, flag confusion clicks and missing clicks on key CTAs.\n**Mouse movement:** where attention concentrates and where it drops.\n\n";}
 
-    p+="## Persona-by-Persona Analysis\nFor EACH of the "+personas.length+" personas, write a subsection:\n### [Persona Name] — Arrives via [entry channel]\n**What they need from this page:** (3-4 bullet points from the persona data above)\n**What the current page delivers:** (2-3 bullet points — be critically honest"+(hasGa4||hasCsvFiles?", cite data where possible":"")+")\n**Friction points:** (2-3 specific friction points"+(hasGa4||hasCsvFiles?", each citing a metric":"")+"). Do not skip any persona.\n\n";
+    p+="## Persona-by-Persona Analysis\nFor EACH of the "+personas.length+" personas, write:\n### [Persona Name] — Arrives via [entry channel]\n**What they need:** (3-4 bullet points)\n**What the current page delivers:** (2-3 bullet points, cite data)\n**Friction points:** (2-3 points, cite a metric each). Do not skip any persona.\n\n";
 
-    p+="## Prioritised UX Recommendations\nOrganise as P1 (quick win, 1 sprint), P2 (medium term), P3 (strategic). Produce at least 8 recommendations.\n\nCRITICAL FORMAT RULE: Format EVERY recommendation using EXACTLY this pattern — no exceptions:\nREC: [number]. [Recommendation title] — [P1/P2/P3] — [Personas served]\n[One paragraph: the specific data or heatmap finding that justifies this, followed by the exact implementable fix and the success metric to track]\n\nExample:\nREC: 1. Move logo strip above the fold — P1 — Commercial Closer, Strategic Leader\nScroll heatmap shows the trusted-client logo strip sits below the point where colour turns from orange to blue, meaning the majority of visitors never reach it. Paid Search (38.8% eng. rate) and Direct (32.2%) visitors — the most likely Commercial Closers and Strategic Leaders — are scanning for credibility signals that are currently invisible to them. Fix: relocate the logo strip to immediately beneath the hero CTAs. Success metric: increase in Paid Search engagement rate above 38.8% baseline.\n\n";
+    p+="## Prioritised UX Recommendations\nP1 = quick win (1 sprint), P2 = medium term, P3 = strategic. At least 8 recommendations.\n\nFORMAT — every recommendation MUST use this exact pattern:\nREC: [number]. [Recommendation title] — [P1/P2/P3] — [Personas served]\n[Paragraph: the SPECIFIC data finding that triggers this (name the channel/metric/number), then the exact fix, then the success metric with a target number]\n\n";
 
-    p+="## Measurement Framework\nTable: Metric | Current Baseline | Target Direction. Include every channel engagement rate"+(hasGa4||hasCsvFiles?" from the data provided":" (estimate if no data)")+". Include click events that should be set up in GA4 to track recommendation impact.\n\n";
+    p+="## Measurement Framework\nTable: Metric | Current Baseline | Target Direction. Include every channel engagement rate from the data. Include GA4 events that should be set up to track recommendations.\n\n";
 
-    p+="## Next Steps\n5-7 specific next steps ordered by urgency. Name the responsible team for each (web team, content team, analytics team, UX team).\n";
-
-    if(hasGa4){p+="\n---\nGA4 ANALYTICS DATA:\n"+ga4Data.text;}
-    if(hasCsvFiles){p+="\n\nUPLOADED DATA FILES:\n";csvFiles.forEach(function(f){p+="\nFile: "+f.name+"\n"+f.text.slice(0,5000)+(f.text.length>5000?"\n[truncated]":"")+"\n";});}
+    p+="## Next Steps\n5-7 specific next steps by urgency. Name the responsible team for each.\n";
 
     setAuditImages(images);
     setAuditPrompt(p);setGeneratedAuditText("");setShowUpgradeNotice(false);setShowModal(true);
