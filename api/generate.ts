@@ -9,28 +9,33 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'prompt is required' });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: 'API key not configured' });
   }
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
-        max_tokens: max_tokens || 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: max_tokens || 1000 }
+        })
+      }
+    );
 
     const data = await response.json();
-    return res.status(200).json(data);
+
+    if (!response.ok) {
+      return res.status(500).json({ error: data.error?.message || 'Gemini API error' });
+    }
+
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    // Return in Anthropic-compatible shape so the frontend needs no changes
+    return res.status(200).json({ content: [{ text }] });
   } catch (err) {
     return res.status(500).json({ error: 'Failed to contact AI service' });
   }
