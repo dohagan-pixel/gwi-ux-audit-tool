@@ -534,6 +534,66 @@ function GA4Uploader({selectedPage,onDataParsed,onClear,parsedData}){
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
+function FileDropZone({onFile,files,onRemove}){
+  var [dragging,setDragging]=useState(false);
+  var inputRef=useRef(null);
+  function processFiles(fileList){
+    Array.from(fileList).forEach(function(file){
+      var isImage=/^image\//.test(file.type);
+      var isCsv=file.name.toLowerCase().endsWith(".csv")||file.type==="text/csv";
+      if(!isImage&&!isCsv)return;
+      var reader=new FileReader();
+      if(isImage){
+        reader.onload=function(e){onFile({type:"image",name:file.name,dataUrl:String(e.target.result),mimeType:file.type});};
+        reader.readAsDataURL(file);
+      }else{
+        reader.onload=function(e){onFile({type:"csv",name:file.name,text:String(e.target.result)});};
+        reader.readAsText(file);
+      }
+    });
+  }
+  var imgFiles=files.filter(function(f){return f.type==="image";});
+  var csvFiles=files.filter(function(f){return f.type==="csv";});
+  return(
+    <div>
+      <div
+        onDragOver={function(e){e.preventDefault();setDragging(true);}}
+        onDragLeave={function(){setDragging(false);}}
+        onDrop={function(e){e.preventDefault();setDragging(false);processFiles(e.dataTransfer.files);}}
+        onClick={function(){inputRef.current&&inputRef.current.click();}}
+        style={{border:"1.5px dashed "+(dragging?C.pink:C.grey5),borderRadius:10,padding:"20px 16px",textAlign:"center",cursor:"pointer",background:dragging?"#FFF0F8":C.grey3,transition:"all 0.15s"}}
+      >
+        <input ref={inputRef} type="file" multiple accept="image/*,.csv" style={{display:"none"}} onChange={function(e){processFiles(e.target.files);e.target.value="";}}/>
+        <div style={{fontSize:22,marginBottom:6}}>⬆</div>
+        <div style={{fontSize:13,fontWeight:600,color:C.grey7}}>Drop heatmap images or CSV files here</div>
+        <div style={{fontSize:11,color:C.grey6,marginTop:4}}>or click to browse · PNG, JPG, WebP, CSV accepted</div>
+      </div>
+      {files.length>0&&(
+        <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:6}}>
+          {imgFiles.length>0&&<div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.04em",marginBottom:2}}>Heatmap images ({imgFiles.length})</div>}
+          {imgFiles.map(function(f,i){return(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:8,background:"#F0F4FF",border:"1px solid #C5D0F5",borderRadius:8,padding:"7px 12px"}}>
+              <img src={f.dataUrl} alt={f.name} style={{width:36,height:36,objectFit:"cover",borderRadius:4,flexShrink:0}}/>
+              <span style={{fontSize:12,color:C.offBlack,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.name}</span>
+              <button onClick={function(){onRemove(f);}} style={{background:"transparent",border:"none",color:C.grey6,cursor:"pointer",fontSize:14,padding:0,lineHeight:1}}>✕</button>
+            </div>
+          );})}
+          {csvFiles.length>0&&<div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.04em",marginTop:imgFiles.length?6:0,marginBottom:2}}>CSV files ({csvFiles.length})</div>}
+          {csvFiles.map(function(f,i){return(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:8,background:"#E6F9F2",border:"1px solid #80D4B0",borderRadius:8,padding:"7px 12px"}}>
+              <span style={{fontSize:18,lineHeight:1}}>📄</span>
+              <span style={{fontSize:12,color:C.offBlack,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.name}</span>
+              <button onClick={function(){onRemove(f);}} style={{background:"transparent",border:"none",color:C.grey6,cursor:"pointer",fontSize:14,padding:0,lineHeight:1}}>✕</button>
+            </div>
+          );})}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function Dashboard({personas,auditData,setView}){
   var isMobile=useWidth()<768;
   var totalActions=auditData.reduce(function(s,p){return s+p.actions.length;},0);
@@ -1222,7 +1282,7 @@ function AnalyticsPage(){
   );
 }
 
-function GeneratingModal({onClose,onDone,prompt,pageLabel}){
+function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
   var [status,setStatus]=useState("loading");
   var [progress,setProgress]=useState(0);
   var intervalRef=useRef(null);
@@ -1236,7 +1296,8 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel}){
   useEffect(function(){
     if(hasFetched.current)return;
     hasFetched.current=true;
-    fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:4000})})
+    var hasImages=images&&images.length>0;
+    fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:4000,images:hasImages?images.map(function(i){return{dataUrl:i.dataUrl,mimeType:i.mimeType};}):undefined})})
       .then(function(r){return r.json();})
       .then(function(data){if(data.error){setStatus("error");return;}var text=data.content&&data.content[0]?data.content[0].text:"";if(!text){setStatus("error");return;}onDone(text);setStatus("done");})
       .catch(function(){setStatus("error");});
@@ -1480,6 +1541,8 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
   var [generatedAuditText,setGeneratedAuditText]=useState("");
   var [nudge,setNudge]=useState(null);
   var [ga4Data,setGa4Data]=useState(null);
+  var [extraFiles,setExtraFiles]=useState([]);
+  var [auditImages,setAuditImages]=useState([]);
   var isMobile=useWidth()<768;
   var visiblePages=pages.filter(function(p){return !p.hidden;});
 
@@ -1496,9 +1559,15 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
   }
 
   function handleAIAudit(){if(!selectedPage){setNudge("ai");return;}setNudge(null);setShowUpgradeNotice(true);}
+  function handleDropFile(f){setExtraFiles(function(prev){return prev.concat([f]);});}
+  function handleRemoveFile(f){setExtraFiles(function(prev){return prev.filter(function(x){return x!==f;});});}
   function proceedToGenerate(){
     var base=buildPrompt();
     var p=ga4Data?base+"\n\nANALYTICS CONTEXT:\n"+ga4Data.text:base;
+    var csvFiles=extraFiles.filter(function(f){return f.type==="csv";});
+    if(csvFiles.length>0){p+="\n\nADDITIONAL DATA FILES:\n";csvFiles.forEach(function(f){p+="\nFile: "+f.name+"\n"+f.text.slice(0,3000)+(f.text.length>3000?"\n[truncated]":"")+"\n";});}
+    var images=extraFiles.filter(function(f){return f.type==="image";});
+    setAuditImages(images);
     setAuditPrompt(p);setGeneratedAuditText("");setShowUpgradeNotice(false);setShowModal(true);
   }
   function handleGeneratePrompt(){
@@ -1525,11 +1594,15 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
               <div style={{width:48,height:48,borderRadius:"50%",background:C.grey3,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}><Sparkles size={22} color={C.grey7}/></div>
               <h2 style={{fontSize:20,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Ready to generate</h2>
               <p style={{fontSize:14,color:C.grey7,lineHeight:1.7,margin:"0 0 4px"}}>Claude will analyse the selected page against all your personas, lifecycle stages and journey data.</p>
-              <p style={{fontSize:13,color:C.grey6,lineHeight:1.6,margin:0}}>Optionally include GA4 data to ground the audit in real behaviour.</p>
+              <p style={{fontSize:13,color:C.grey6,lineHeight:1.6,margin:0}}>Optionally include GA4 data, heatmap images, or CSV files to ground the audit in real behaviour.</p>
             </div>
-            <div style={{marginBottom:20}}>
+            <div style={{marginBottom:16}}>
               <div style={{fontSize:12,fontWeight:700,color:C.black,marginBottom:8}}>GA4 data <span style={{fontWeight:400,color:C.grey7}}>(optional)</span></div>
               <GA4Uploader selectedPage={selectedPage} onDataParsed={setGa4Data} onClear={function(){setGa4Data(null);}} parsedData={ga4Data}/>
+            </div>
+            <div style={{marginBottom:20}}>
+              <div style={{fontSize:12,fontWeight:700,color:C.black,marginBottom:8}}>Heatmaps &amp; additional files <span style={{fontWeight:400,color:C.grey7}}>(optional)</span></div>
+              <FileDropZone onFile={handleDropFile} files={extraFiles} onRemove={handleRemoveFile}/>
             </div>
             <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
               <button onClick={function(){setShowUpgradeNotice(false);}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"12px 24px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
@@ -1586,7 +1659,7 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
         </div>
       )}
       <DataAccordion personas={personas} stages={stages} journeys={journeys} isMobile={isMobile}/>
-      {showModal&&auditPrompt&&<GeneratingModal prompt={auditPrompt} pageLabel={selectedPage==="all"?"All Pages":(visiblePages.find(function(p){return p.url===selectedPage;})||{label:selectedPage}).label} onDone={function(text){setGeneratedAuditText(text);}} onClose={handleModalClose}/>}
+      {showModal&&auditPrompt&&<GeneratingModal prompt={auditPrompt} images={auditImages} pageLabel={selectedPage==="all"?"All Pages":(visiblePages.find(function(p){return p.url===selectedPage;})||{label:selectedPage}).label} onDone={function(text){setGeneratedAuditText(text);}} onClose={handleModalClose}/>}
     </PageWrap>
   );
 }
