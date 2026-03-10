@@ -1306,7 +1306,7 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center"}}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       <div style={{background:C.white,borderRadius:16,padding:32,width:440,maxWidth:"90vw",textAlign:"center"}}>
-        {status==="loading"&&(<><div style={{width:48,height:48,borderRadius:"50%",border:"4px solid "+C.grey4,borderTop:"4px solid "+C.pink,margin:"0 auto 20px",animation:"spin 0.8s linear infinite"}}/><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Generating your audit</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 6px"}}>Analysing {pageLabel} against all personas, lifecycle stages and journey data.</p><p style={{fontSize:12,color:C.grey6,margin:"0 0 24px"}}>This usually takes around a minute — the more context, the sharper the output.</p><div style={{background:C.grey3,borderRadius:99,height:8,overflow:"hidden",marginBottom:8}}><div style={{width:progress+"%",background:C.pink,height:"100%",borderRadius:99,transition:"width 0.4s ease"}}/></div><div style={{fontSize:12,color:C.grey6,textAlign:"right"}}>{Math.round(progress)}%</div></>)}
+        {status==="loading"&&(<><div style={{width:48,height:48,borderRadius:"50%",border:"4px solid "+C.grey4,borderTop:"4px solid "+C.pink,margin:"0 auto 20px",animation:"spin 0.8s linear infinite"}}/><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Generating your audit</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 6px"}}>{images&&images.length>0?"Reading heatmaps and analysing scroll depth, click patterns, and attention zones…":"Analysing "+pageLabel+" against all personas, lifecycle stages and journey data."}</p><p style={{fontSize:12,color:C.grey6,margin:"0 0 24px"}}>This usually takes around a minute — the more context, the sharper the output.</p><div style={{background:C.grey3,borderRadius:99,height:8,overflow:"hidden",marginBottom:8}}><div style={{width:progress+"%",background:C.pink,height:"100%",borderRadius:99,transition:"width 0.4s ease"}}/></div><div style={{fontSize:12,color:C.grey6,textAlign:"right"}}>{Math.round(progress)}%</div></>)}
         {status==="done"&&(<><div style={{width:48,height:48,borderRadius:"50%",background:"#E6F9F2",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:24}}>✓</div><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Audit ready</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 24px"}}>Your {pageLabel} audit has been generated.</p><div style={{display:"flex",gap:10,justifyContent:"center"}}><button onClick={function(){onClose(false);}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Close</button><button onClick={function(){onClose(true);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>View audit</button></div></>)}
         {status==="error"&&(<><div style={{width:48,height:48,borderRadius:"50%",background:"#FFF0F0",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:24}}>✗</div><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Something went wrong</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 24px"}}>The audit could not be generated.</p><button onClick={function(){onClose(false);}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Close</button></>)}
       </div>
@@ -1562,11 +1562,43 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
   function handleDropFile(f){setExtraFiles(function(prev){return prev.concat([f]);});}
   function handleRemoveFile(f){setExtraFiles(function(prev){return prev.filter(function(x){return x!==f;});});}
   function proceedToGenerate(){
-    var base=buildPrompt();
-    var p=ga4Data?base+"\n\nANALYTICS CONTEXT:\n"+ga4Data.text:base;
     var csvFiles=extraFiles.filter(function(f){return f.type==="csv";});
-    if(csvFiles.length>0){p+="\n\nADDITIONAL DATA FILES:\n";csvFiles.forEach(function(f){p+="\nFile: "+f.name+"\n"+f.text.slice(0,3000)+(f.text.length>3000?"\n[truncated]":"")+"\n";});}
     var images=extraFiles.filter(function(f){return f.type==="image";});
+    var hasHeatmaps=images.length>0;
+    var hasCsvFiles=csvFiles.length>0;
+    var hasGa4=!!ga4Data;
+
+    // Build data-aware requirement block that goes at the top of the prompt
+    var dataRequirements="";
+    if(hasHeatmaps){
+      dataRequirements+="\n\nHEATMAP ANALYSIS — MANDATORY:\n";
+      dataRequirements+="You have been provided with "+images.length+" heatmap image"+(images.length>1?"s":"")+". Analyse each image carefully BEFORE writing any recommendations. Identify:\n";
+      dataRequirements+="- Scroll depth: Exactly where do users stop scrolling? Estimate the % who reach each section based on colour intensity.\n";
+      dataRequirements+="- Click & tap patterns: Which elements attract clicks? Which interactive elements are ignored? Are there non-interactive elements being clicked (misclick signals)?\n";
+      dataRequirements+="- Attention hotspots vs dead zones: Where is engagement concentrated? What areas are cold/ignored?\n";
+      dataRequirements+="- Fold point: Where does the visible viewport end? What content is critically buried below it?\n";
+      dataRequirements+="- Rage clicks or frustration signals: Any areas with dense, rapid repeated clicks?\n\n";
+      dataRequirements+="RULE: Every recommendation MUST open with a direct heatmap finding. Format: '[Heatmap finding]: Only X% scroll past [section] / Users are clicking [element] / [Zone] shows dead engagement — therefore [recommendation].'";
+    }
+    if(hasGa4||hasCsvFiles){
+      dataRequirements+="\n\nDATA CITATION — MANDATORY:\n";
+      dataRequirements+="You have been provided with real behavioural data. Every single recommendation MUST cite at least one specific metric or data point. No generic UX advice — ground every claim in the numbers.\n";
+      dataRequirements+="Format each recommendation so the data drives the insight, e.g.: 'Sessions: 4,521 with only 38% engagement rate and 2m avg session — users are bouncing before reaching [element]. Fix: [specific change].'";
+    }
+
+    // Build base prompt and inject data requirements right after the role line
+    var base=buildPrompt();
+    var p=base.replace(
+      "You are a UX strategist helping audit gwi.com.\n\n",
+      "You are a UX strategist helping audit gwi.com."+dataRequirements+"\n\n"
+    );
+
+    if(hasGa4){p+="\n\nGA4 ANALYTICS DATA:\n"+ga4Data.text;}
+    if(hasCsvFiles){
+      p+="\n\nUPLOADED DATA FILES:\n";
+      csvFiles.forEach(function(f){p+="\nFile: "+f.name+"\n"+f.text.slice(0,4000)+(f.text.length>4000?"\n[truncated]":"")+"\n";});
+    }
+
     setAuditImages(images);
     setAuditPrompt(p);setGeneratedAuditText("");setShowUpgradeNotice(false);setShowModal(true);
   }
