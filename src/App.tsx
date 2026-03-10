@@ -1297,7 +1297,7 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
     if(hasFetched.current)return;
     hasFetched.current=true;
     var hasImages=images&&images.length>0;
-    fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:hasImages?6000:4000,images:hasImages?images.map(function(i){return{dataUrl:i.dataUrl,mimeType:i.mimeType};}):undefined})})
+    fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:hasImages?8000:8000,images:hasImages?images.map(function(i){return{dataUrl:i.dataUrl,mimeType:i.mimeType};}):undefined})})
       .then(function(r){return r.json();})
       .then(function(data){if(data.error){setStatus("error");return;}var text=data.content&&data.content[0]?data.content[0].text:"";if(!text){setStatus("error");return;}onDone(text);setStatus("done");})
       .catch(function(){setStatus("error");});
@@ -1319,7 +1319,7 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditD
   var [added,setAdded]=useState({});
   var isMobile=useWidth()<768;
   var audit=audits.find(function(a){return a.id===activeAudit;});
-  function parseRecs(text){var recs=[];var blocks=text.split(/\n+/);var current=null;blocks.forEach(function(block){var t=block.trim();if(!t)return;var m=t.match(/^(\d+)\.\s+(.+)$/);if(m){if(current)recs.push(current);current={title:m[2].trim(),body:""};}else if(current){current.body=current.body?current.body+" "+t:t;}});if(current)recs.push(current);return recs.filter(function(r){return r.title&&r.body;});}
+  function parseRecs(text){var recs=[];var blocks=text.split(/\n+/);var current=null;blocks.forEach(function(block){var t=block.trim();if(!t)return;var m=t.match(/^REC:\s*(\d+)\.\s+(.+)$/);if(m){if(current)recs.push(current);current={title:m[2].trim(),body:""};}else if(current){current.body=current.body?current.body+" "+t:t;}});if(current)recs.push(current);return recs.filter(function(r){return r.title&&r.body;});}
   function isAlreadyAdded(rec,scope){var pageUrl=scope==="all"?"/":scope;var existing=auditData.find(function(p){return p.url===pageUrl;});if(!existing)return false;return existing.actions.some(function(a){return a.text===rec.title;});}
   function addToAudit(rec,scope,idx){
     var pageUrl=scope==="all"?"/":scope;
@@ -1567,43 +1567,38 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
     var hasHeatmaps=images.length>0;
     var hasCsvFiles=csvFiles.length>0;
     var hasGa4=!!ga4Data;
+    var obj=visiblePages.find(function(p){return p.url===selectedPage;});
+    var pageLabel=selectedPage==="all"?"the gwi.com website overall":(obj?obj.label+" page ("+selectedPage+")":selectedPage);
 
-    // Build data-aware requirement block injected at the top of the prompt
-    var dataRequirements="";
-    if(hasHeatmaps){
-      dataRequirements+="\n\nHEATMAP ANALYSIS — YOU MUST FOLLOW THIS OUTPUT STRUCTURE EXACTLY:\n\n";
-      dataRequirements+="STEP 1 — Begin your response with a section headed 'HEATMAP READING:'\n";
-      dataRequirements+="In this section, describe in detail what you observe in each heatmap image:\n";
-      dataRequirements+="  SCROLL DEPTH: Heatmaps use a colour gradient — red/orange/yellow = high engagement (many users reached this point), green/blue/grey = low engagement (few users reached here). Identify the exact transition line where the colour shifts from warm to cold. This is the scroll depth cutoff. State: (a) what page section or element sits at that cutoff, (b) your estimate of what % of users scroll past it, and (c) list every important element — CTAs, value propositions, social proof, pricing — that sits BELOW the cutoff and is therefore missed by most visitors.\n";
-      dataRequirements+="  CLICK PATTERNS: List every element or area that shows click concentration. Flag any non-interactive areas being clicked (signal of user confusion). Flag interactive elements that show zero or near-zero clicks.\n";
-      dataRequirements+="  DEAD ZONES: List page sections where colour is cold across the full width — areas of zero engagement.\n";
-      dataRequirements+="  ATTENTION HOTSPOTS: List areas of peak engagement.\n\n";
-      dataRequirements+="STEP 2 — After the HEATMAP READING section, write your numbered recommendations.\n";
-      dataRequirements+="Each recommendation MUST:\n";
-      dataRequirements+="- Open by quoting the specific heatmap observation that triggered it (scroll depth cutoff, dead zone, click cluster, etc.)\n";
-      dataRequirements+="- State exactly where on the page the change needs to happen\n";
-      dataRequirements+="- Explain why the heatmap data demands this change\n";
-      dataRequirements+="- Give the specific fix\n\n";
-      dataRequirements+="Example format: '1. Move the free trial CTA above the scroll cutoff\\nHeatmap observation: The scroll depth gradient shifts from orange to blue at the pricing table, meaning ~65% of visitors never see the primary CTA. Given that the Data Analyst persona (driven by self-serve access) needs immediate trial access, burying the CTA below the fold is costing sign-ups. Fix: add a sticky CTA button visible from page load and duplicate the CTA immediately below the hero copy.'";
-    }
-    if(hasGa4||hasCsvFiles){
-      dataRequirements+="\n\nDATA CITATION — MANDATORY:\n";
-      dataRequirements+="Real behavioural data has been provided. Every recommendation MUST cite at least one specific metric or data point. No generic UX advice — every claim must be anchored to a number.\n";
-      dataRequirements+="Format: 'Sessions: 4,521 with 38% engagement rate — users are disengaging before [element]. Fix: [specific change].'";
-    }
+    var personaCtx="";
+    personas.forEach(function(p){personaCtx+="- "+p.label+" ("+p.tagline+"): Entry via "+p.entry+". Drives: "+p.drives+". Bugs: "+p.bugs+". Website needs: "+p.website+".\n";});
+    var lifecycleCtx="";
+    stages.forEach(function(s){lifecycleCtx+="- "+s.label+": Goal: "+s.gwi_goal+". Anxiety: "+s.anxiety+".\n";});
 
-    // Build base prompt and inject data requirements right after the role line
-    var base=buildPrompt();
-    var p=base.replace(
-      "You are a UX strategist helping audit gwi.com.\n\n",
-      "You are a UX strategist helping audit gwi.com."+dataRequirements+"\n\n"
-    );
+    var p="You are a senior UX strategist producing a professional audit report for gwi.com. Your output must be specific, data-grounded, and actionable — never generic UX advice.\n\n";
+    p+="PAGE BEING AUDITED: "+pageLabel+"\n\n";
+    p+="PERSONAS:\n"+personaCtx+"\n";
+    p+="LIFECYCLE STAGES:\n"+lifecycleCtx+"\n";
 
-    if(hasGa4){p+="\n\nGA4 ANALYTICS DATA:\n"+ga4Data.text;}
-    if(hasCsvFiles){
-      p+="\n\nUPLOADED DATA FILES:\n";
-      csvFiles.forEach(function(f){p+="\nFile: "+f.name+"\n"+f.text.slice(0,4000)+(f.text.length>4000?"\n[truncated]":"")+"\n";});
-    }
+    if(hasGa4||hasCsvFiles){p+="RULE — DATA GROUNDING: Real behavioural data is provided below. Every claim and recommendation MUST cite a specific number from it. Never write 'users are not engaging' — write 'Email traffic (1,371 sessions) engages at 3.8%'. Vague statements are not acceptable.\n\n";}
+    if(hasHeatmaps){p+="RULE — HEATMAP READING: Heatmap images are attached. Red/orange = high engagement, blue/grey = low. For scroll heatmaps: identify the EXACT element where warm turns cold — that is the scroll cutoff. List every important element (CTAs, logos, testimonials, pricing) that sits below it. For click heatmaps: name every click cluster and every interactive element with no clicks.\n\n";}
+
+    p+="PRODUCE ALL SECTIONS BELOW IN THIS EXACT ORDER — DO NOT SKIP ANY:\n\n";
+    p+="## Executive Summary\n3-4 paragraphs. Open with the overall engagement number and what it means in plain language. Describe the worst-performing channel specifically (name it, cite its rate). "+(hasHeatmaps?"Summarise what the heatmap reveals structurally. ":"")+"Close with one sentence naming the single core problem this page is failing to solve.\n\n";
+
+    if(hasGa4||hasCsvFiles){p+="## Data Summary\nReproduce channel performance as a markdown table: Channel | Sessions | Eng. Rate | Avg. Eng. Time. Then write 4-6 Key Data Observations as bullet points — each MUST open with the specific metric.\n\n";}
+    if(hasHeatmaps){p+="## Heatmap Observations\nThree sub-sections: **Scroll behaviour** (identify the warm/cold transition, name the cutoff element, list everything below it), **Click behaviour** (name every click cluster, flag confusion clicks and missing clicks on key CTAs), **Mouse movement** (where attention concentrates and where it drops).\n\n";}
+
+    p+="## Persona-by-Persona Analysis\nFor EACH of the "+personas.length+" personas, write a subsection:\n### [Persona Name] — Arrives via [entry channel]\n**What they need from this page:** (3-4 bullet points from the persona data above)\n**What the current page delivers:** (2-3 bullet points — be critically honest"+(hasGa4||hasCsvFiles?", cite data where possible":"")+")\n**Friction points:** (2-3 specific friction points"+(hasGa4||hasCsvFiles?", each citing a metric":"")+"). Do not skip any persona.\n\n";
+
+    p+="## Prioritised UX Recommendations\nOrganise as P1 (quick win, 1 sprint), P2 (medium term), P3 (strategic). Produce at least 8 recommendations.\n\nCRITICAL FORMAT RULE: Format EVERY recommendation using EXACTLY this pattern — no exceptions:\nREC: [number]. [Recommendation title] — [P1/P2/P3] — [Personas served]\n[One paragraph: the specific data or heatmap finding that justifies this, followed by the exact implementable fix and the success metric to track]\n\nExample:\nREC: 1. Move logo strip above the fold — P1 — Commercial Closer, Strategic Leader\nScroll heatmap shows the trusted-client logo strip sits below the point where colour turns from orange to blue, meaning the majority of visitors never reach it. Paid Search (38.8% eng. rate) and Direct (32.2%) visitors — the most likely Commercial Closers and Strategic Leaders — are scanning for credibility signals that are currently invisible to them. Fix: relocate the logo strip to immediately beneath the hero CTAs. Success metric: increase in Paid Search engagement rate above 38.8% baseline.\n\n";
+
+    p+="## Measurement Framework\nTable: Metric | Current Baseline | Target Direction. Include every channel engagement rate"+(hasGa4||hasCsvFiles?" from the data provided":" (estimate if no data)")+". Include click events that should be set up in GA4 to track recommendation impact.\n\n";
+
+    p+="## Next Steps\n5-7 specific next steps ordered by urgency. Name the responsible team for each (web team, content team, analytics team, UX team).\n";
+
+    if(hasGa4){p+="\n---\nGA4 ANALYTICS DATA:\n"+ga4Data.text;}
+    if(hasCsvFiles){p+="\n\nUPLOADED DATA FILES:\n";csvFiles.forEach(function(f){p+="\nFile: "+f.name+"\n"+f.text.slice(0,5000)+(f.text.length>5000?"\n[truncated]":"")+"\n";});}
 
     setAuditImages(images);
     setAuditPrompt(p);setGeneratedAuditText("");setShowUpgradeNotice(false);setShowModal(true);
