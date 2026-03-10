@@ -1297,7 +1297,7 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
     if(hasFetched.current)return;
     hasFetched.current=true;
     var hasImages=images&&images.length>0;
-    fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:4000,images:hasImages?images.map(function(i){return{dataUrl:i.dataUrl,mimeType:i.mimeType};}):undefined})})
+    fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:hasImages?6000:4000,images:hasImages?images.map(function(i){return{dataUrl:i.dataUrl,mimeType:i.mimeType};}):undefined})})
       .then(function(r){return r.json();})
       .then(function(data){if(data.error){setStatus("error");return;}var text=data.content&&data.content[0]?data.content[0].text:"";if(!text){setStatus("error");return;}onDone(text);setStatus("done");})
       .catch(function(){setStatus("error");});
@@ -1568,22 +1568,28 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
     var hasCsvFiles=csvFiles.length>0;
     var hasGa4=!!ga4Data;
 
-    // Build data-aware requirement block that goes at the top of the prompt
+    // Build data-aware requirement block injected at the top of the prompt
     var dataRequirements="";
     if(hasHeatmaps){
-      dataRequirements+="\n\nHEATMAP ANALYSIS — MANDATORY:\n";
-      dataRequirements+="You have been provided with "+images.length+" heatmap image"+(images.length>1?"s":"")+". Analyse each image carefully BEFORE writing any recommendations. Identify:\n";
-      dataRequirements+="- Scroll depth: Exactly where do users stop scrolling? Estimate the % who reach each section based on colour intensity.\n";
-      dataRequirements+="- Click & tap patterns: Which elements attract clicks? Which interactive elements are ignored? Are there non-interactive elements being clicked (misclick signals)?\n";
-      dataRequirements+="- Attention hotspots vs dead zones: Where is engagement concentrated? What areas are cold/ignored?\n";
-      dataRequirements+="- Fold point: Where does the visible viewport end? What content is critically buried below it?\n";
-      dataRequirements+="- Rage clicks or frustration signals: Any areas with dense, rapid repeated clicks?\n\n";
-      dataRequirements+="RULE: Every recommendation MUST open with a direct heatmap finding. Format: '[Heatmap finding]: Only X% scroll past [section] / Users are clicking [element] / [Zone] shows dead engagement — therefore [recommendation].'";
+      dataRequirements+="\n\nHEATMAP ANALYSIS — YOU MUST FOLLOW THIS OUTPUT STRUCTURE EXACTLY:\n\n";
+      dataRequirements+="STEP 1 — Begin your response with a section headed 'HEATMAP READING:'\n";
+      dataRequirements+="In this section, describe in detail what you observe in each heatmap image:\n";
+      dataRequirements+="  SCROLL DEPTH: Heatmaps use a colour gradient — red/orange/yellow = high engagement (many users reached this point), green/blue/grey = low engagement (few users reached here). Identify the exact transition line where the colour shifts from warm to cold. This is the scroll depth cutoff. State: (a) what page section or element sits at that cutoff, (b) your estimate of what % of users scroll past it, and (c) list every important element — CTAs, value propositions, social proof, pricing — that sits BELOW the cutoff and is therefore missed by most visitors.\n";
+      dataRequirements+="  CLICK PATTERNS: List every element or area that shows click concentration. Flag any non-interactive areas being clicked (signal of user confusion). Flag interactive elements that show zero or near-zero clicks.\n";
+      dataRequirements+="  DEAD ZONES: List page sections where colour is cold across the full width — areas of zero engagement.\n";
+      dataRequirements+="  ATTENTION HOTSPOTS: List areas of peak engagement.\n\n";
+      dataRequirements+="STEP 2 — After the HEATMAP READING section, write your numbered recommendations.\n";
+      dataRequirements+="Each recommendation MUST:\n";
+      dataRequirements+="- Open by quoting the specific heatmap observation that triggered it (scroll depth cutoff, dead zone, click cluster, etc.)\n";
+      dataRequirements+="- State exactly where on the page the change needs to happen\n";
+      dataRequirements+="- Explain why the heatmap data demands this change\n";
+      dataRequirements+="- Give the specific fix\n\n";
+      dataRequirements+="Example format: '1. Move the free trial CTA above the scroll cutoff\\nHeatmap observation: The scroll depth gradient shifts from orange to blue at the pricing table, meaning ~65% of visitors never see the primary CTA. Given that the Data Analyst persona (driven by self-serve access) needs immediate trial access, burying the CTA below the fold is costing sign-ups. Fix: add a sticky CTA button visible from page load and duplicate the CTA immediately below the hero copy.'";
     }
     if(hasGa4||hasCsvFiles){
       dataRequirements+="\n\nDATA CITATION — MANDATORY:\n";
-      dataRequirements+="You have been provided with real behavioural data. Every single recommendation MUST cite at least one specific metric or data point. No generic UX advice — ground every claim in the numbers.\n";
-      dataRequirements+="Format each recommendation so the data drives the insight, e.g.: 'Sessions: 4,521 with only 38% engagement rate and 2m avg session — users are bouncing before reaching [element]. Fix: [specific change].'";
+      dataRequirements+="Real behavioural data has been provided. Every recommendation MUST cite at least one specific metric or data point. No generic UX advice — every claim must be anchored to a number.\n";
+      dataRequirements+="Format: 'Sessions: 4,521 with 38% engagement rate — users are disengaging before [element]. Fix: [specific change].'";
     }
 
     // Build base prompt and inject data requirements right after the role line
