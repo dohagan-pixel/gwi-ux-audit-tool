@@ -224,7 +224,7 @@ function useWidth(){
 function fetchIssueSummary(page,onSuccess,onDone){
   var lines=page.actions.map(function(a,i){return(i+1)+". "+a.text+(a.description?" - "+a.description:"");});
   var prompt="You are a UX strategist. Write a 2-3 sentence diagnostic summary of the core UX problem on this page. Be direct and sharp. Do not list actions, synthesise the underlying issue. Page: "+page.label+" ("+page.url+"). Actions: "+lines.join(". ")+". Return only the paragraph.";
-  fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:200,messages:[{role:"user",content:prompt}]})})
+  fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:200})})
     .then(function(r){return r.json();})
     .then(function(data){onSuccess(data.content&&data.content[0]?data.content[0].text:"");onDone();})
     .catch(function(){onDone();});
@@ -1238,7 +1238,7 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel}){
   useEffect(function(){
     if(hasFetched.current)return;
     hasFetched.current=true;
-    fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:4000,messages:[{role:"user",content:prompt}]})})
+    fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:4000})})
       .then(function(r){return r.json();})
       .then(function(data){if(data.error){setStatus("error");return;}var text=data.content&&data.content[0]?data.content[0].text:"";if(!text){setStatus("error");return;}onDone(text);setStatus("done");})
       .catch(function(){setStatus("error");});
@@ -1966,4 +1966,5 @@ export default function App(){
     </div>
   );
 }
+
 
