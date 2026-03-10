@@ -1,4 +1,10 @@
 import { useState, useRef, useEffect } from "react";
+
+import{initializeApp}from'firebase/app';
+import{getAuth,GoogleAuthProvider,signInWithPopup,signOut as fbSignOut,onAuthStateChanged}from'firebase/auth';
+import{getFirestore,doc,getDoc,setDoc}from'firebase/firestore';
+const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
+const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
 import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight } from "lucide-react";
 
 const C = {
@@ -1899,6 +1905,8 @@ function MobileNav({view,setView}){
   );
 }
 
+
+function LoginScreen({onLogin,loginError}){return(<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",background:"#0a0a0a"}}><div style={{textAlign:"center",maxWidth:360,padding:32,boxSizing:"border-box"}}><div style={{fontWeight:800,fontSize:36,color:"#fff",marginBottom:8}}>GWI UX</div><div style={{fontSize:14,color:"#666",marginBottom:40}}>UX Audit Platform</div><button onClick={onLogin} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:"#fff",color:"#333",border:"none",borderRadius:8,padding:"13px 24px",fontSize:15,fontWeight:600,cursor:"pointer",width:"100%",marginBottom:16}}>Sign in with Google</button>{loginError&&<div style={{color:"#f87171",fontSize:13,marginBottom:12,padding:8,background:"rgba(248,113,113,0.1)",borderRadius:6}}>{loginError}</div>}<div style={{fontSize:12,color:"#555"}}>Access restricted to @gwi.com accounts</div></div></div>);}
 export default function App(){
   var [view,setView]=useState("dashboard");
   var [stages,setStages]=useState(INIT_STAGES);
@@ -1911,6 +1919,15 @@ export default function App(){
   var [showAddAction,setShowAddAction]=useState(false);
   var [generatedAudits,setGeneratedAudits]=useState([]);
   var isMobile=useWidth()<768;
+  var [_user,_setUser]=useState(null);
+  var [_authLoading,_setAuthLoading]=useState(true);
+  var [_loginError,_setLoginError]=useState(null);
+  useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()&&snap.data().auditData)setAuditData(snap.data().auditData);});}else{_setUser(null);}_setAuthLoading(false);});},[]);
+  useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[auditData,_user]);
+  function _handleLogin(){var p=new GoogleAuthProvider();p.setCustomParameters({hd:"gwi.com"});signInWithPopup(_auth,p).catch(function(){_setLoginError("Sign-in failed. Try again.");});}
+  if(_authLoading)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#0a0a0a",color:"#fff",fontSize:16}}>Loading…</div>);
+  if(!_user)return(<LoginScreen onLogin={_handleLogin} loginError={_loginError}/>);
+
 
   return(
     <div style={{display:"flex",flexDirection:"column",height:"100vh",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
@@ -1926,6 +1943,7 @@ export default function App(){
           <Dropdown label="Mapping" items={MAPPING_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("mapping");}} forceActive={view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"}/>
           <button onClick={function(){setView("analytics");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="analytics"?C.pink:"transparent",color:view==="analytics"?C.white:C.grey7,flexShrink:0}}>Analytics</button>
           <div style={{flex:1}}/>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginRight:8}}>{_user.photoURL&&<img src={_user.photoURL} alt="" style={{width:26,height:26,borderRadius:"50%"}}/>}<button onClick={function(){fbSignOut(_auth);}} style={{background:"transparent",border:"1px solid #444",borderRadius:6,color:"#aaa",padding:"4px 10px",fontSize:12,cursor:"pointer"}}>Sign out</button></div>
           <button onClick={function(){setView("settings");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="settings"?C.pink:"transparent",color:view==="settings"?C.white:C.grey7,flexShrink:0}}>Settings</button>
         </div>
       )}
@@ -1948,3 +1966,4 @@ export default function App(){
     </div>
   );
 }
+
