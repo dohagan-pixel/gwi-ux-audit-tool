@@ -1252,7 +1252,7 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction}){
 
 function AnalyticsPage({gaCards}){
   var [tab,setTab]=useState("ga");
-  var [showNotice,setShowNotice]=useState(true);
+  var [showNotice,setShowNotice]=useState(function(){try{return localStorage.getItem("analytics_notice_dismissed")!=="1";}catch(e){return true;}});
   var isMobile=useWidth()<768;
   var CARD_ICONS_MAP={LayoutDashboard:<LayoutDashboard size={22}/>,Home:<Home size={22}/>,Puzzle:<Puzzle size={22}/>,DollarSign:<DollarSign size={22}/>,FileText:<FileText size={22}/>,Bot:<Bot size={22}/>,MousePointerClick:<MousePointerClick size={22}/>,GitMerge:<GitMerge size={22}/>,BarChart2:<BarChart2 size={22}/>,Layers:<Layers size={22}/>,Zap:<Zap size={22}/>,Brain:<Brain size={22}/>};
   return(
@@ -1263,7 +1263,7 @@ function AnalyticsPage({gaCards}){
           <h2 style={{fontSize:20,fontWeight:800,color:C.black,margin:"0 0 12px"}}>Analytics is getting an upgrade</h2>
           <p style={{fontSize:14,color:C.grey7,lineHeight:1.7,margin:"0 0 8px"}}>This section currently links out to GA4 and Hotjar directly.</p>
           <p style={{fontSize:14,color:C.grey7,lineHeight:1.7,margin:"0 0 28px"}}>Once we have a <strong style={{color:C.black}}>Claude Code licence</strong>, this will be rebuilt to pull live analytics data directly into the tool.</p>
-          <button onClick={function(){setShowNotice(false);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"12px 28px",fontSize:14,fontWeight:700,cursor:"pointer"}}>Got it, take me in</button>
+          <button onClick={function(){setShowNotice(false);try{localStorage.setItem("analytics_notice_dismissed","1");}catch(e){}}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"12px 28px",fontSize:14,fontWeight:700,cursor:"pointer"}}>Got it, take me in</button>
         </Modal>
       )}
       <PageWrap isMobile={isMobile}>
@@ -1972,13 +1972,16 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
             {(gaCards||[]).map(function(card,i,arr){
               var isSaved=gaCardSaved[card.id];
               return(
-                <div key={card.id} style={{display:"flex",alignItems:"center",gap:8,padding:"12px 16px",borderBottom:i<arr.length-1?"1px solid "+C.grey3:"none",flexWrap:isMobile?"wrap":"nowrap"}}>
-                  <div style={{flexShrink:0,width:isMobile?"100%":180}}>
-                    <input value={card.title||""} onChange={function(e){var v=e.target.value;setGaCards(function(prev){return prev.map(function(c){return c.id===card.id?Object.assign({},c,{title:v}):c;});});}} style={{width:"100%",padding:"6px 8px",border:"1px solid "+C.grey4,borderRadius:6,fontSize:13,fontWeight:600,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>
+                <div key={card.id} style={{padding:"12px 16px",borderBottom:i<arr.length-1?"1px solid "+C.grey3:"none"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:isMobile?"wrap":"nowrap"}}>
+                    <div style={{flexShrink:0,width:isMobile?"100%":180}}>
+                      <input value={card.title||""} onChange={function(e){var v=e.target.value;setGaCards(function(prev){return prev.map(function(c){return c.id===card.id?Object.assign({},c,{title:v}):c;});});}} placeholder="Card title" style={{width:"100%",padding:"6px 8px",border:"1px solid "+C.grey4,borderRadius:6,fontSize:13,fontWeight:600,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>
+                    </div>
+                    <input value={card.url||""} onChange={function(e){var v=e.target.value;setGaCards(function(prev){return prev.map(function(c){return c.id===card.id?Object.assign({},c,{url:v}):c;});});}} placeholder="https://analytics.google.com/..." style={{flex:1,width:isMobile?"100%":"auto",padding:"7px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box",outline:"none"}}/>
+                    <button onClick={function(){flashSaved(card.id);}} title="Save" style={{flexShrink:0,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:isSaved?"#E6F9F2":C.grey3,color:isSaved?"#00A86B":C.grey6,border:isSaved?"1px solid #A3E6C8":"none",borderRadius:8,cursor:"pointer",transition:"all 0.2s"}}><Check size={14}/></button>
+                    <button onClick={function(){deleteGaCard(card.id);}} title="Delete" style={{flexShrink:0,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"#FFF0F0",color:"#CC0000",border:"1px solid #FFAAAA",borderRadius:8,cursor:"pointer"}}><Trash2 size={14}/></button>
                   </div>
-                  <input value={card.url||""} onChange={function(e){var v=e.target.value;setGaCards(function(prev){return prev.map(function(c){return c.id===card.id?Object.assign({},c,{url:v}):c;});});}} placeholder="https://analytics.google.com/..." style={{flex:1,width:isMobile?"100%":"auto",padding:"7px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box",outline:"none"}}/>
-                  <button onClick={function(){flashSaved(card.id);}} title="Save" style={{flexShrink:0,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:isSaved?"#E6F9F2":C.grey3,color:isSaved?"#00A86B":C.grey6,border:isSaved?"1px solid #A3E6C8":"none",borderRadius:8,cursor:"pointer",transition:"all 0.2s"}}><Check size={14}/></button>
-                  <button onClick={function(){deleteGaCard(card.id);}} title="Delete" style={{flexShrink:0,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"#FFF0F0",color:"#CC0000",border:"1px solid #FFAAAA",borderRadius:8,cursor:"pointer"}}><Trash2 size={14}/></button>
+                  <input value={card.desc||""} onChange={function(e){var v=e.target.value;setGaCards(function(prev){return prev.map(function(c){return c.id===card.id?Object.assign({},c,{desc:v}):c;});});}} placeholder="Card description (shown on Analytics page)" style={{width:"100%",padding:"6px 8px",border:"1px solid "+C.grey4,borderRadius:6,fontSize:12,color:C.grey7,background:C.white,boxSizing:"border-box",outline:"none"}}/>
                 </div>
               );
             })}
