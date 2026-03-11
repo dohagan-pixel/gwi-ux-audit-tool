@@ -5,7 +5,7 @@ import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
-import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil } from "lucide-react";
+import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star } from "lucide-react";
 
 const C = {
   pink:"#FF0077",white:"#FFFFFF",black:"#101720",offBlack:"#2A3447",
@@ -1380,7 +1380,7 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
   );
 }
 
-function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditData,pages,setView}){
+function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAuditData,auditData,pages,setView}){
   var [activeAudit,setActiveAudit]=useState(audits.length>0?audits[audits.length-1].id:null);
   var [added,setAdded]=useState({});
   var [editing,setEditing]=useState(false);
@@ -1390,7 +1390,8 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditD
   var audit=audits.find(function(a){return a.id===activeAudit;});
   function deleteActiveAudit(){var rem=audits.filter(function(x){return x.id!==activeAudit;});setAudits(rem);if(onDeleteAudit)onDeleteAudit(activeAudit);setActiveAudit(rem.length>0?rem[rem.length-1].id:null);}
   function openEdit(){setEditLabel(audit?audit.pageLabel:"");setEditDesc(audit?audit.description||"":"");setEditing(true);}
-  function saveEdit(){setAudits(function(prev){return prev.map(function(a){return a.id===activeAudit?Object.assign({},a,{pageLabel:editLabel.trim()||a.pageLabel,description:editDesc.trim()}):a;});});setEditing(false);}
+  function saveEdit(){var updated=Object.assign({},audit,{pageLabel:editLabel.trim()||audit.pageLabel,description:editDesc.trim()});setAudits(function(prev){return prev.map(function(a){return a.id===activeAudit?updated:a;});});if(onUpdateAudit)onUpdateAudit(updated);setEditing(false);}
+  function toggleStar(){var updated=Object.assign({},audit,{starred:!audit.starred});setAudits(function(prev){return prev.map(function(a){return a.id===activeAudit?updated:a;});});if(onUpdateAudit)onUpdateAudit(updated);}
   function parseRecs(text){var recs=[];var blocks=text.split(/\n+/);var current=null;blocks.forEach(function(block){var t=block.trim();if(!t)return;var m=t.match(/^FINDING:\s*(\d+)\.\s+(.+)$/);if(m){if(current)recs.push(current);current={title:m[2].trim(),shows:"",why:"",change:"",metric:"",body:""};}else if(current){if(t.startsWith("SHOWS:")){current.shows=t.slice(6).trim();}else if(t.startsWith("WHY:")){current.why=t.slice(4).trim();}else if(t.startsWith("CHANGE:")){current.change=t.slice(7).trim();}else if(t.startsWith("METRIC:")){current.metric=t.slice(7).trim();}else{current.body=current.body?current.body+" "+t:t;}}});if(current)recs.push(current);return recs.filter(function(r){return r.title&&(r.shows||r.why||r.change||r.body);});}
   function isAlreadyAdded(rec,scope){var pageUrl=scope==="all"?"/":scope;var existing=auditData.find(function(p){return p.url===pageUrl;});if(!existing)return false;return existing.actions.some(function(a){return a.text===rec.title;});}
   function addToAudit(rec,scope,idx){
@@ -1411,11 +1412,27 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditD
         {audits.slice().reverse().map(function(a){var isActive=a.id===activeAudit;return(
           <div key={a.id} style={{borderBottom:"1px solid "+C.grey3,background:isActive?C.grey3:"transparent"}}>
             <button onClick={function(){setActiveAudit(a.id);setEditing(false);}} style={{textAlign:"left",padding:"12px 16px",borderLeft:"4px solid "+(isActive?C.pink:"transparent"),background:"transparent",color:isActive?C.black:C.grey8,border:"none",cursor:"pointer",width:"100%"}}>
-              <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>{a.pageLabel}</div>
-              <div style={{fontSize:11,color:C.grey6}}>{a.date}</div>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                {a.starred&&<Star size={11} fill="#FFC107" color="#FFC107" style={{flexShrink:0}}/>}
+                <span style={{fontSize:13,fontWeight:700}}>{a.pageLabel}</span>
+              </div>
+              <div style={{fontSize:11,color:C.grey6,marginTop:2}}>{a.date}</div>
             </button>
           </div>
         );})}
+        {audits.some(function(a){return a.starred;})&&(<>
+          <div style={{padding:"14px 16px",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",borderTop:"2px solid "+C.grey4,borderBottom:"1px solid "+C.grey4,display:"flex",alignItems:"center",gap:6}}>
+            <Star size={11} fill="#FFC107" color="#FFC107"/><span>Starred</span>
+          </div>
+          {audits.filter(function(a){return a.starred;}).reverse().map(function(a){var isActive=a.id===activeAudit;return(
+            <div key={"star-"+a.id} style={{borderBottom:"1px solid "+C.grey3,background:isActive?C.grey3:"transparent"}}>
+              <button onClick={function(){setActiveAudit(a.id);setEditing(false);}} style={{textAlign:"left",padding:"12px 16px",borderLeft:"4px solid "+(isActive?"#FFC107":"transparent"),background:"transparent",color:isActive?C.black:C.grey8,border:"none",cursor:"pointer",width:"100%"}}>
+                <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>{a.pageLabel}</div>
+                <div style={{fontSize:11,color:C.grey6}}>{a.date}</div>
+              </button>
+            </div>
+          );})}
+        </>)}
       </div>
       <div style={{flex:1,overflow:"auto",padding:isMobile?16:28}}>
         <div style={{paddingBottom:80}}>
@@ -1443,6 +1460,7 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditD
               </div>
               {!editing&&(
                 <div style={{display:"flex",gap:8,flexShrink:0,paddingTop:2}}>
+                  <button onClick={toggleStar} title={audit.starred?"Remove from starred":"Add to starred"} style={{background:audit.starred?"rgba(255,193,7,0.15)":"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:audit.starred?"#FFC107":C.grey4}}><Star size={15} fill={audit.starred?"#FFC107":"none"}/></button>
                   <button onClick={openEdit} title="Rename / add description" style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.grey4}}><Pencil size={15}/></button>
                   <button onClick={deleteActiveAudit} title="Delete audit" style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#FF6B6B"}}><Trash2 size={15}/></button>
                 </div>
@@ -2362,7 +2380,7 @@ export default function App(){
         {view==="audit"&&<AuditPage personas={personas} pages={pages} auditData={auditData} setAuditData={setAuditData} onAddAction={function(){setShowAddAction(true);}}/>}
         {view==="analytics"&&<AnalyticsPage gaCards={gaCards}/>}
         {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit).catch(function(){});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
-        {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id)).catch(function(){});}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
+        {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id)).catch(function(){});}} onUpdateAudit={function(updated){if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",updated.id),updated).catch(function(){});}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
         {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards}/>}
       </div>
       {showAddAction&&<AddActionModal auditData={auditData} setAuditData={setAuditData} pages={pages} onClose={function(){setShowAddAction(false);}}/>}
