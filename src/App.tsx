@@ -1288,7 +1288,7 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
   if(audits.length===0){return(<div style={{background:C.grey2,height:"100%",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center",padding:32}}><div style={{marginBottom:16,color:C.grey6,display:"flex",justifyContent:"center"}}><ClipboardList size={32}/></div><h2 style={{fontSize:20,fontWeight:800,color:C.black,marginBottom:8}}>No generated audits yet</h2><p style={{fontSize:14,color:C.grey7,marginBottom:20}}>Generate your first audit from the UX Audit page.</p><button onClick={function(){setView("summary");}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Go to UX Audit</button></div></div>);}
   var recs=audit?parseRecs(audit.content):[];
   return(
-    <div style={{display:"flex",flexDirection:isMobile?"column":"row",height:"100%",background:C.grey2}}>
+    <div style={{display:"flex",flexDirection:isMobile?"column":"row",flex:1,minHeight:0,background:C.grey2}}>
       <div style={{width:isMobile?"100%":220,background:C.white,borderRight:"1px solid "+C.grey4,flexShrink:0,display:"flex",flexDirection:"column",overflow:"auto"}}>
         <div style={{padding:"14px 16px",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",borderBottom:"1px solid "+C.grey4}}>Generated Audits</div>
         {audits.filter(function(a){return !a.starred;}).slice().reverse().map(function(a){var isActive=a.id===activeAudit;return(
@@ -2239,7 +2239,7 @@ export default function App(){
           <UserMenu user={_user} onSignOut={function(){fbSignOut(_auth);}} onSettings={function(){setView("settings");}} activeView={view}/>
         </div>
       )}
-      <div style={{flex:1,overflow:"hidden"}}>
+      <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
         {view==="dashboard"&&<Dashboard personas={personas} auditData={auditData} setView={setView}/>}
         {view==="personas"&&<PersonasDash personas={personas} setView={setView} setActivePersona={setActivePersonaId}/>}
         {view==="persona-detail"&&<PersonasPage personas={personas} journeys={journeys} setView={setView} setActivePersonaForJourney={setActivePersonaForJourney} initialPersonaId={activePersonaId}/>}
