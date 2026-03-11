@@ -1409,14 +1409,11 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
     <div style={{display:"flex",flexDirection:isMobile?"column":"row",height:"100%",background:C.grey2}}>
       <div style={{width:isMobile?"100%":220,background:C.white,borderRight:"1px solid "+C.grey4,flexShrink:0,display:"flex",flexDirection:"column",overflow:"auto"}}>
         <div style={{padding:"14px 16px",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",borderBottom:"1px solid "+C.grey4}}>Generated Audits</div>
-        {audits.slice().reverse().map(function(a){var isActive=a.id===activeAudit;return(
+        {audits.filter(function(a){return !a.starred;}).slice().reverse().map(function(a){var isActive=a.id===activeAudit;return(
           <div key={a.id} style={{borderBottom:"1px solid "+C.grey3,background:isActive?C.grey3:"transparent"}}>
             <button onClick={function(){setActiveAudit(a.id);setEditing(false);}} style={{textAlign:"left",padding:"12px 16px",borderLeft:"4px solid "+(isActive?C.pink:"transparent"),background:"transparent",color:isActive?C.black:C.grey8,border:"none",cursor:"pointer",width:"100%"}}>
-              <div style={{display:"flex",alignItems:"center",gap:6}}>
-                {a.starred&&<Star size={11} fill="#FFC107" color="#FFC107" style={{flexShrink:0}}/>}
-                <span style={{fontSize:13,fontWeight:700}}>{a.pageLabel}</span>
-              </div>
-              <div style={{fontSize:11,color:C.grey6,marginTop:2}}>{a.date}</div>
+              <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>{a.pageLabel}</div>
+              <div style={{fontSize:11,color:C.grey6}}>{a.date}</div>
             </button>
           </div>
         );})}
