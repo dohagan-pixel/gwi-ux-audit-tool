@@ -646,7 +646,7 @@ function Dashboard({personas,auditData,setView}){
   ];
   return(
     <div style={{background:C.grey2,height:"100%",overflow:"auto",padding:isMobile?"20px 16px":"40px 32px"}}>
-      <div style={{maxWidth:920,margin:"0 auto"}}>
+      <div style={{maxWidth:920,margin:"0 auto",paddingBottom:80}}>
         <div style={{background:C.black,borderRadius:20,padding:isMobile?"24px":"36px 40px",marginBottom:28}}>
           <div style={{fontSize:12,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>GWI Website — UX Audit</div>
           <h1 style={{color:C.white,fontSize:isMobile?24:32,fontWeight:800,margin:"0 0 12px",lineHeight:1.15}}>Optimize for free sign-ups using real behavioral data.</h1>
@@ -778,7 +778,7 @@ function PersonasPage({personas,journeys,setView,setActivePersonaForJourney,init
         </div>
       )}
       <div style={{flex:1,overflow:"auto",padding:isMobile?16:20,background:C.grey2}}>
-        <div style={{maxWidth:920,margin:"0 auto"}}>
+        <div style={{maxWidth:920,margin:"0 auto",paddingBottom:80}}>
           <div style={{background:col.bg,border:"1px solid "+col.border,borderRadius:16,padding:24,marginBottom:24}}>
             <h2 style={{color:C.black,fontSize:24,fontWeight:700,margin:0}}>{p.label}</h2>
             <p style={{color:C.black,marginTop:8,fontSize:18,fontWeight:600,lineHeight:1.3}}>{p.tagline}</p>
@@ -819,7 +819,7 @@ function CustomerMappingPage({stages,personas,journeys,setView}){
     <div style={{display:"flex",flexDirection:isMobile?"column":"row",height:"100%",overflow:"hidden"}}>
       <MappingSidebar activeId="lifecycle" setView={setView} isMobile={isMobile}/>
       <div style={{flex:1,overflow:"auto",background:C.grey2,padding:isMobile?"16px":"20px"}}>
-        <div style={{maxWidth:920,margin:"0 auto"}}>
+        <div style={{maxWidth:920,margin:"0 auto",paddingBottom:80}}>
           <div style={{background:C.black,borderRadius:16,padding:isMobile?"20px":"28px 32px",marginBottom:24,position:"relative"}}>
             <div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>The full picture</div>
             <h1 style={{color:C.white,fontSize:isMobile?20:26,fontWeight:800,margin:"0 0 8px"}}>Customer Lifecycle Map</h1>
@@ -902,7 +902,7 @@ function AffinityPage({personas,setView}){
     <div style={{display:"flex",flexDirection:isMobile?"column":"row",height:"100%",overflow:"hidden"}}>
       <MappingSidebar activeId="affinity" setView={setView} isMobile={isMobile}/>
       <div style={{flex:1,overflow:"auto",background:C.grey2,padding:isMobile?"16px":"20px"}}>
-        <div style={{maxWidth:920,margin:"0 auto"}}>
+        <div style={{maxWidth:920,margin:"0 auto",paddingBottom:80}}>
           <BlackHero eyebrow="Patterns across all personas" title="Affinity Map" desc="An affinity map clusters recurring signals from across all five personas into the systemic problems the website must solve." why="Individual persona profiles tell you what each person needs. The affinity map tells you what everyone needs."/>
           <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:24}}>
             {CLUSTERS.map(function(c){return(
@@ -966,7 +966,7 @@ function JourneyPage({pages,personas,journeys,initialPersonaId,setView}){
     <div style={{display:"flex",flexDirection:isMobile?"column":"row",height:"100%",overflow:"hidden"}}>
       <MappingSidebar activeId="journey" setView={setView} isMobile={isMobile} personas={personas} activePersona={activePersona} setActivePersona={function(id){setActivePersona(id);setActiveStage(null);}}/>
       <div style={{flex:1,overflow:"auto",padding:isMobile?16:20,background:C.grey2}}>
-        <div style={{maxWidth:920,margin:"0 auto"}}>
+        <div style={{maxWidth:920,margin:"0 auto",paddingBottom:80}}>
           <BlackHero eyebrow="How personas move through gwi.com" title="Journey Mapper" desc="Every persona has a different entry point, a different set of questions, and a different path through the site." why="The Journey Mapper makes visible something that is easy to miss: each persona takes a completely different path through gwi.com."/>
           <div style={{background:col.bg,border:"1px solid "+col.border,borderRadius:12,padding:16,marginBottom:16}}>
             <div style={{fontWeight:700,color:C.black,fontSize:15}}>{persona.label}</div>
@@ -1386,6 +1386,7 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditD
         );})}
       </div>
       <div style={{flex:1,overflow:"auto",padding:isMobile?16:28}}>
+        <div style={{paddingBottom:80}}>
         {audit&&(<>
           <div style={{background:C.black,borderRadius:16,padding:"24px 28px",marginBottom:24}}>
             <div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:6}}>Generated UX Audit</div>
@@ -1428,6 +1429,7 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditD
             })}
           </div>
         </>)}
+        </div>
       </div>
     </div>
   );
@@ -2024,7 +2026,7 @@ function UserFlowsPage({setView}){
     <div style={{display:"flex",flexDirection:isMobile?"column":"row",height:"100%",overflow:"hidden"}}>
       <MappingSidebar activeId="flows" setView={setView} isMobile={isMobile}/>
       <div style={{flex:1,overflow:"auto",background:C.grey2,padding:isMobile?"16px":"20px"}}>
-        <div style={{maxWidth:920,margin:"0 auto"}}>
+        <div style={{maxWidth:920,margin:"0 auto",paddingBottom:80}}>
           <BlackHero eyebrow="Step by step" title="User Flows" desc="The exact clicks from A to B. Each flow maps screens, decision points, actions and drop-off paths for a specific goal on gwi.com." why="Journey maps show which pages a persona visits. User flows go one level deeper."/>
           <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:24}}>
             {FLOWS.map(function(f){return(<button key={f.id} onClick={function(){setActiveFlow(f.id);}} style={{background:activeFlow===f.id?C.pink:C.white,color:activeFlow===f.id?C.white:C.offBlack,border:"1.5px solid "+(activeFlow===f.id?C.pink:C.grey4),fontSize:12,fontWeight:700,padding:"6px 16px",borderRadius:99,cursor:"pointer"}}>{f.label}</button>);})}
