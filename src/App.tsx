@@ -1591,8 +1591,8 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
 
     var p="You are a senior UX strategist producing a professional audit report for gwi.com.\n\n";
     p+="ABSOLUTE RULE — NO GENERIC ADVICE: Every single sentence must be grounded in the data provided. Never write vague statements.\n";
-    p+="BAD (forbidden): 'Enhance scroll engagement — content below the fold has low engagement.'\n";
-    p+="GOOD (required): 'Email sends 1,371 sessions but only 3.8% engage and avg time is 1.1s — subscribers expect content, not a product homepage. Fix: add trending content above the fold. Target: Email engagement from 3.8% to 15%+.'\n\n";
+    p+="BAD (forbidden): 'Enhance scroll engagement — users are not engaging with page content.'\n";
+    p+="GOOD (required): 'Email sends 1,371 sessions but only 3.8% engage and avg time is 1.1s — subscribers expect content, not a product homepage. Fix: make a trending content strip the first visible section on landing. Target: Email engagement from 3.8% to 15%+.'\n\n";
 
     if(hasGa4){p+="=== GA4 ANALYTICS DATA ===\n"+ga4Data.text+"\n=== END GA4 DATA ===\n\n";}
     if(hasCsvFiles){p+="=== UPLOADED DATA FILES ===\n";csvFiles.forEach(function(f){p+="\nFile: "+f.name+"\n"+f.text.slice(0,5000)+(f.text.length>5000?"\n[truncated]":"")+"\n";});p+="=== END DATA FILES ===\n\n";}
