@@ -1359,7 +1359,7 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
               var priorityBg=priority==="P1"?"#FFF0E8":priority==="P2"?"#EEEEFF":"#E6F9F2";
               var hasBody=!!(rec.shows||rec.why||rec.change||rec.metric||rec.body);
               return(
-                <div key={i} style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"20px"}}>
+                <div key={i} style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"20px 20px 40px"}}>
                   <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
                     <div style={{width:28,height:28,borderRadius:"50%",background:C.white,border:"2px solid "+C.pink,color:C.black,fontSize:12,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{isAdded?"✓":i+1}</div>
                     <div style={{flex:1}}>
