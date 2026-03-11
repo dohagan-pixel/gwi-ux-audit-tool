@@ -213,6 +213,18 @@ const HOTJAR_SECTIONS = [
   ]},
 ];
 
+const INIT_GA_CARDS=[
+  {id:"gc1",iconKey:"LayoutDashboard",title:"Platform and Feature Pages",desc:"Sessions, engagement rate, average engagement time, and views per session.",url:"https://analytics.google.com/analytics/web/#/analysis/a10233579p256535728/edit/zqCwkMKSSEuB9-O-s-tLNw"},
+  {id:"gc2",iconKey:"Home",title:"Homepage Analysis",desc:"Sessions, engagement, and behavioural data for the GWI homepage.",url:"https://analytics.google.com/analytics/web/#/analysis/a10233579p256535728/edit/Pg63LOrrQLS8h8kuA2bYMg"},
+  {id:"gc3",iconKey:"Puzzle",title:"Solutions Pages",desc:"Sessions, engagement, and behavioural data across GWI solutions pages.",url:"https://analytics.google.com/analytics/web/#/analysis/a10233579p256535728/edit/dI-KdK2ASwCvUtoX0wC9oA"},
+  {id:"gc4",iconKey:"DollarSign",title:"Pricing Analysis",desc:"Sessions, engagement, and behavioural data for the GWI pricing page.",url:"https://analytics.google.com/analytics/web/#/analysis/a10233579p256535728/edit/7gRXm5blRPSajwjCEzhMUQ"},
+  {id:"gc5",iconKey:"FileText",title:"Blog Sessions",desc:"Sessions, engagement, and behavioural data across GWI blog pages.",url:"https://analytics.google.com/analytics/web/#/analysis/a10233579p256535728/edit/qKrjcBr5TZ2Xr_lUgj58Ng"},
+  {id:"gc6",iconKey:"Bot",title:"GWI AI Website",desc:"Sessions, engagement, and behavioural data for the GWI AI website.",url:"https://analytics.google.com/analytics/web/#/analysis/a10233579p256535728/edit/NeKzWN5mSf6saQwx6_o-zQ"},
+  {id:"gc7",iconKey:"MousePointerClick",title:"Sessions, Conversions and Clicks",desc:"Overview of sessions, conversion events, and click interactions.",url:"https://analytics.google.com/analytics/web/#/analysis/a10233579p256535728/edit/XEFy2ePlQUyqSdYPHZDXiA"},
+  {id:"gc8",iconKey:"GitMerge",title:"Free Plan Signup Funnel",desc:"Step-by-step funnel analysis tracking users through the free plan signup flow.",url:"https://analytics.google.com/analytics/web/#/analysis/a10233579p256535728/edit/5hAyXm17SZml3BX8Lb0BAg"},
+];
+const CARD_ICON_KEYS=["LayoutDashboard","Home","Puzzle","DollarSign","FileText","Bot","MousePointerClick","GitMerge","BarChart2","Layers","Zap","Brain"];
+
 function getPersonaColor(p){return DEFAULT_PERSONA_COLORS[p.colorIndex%DEFAULT_PERSONA_COLORS.length];}
 
 function useWidth(){
@@ -1238,20 +1250,11 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction}){
   );
 }
 
-function AnalyticsPage(){
+function AnalyticsPage({gaCards}){
   var [tab,setTab]=useState("ga");
   var [showNotice,setShowNotice]=useState(true);
   var isMobile=useWidth()<768;
-  var gaCards=[
-    {icon:<LayoutDashboard size={22}/>,title:"Platform and Feature Pages",desc:"Sessions, engagement rate, average engagement time, and views per session.",url:"https://analytics.google.com/analytics/web/#/analysis/a10233579p256535728/edit/zqCwkMKSSEuB9-O-s-tLNw"},
-    {icon:<Home size={22}/>,title:"Homepage Analysis",desc:"Sessions, engagement, and behavioural data for the GWI homepage.",url:"https://analytics.google.com/analytics/web/#/analysis/a10233579p256535728/edit/Pg63LOrrQLS8h8kuA2bYMg"},
-    {icon:<Puzzle size={22}/>,title:"Solutions Pages",desc:"Sessions, engagement, and behavioural data across GWI solutions pages.",url:"https://analytics.google.com/analytics/web/#/analysis/a10233579p256535728/edit/dI-KdK2ASwCvUtoX0wC9oA"},
-    {icon:<DollarSign size={22}/>,title:"Pricing Analysis",desc:"Sessions, engagement, and behavioural data for the GWI pricing page.",url:"https://analytics.google.com/analytics/web/#/analysis/a10233579p256535728/edit/7gRXm5blRPSajwjCEzhMUQ"},
-    {icon:<FileText size={22}/>,title:"Blog Sessions",desc:"Sessions, engagement, and behavioural data across GWI blog pages.",url:"https://analytics.google.com/analytics/web/#/analysis/a10233579p256535728/edit/qKrjcBr5TZ2Xr_lUgj58Ng"},
-    {icon:<Bot size={22}/>,title:"GWI AI Website",desc:"Sessions, engagement, and behavioural data for the GWI AI website.",url:"https://analytics.google.com/analytics/web/#/analysis/a10233579p256535728/edit/NeKzWN5mSf6saQwx6_o-zQ"},
-    {icon:<MousePointerClick size={22}/>,title:"Sessions, Conversions and Clicks",desc:"Overview of sessions, conversion events, and click interactions.",url:"https://analytics.google.com/analytics/web/#/analysis/a10233579p256535728/edit/XEFy2ePlQUyqSdYPHZDXiA"},
-    {icon:<GitMerge size={22}/>,title:"Free Plan Signup Funnel",desc:"Step-by-step funnel analysis tracking users through the free plan signup flow.",url:"https://analytics.google.com/analytics/web/#/analysis/a10233579p256535728/edit/5hAyXm17SZml3BX8Lb0BAg"},
-  ];
+  var CARD_ICONS_MAP={LayoutDashboard:<LayoutDashboard size={22}/>,Home:<Home size={22}/>,Puzzle:<Puzzle size={22}/>,DollarSign:<DollarSign size={22}/>,FileText:<FileText size={22}/>,Bot:<Bot size={22}/>,MousePointerClick:<MousePointerClick size={22}/>,GitMerge:<GitMerge size={22}/>,BarChart2:<BarChart2 size={22}/>,Layers:<Layers size={22}/>,Zap:<Zap size={22}/>,Brain:<Brain size={22}/>};
   return(
     <div style={{position:"relative",height:"100%"}}>
       {showNotice&&(
@@ -1272,12 +1275,12 @@ function AnalyticsPage(){
         </div>
         {tab==="ga"&&(
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill,minmax(260px,1fr))",gap:16}}>
-            {gaCards.map(function(card){return(
-              <a key={card.title} href={card.url} target="_blank" rel="noreferrer"
+            {(gaCards||[]).map(function(card){return(
+              <a key={card.id||card.title} href={card.url} target="_blank" rel="noreferrer"
                 style={{display:"flex",flexDirection:"column",gap:8,background:C.white,border:"1.5px solid "+C.grey4,borderRadius:14,padding:20,textDecoration:"none",color:"inherit"}}
                 onMouseEnter={function(e){e.currentTarget.style.borderColor="#FFE8EE";e.currentTarget.style.boxShadow="0 4px 16px rgba(255,0,119,0.06)";}}
                 onMouseLeave={function(e){e.currentTarget.style.borderColor=C.grey4;e.currentTarget.style.boxShadow="none";}}>
-                <div style={{color:C.pink}}>{card.icon}</div>
+                <div style={{color:C.pink}}>{CARD_ICONS_MAP[card.iconKey]||<BarChart2 size={22}/>}</div>
                 <div style={{fontSize:17,fontWeight:800,color:C.offBlack}}>{card.title}</div>
                 <p style={{fontSize:15,color:C.grey7,lineHeight:1.65,margin:0,flex:1}}>{card.desc}</p>
                 <CardLink label="Open in GA4"/>
@@ -1781,7 +1784,7 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
   );
 }
 
-function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,journeys,setJourneys}){
+function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,journeys,setJourneys,gaCards,setGaCards}){
   var [tab,setTab]=useState("pages");
   var [newPage,setNewPage]=useState({url:"",label:"",section:"Products"});
   var [editingPersona,setEditingPersona]=useState(null);
@@ -1793,10 +1796,10 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
   var [stepDraft,setStepDraft]=useState({});
   var [showNewPersona,setShowNewPersona]=useState(false);
   var [newPersona,setNewPersona]=useState({label:"",tagline:"",entry:"",traits:"",who:"",what:"",drives:"",bugs:"",grabs:"",website:""});
-  var [gaDrafts,setGaDrafts]=useState({});
-  var [gaSaved,setGaSaved]=useState({});
-  var [showNewGaEntry,setShowNewGaEntry]=useState(false);
-  var [newGaEntry,setNewGaEntry]=useState({url:"",label:"",section:"Products",gaUrl:""});
+  var [gaCardDrafts,setGaCardDrafts]=useState({});
+  var [gaCardSaved,setGaCardSaved]=useState({});
+  var [showNewGaCard,setShowNewGaCard]=useState(false);
+  var [newGaCard,setNewGaCard]=useState({iconKey:"BarChart2",title:"",desc:"",url:""});
   var isMobile=useWidth()<768;
   var sectionSet={};pages.forEach(function(p){sectionSet[p.section]=true;});var sections=Object.keys(sectionSet);
   var MULTI=["who","what","drives","bugs","grabs","concerns","whyUs","platform","website","gwi_goal","hmw","signupNote","push","pull","habit","anxiety"];
@@ -1805,9 +1808,9 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
   var STAGE_FIELDS=[["GWI Goal","gwi_goal"],["How Might We","hmw"],["Website role note","signupNote"],["Push","push"],["Pull","pull"],["Habit","habit"],["Anxiety","anxiety"]];
   function Inp({val,onChange,multi,rows}){if(multi)return <textarea value={val||""} onChange={function(e){onChange(e.target.value);}} rows={rows||2} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,resize:"vertical",fontFamily:"inherit",boxSizing:"border-box"}}/>;return <input value={val||""} onChange={function(e){onChange(e.target.value);}} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>;}
   function saveNewPersona(){if(!newPersona.label)return;var id=newPersona.label.toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"");var traits=newPersona.traits.split(",").map(function(t){return t.trim();}).filter(Boolean);setPersonas(function(prev){return prev.concat([Object.assign({},newPersona,{id:id,traits:traits,colorIndex:personas.length%DEFAULT_PERSONA_COLORS.length})]);});setJourneys(function(prev){var n=Object.assign({},prev);n[id]=[];return n;});setNewPersona({label:"",tagline:"",entry:"",traits:"",who:"",what:"",drives:"",bugs:"",grabs:"",website:""});setShowNewPersona(false);}
-  function saveGaUrl(pageUrl){var v=gaDrafts[pageUrl];if(v===undefined)return;setPages(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{gaUrl:v}):p;});});setGaDrafts(function(d){var n=Object.assign({},d);delete n[pageUrl];return n;});setGaSaved(function(s){return Object.assign({},s,{[pageUrl]:true});});setTimeout(function(){setGaSaved(function(s){var n=Object.assign({},s);delete n[pageUrl];return n;});},1500);}
-  function deleteGaPage(pageUrl){setPages(function(prev){return prev.filter(function(p){return p.url!==pageUrl;});});setGaDrafts(function(d){var n=Object.assign({},d);delete n[pageUrl];return n;});}
-  function addGaEntry(){if(!newGaEntry.url||!newGaEntry.label)return;setPages(function(prev){return prev.concat([{url:newGaEntry.url,label:newGaEntry.label,section:newGaEntry.section,hidden:false,gaUrl:newGaEntry.gaUrl}]);});setNewGaEntry({url:"",label:"",section:"Products",gaUrl:""});setShowNewGaEntry(false);}
+  function saveGaCard(id){var d=gaCardDrafts[id];if(!d)return;setGaCards(function(prev){return prev.map(function(c){return c.id===id?Object.assign({},c,d):c;});});setGaCardDrafts(function(x){var n=Object.assign({},x);delete n[id];return n;});setGaCardSaved(function(s){return Object.assign({},s,{[id]:true});});setTimeout(function(){setGaCardSaved(function(s){var n=Object.assign({},s);delete n[id];return n;});},1500);}
+  function deleteGaCard(id){setGaCards(function(prev){return prev.filter(function(c){return c.id!==id;});});setGaCardDrafts(function(x){var n=Object.assign({},x);delete n[id];return n;});}
+  function addGaCard(){if(!newGaCard.title||!newGaCard.url)return;setGaCards(function(prev){return prev.concat([Object.assign({},newGaCard,{id:"gc-"+Date.now()})]);});setNewGaCard({iconKey:"BarChart2",title:"",desc:"",url:""});setShowNewGaCard(false);}
   return(
     <PageWrap isMobile={isMobile}>
       <BlackHero eyebrow="GWI Website - UX" title="Settings" desc="The quality of every audit depends on the data behind it."/>
@@ -1947,56 +1950,44 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
       {tab==="ga"&&(
         <div>
           <div style={{marginBottom:20}}>
-            {!showNewGaEntry&&(
-              <button onClick={function(){setShowNewGaEntry(true);}} style={{display:"flex",alignItems:"center",gap:8,background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}><Plus size={14}/>Add Page &amp; GA URL</button>
+            {!showNewGaCard&&(
+              <button onClick={function(){setShowNewGaCard(true);}} style={{display:"flex",alignItems:"center",gap:8,background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}><Plus size={14}/>Add Card</button>
             )}
-            {showNewGaEntry&&(
+            {showNewGaCard&&(
               <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:20}}>
-                <h3 style={{fontWeight:700,color:C.black,fontSize:15,marginBottom:16}}>New Page</h3>
-                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"2fr 2fr 1fr",gap:10,marginBottom:12}}>
-                  <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>URL</div><input value={newGaEntry.url} onChange={function(e){setNewGaEntry(Object.assign({},newGaEntry,{url:e.target.value}));}} placeholder="https://gwi.ai/page" style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
-                  <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Label</div><input value={newGaEntry.label} onChange={function(e){setNewGaEntry(Object.assign({},newGaEntry,{label:e.target.value}));}} placeholder="Page Name" style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
-                  <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Section</div><select value={newGaEntry.section} onChange={function(e){setNewGaEntry(Object.assign({},newGaEntry,{section:e.target.value}));}} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,background:C.white}}>{sections.map(function(s){return <option key={s}>{s}</option>;})}</select></div>
+                <h3 style={{fontWeight:700,color:C.black,fontSize:15,marginBottom:16}}>New GA Card</h3>
+                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:10,marginBottom:10}}>
+                  <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Title</div><input value={newGaCard.title} onChange={function(e){setNewGaCard(Object.assign({},newGaCard,{title:e.target.value}));}} placeholder="e.g. Homepage Analysis" style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
+                  <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Icon</div><select value={newGaCard.iconKey} onChange={function(e){setNewGaCard(Object.assign({},newGaCard,{iconKey:e.target.value}));}} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,background:C.white}}>{CARD_ICON_KEYS.map(function(k){return <option key={k} value={k}>{k}</option>;})}</select></div>
                 </div>
-                <div style={{marginBottom:16}}><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Google Analytics URL</div><input value={newGaEntry.gaUrl} onChange={function(e){setNewGaEntry(Object.assign({},newGaEntry,{gaUrl:e.target.value}));}} placeholder="https://analytics.google.com/analytics/web/..." style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
+                <div style={{marginBottom:10}}><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Description</div><input value={newGaCard.desc} onChange={function(e){setNewGaCard(Object.assign({},newGaCard,{desc:e.target.value}));}} placeholder="Short description of this report" style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
+                <div style={{marginBottom:16}}><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>GA4 URL</div><input value={newGaCard.url} onChange={function(e){setNewGaCard(Object.assign({},newGaCard,{url:e.target.value}));}} placeholder="https://analytics.google.com/analytics/web/..." style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
                 <div style={{display:"flex",gap:8}}>
-                  <button onClick={addGaEntry} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add Page</button>
-                  <button onClick={function(){setShowNewGaEntry(false);setNewGaEntry({url:"",label:"",section:"Products",gaUrl:""}); }} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+                  <button onClick={addGaCard} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add Card</button>
+                  <button onClick={function(){setShowNewGaCard(false);setNewGaCard({iconKey:"BarChart2",title:"",desc:"",url:""}); }} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
                 </div>
               </div>
             )}
           </div>
-          <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"14px 20px",marginBottom:20}}>
-            <div style={{fontWeight:700,color:C.black,fontSize:14,marginBottom:4}}>Google Analytics URLs</div>
-            <div style={{color:C.grey7,fontSize:13}}>Paste the GA4 report URL for each page. These will appear as quick-links inside each page audit card.</div>
-          </div>
-          {sections.map(function(section){
-            var sectionPages=pages.filter(function(p){return p.section===section;});
-            if(!sectionPages.length)return null;
-            return(
-              <div key={section} style={{marginBottom:20}}>
-                <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>{section}</div>
-                <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,overflow:"hidden"}}>
-                  {sectionPages.map(function(page,i,arr){
-                    var isDirty=gaDrafts[page.url]!==undefined;
-                    var isSaved=gaSaved[page.url];
-                    var inputVal=isDirty?gaDrafts[page.url]:(page.gaUrl||"");
-                    return(
-                      <div key={page.url} style={{display:"flex",alignItems:"center",gap:8,padding:"12px 16px",borderBottom:i<arr.length-1?"1px solid "+C.grey3:"none",flexWrap:isMobile?"wrap":"nowrap"}}>
-                        <div style={{flexShrink:0,width:isMobile?"100%":210}}>
-                          <div style={{fontWeight:600,color:C.offBlack,fontSize:13}}>{page.label}</div>
-                          <div style={{fontFamily:"monospace",color:C.grey6,fontSize:11,marginTop:2}}>{page.url.replace("https://gwi.ai","gwi.ai").replace("https://trust.gwi.com","trust.gwi.com")}</div>
-                        </div>
-                        <input value={inputVal} onChange={function(e){var v=e.target.value;setGaDrafts(function(d){return Object.assign({},d,{[page.url]:v});});}} placeholder="https://analytics.google.com/..." style={{flex:1,width:isMobile?"100%":"auto",padding:"7px 10px",border:"1px solid "+(isDirty?C.pink:C.grey4),borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box",outline:"none"}}/>
-                        <button onClick={function(){saveGaUrl(page.url);}} title="Save" style={{flexShrink:0,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:isSaved?"#E6F9F2":isDirty?C.pink:C.grey3,color:isSaved?"#00A86B":isDirty?C.white:C.grey6,border:isSaved?"1px solid #A3E6C8":"none",borderRadius:8,cursor:isDirty?"pointer":"default",transition:"all 0.2s"}}><Check size={14}/></button>
-                        <button onClick={function(){deleteGaPage(page.url);}} title="Delete" style={{flexShrink:0,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"#FFF0F0",color:"#CC0000",border:"1px solid #FFAAAA",borderRadius:8,cursor:"pointer"}}><Trash2 size={14}/></button>
-                      </div>
-                    );
-                  })}
+          <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,overflow:"hidden"}}>
+            {(gaCards||[]).map(function(card,i,arr){
+              var draft=gaCardDrafts[card.id]||{};
+              var isDirty=!!gaCardDrafts[card.id];
+              var isSaved=gaCardSaved[card.id];
+              var urlVal=draft.url!==undefined?draft.url:card.url;
+              var titleVal=draft.title!==undefined?draft.title:card.title;
+              return(
+                <div key={card.id} style={{display:"flex",alignItems:"center",gap:8,padding:"12px 16px",borderBottom:i<arr.length-1?"1px solid "+C.grey3:"none",flexWrap:isMobile?"wrap":"nowrap"}}>
+                  <div style={{flexShrink:0,width:isMobile?"100%":180}}>
+                    <input value={titleVal} onChange={function(e){var v=e.target.value;setGaCardDrafts(function(d){return Object.assign({},d,{[card.id]:Object.assign({},d[card.id]||{},{ title:v})});});}} style={{width:"100%",padding:"6px 8px",border:"1px solid "+(isDirty?C.pink:C.grey4),borderRadius:6,fontSize:13,fontWeight:600,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>
+                  </div>
+                  <input value={urlVal} onChange={function(e){var v=e.target.value;setGaCardDrafts(function(d){return Object.assign({},d,{[card.id]:Object.assign({},d[card.id]||{},{url:v})});});}} placeholder="https://analytics.google.com/..." style={{flex:1,width:isMobile?"100%":"auto",padding:"7px 10px",border:"1px solid "+(isDirty?C.pink:C.grey4),borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box",outline:"none"}}/>
+                  <button onClick={function(){saveGaCard(card.id);}} title="Save" style={{flexShrink:0,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:isSaved?"#E6F9F2":isDirty?C.pink:C.grey3,color:isSaved?"#00A86B":isDirty?C.white:C.grey6,border:isSaved?"1px solid #A3E6C8":"none",borderRadius:8,cursor:isDirty?"pointer":"default",transition:"all 0.2s"}}><Check size={14}/></button>
+                  <button onClick={function(){deleteGaCard(card.id);}} title="Delete" style={{flexShrink:0,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"#FFF0F0",color:"#CC0000",border:"1px solid #FFAAAA",borderRadius:8,cursor:"pointer"}}><Trash2 size={14}/></button>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
     </PageWrap>
@@ -2277,6 +2268,7 @@ export default function App(){
   var [personas,setPersonas]=useState(INIT_PERSONAS);
   var [pages,setPages]=useState(INIT_PAGES);
   var [journeys,setJourneys]=useState(INIT_JOURNEYS);
+  var [gaCards,setGaCards]=useState(INIT_GA_CARDS);
   var [auditData,setAuditData]=useState(INIT_AUDIT);
   var [activePersonaId,setActivePersonaId]=useState(null);
   var [activePersonaForJourney,setActivePersonaForJourney]=useState(null);
@@ -2286,8 +2278,8 @@ export default function App(){
   var [_user,_setUser]=useState(null);
   var [_authLoading,_setAuthLoading]=useState(true);
   var [_loginError,_setLoginError]=useState(null);
-  useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()){var d=snap.data();if(d.auditData)setAuditData(d.auditData);if(d.stages)setStages(d.stages);if(d.personas)setPersonas(d.personas);if(d.pages)setPages(d.pages);if(d.journeys)setJourneys(d.journeys);}});getDocs(collection(_db,"users",u.uid,"generatedAudits")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setGeneratedAudits(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});merged.sort(function(a,b){return a.id<b.id?-1:1;});return merged;});}).catch(function(){});}else{_setUser(null);}_setAuthLoading(false);});},[]);
-  useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,stages:stages,personas:personas,pages:pages,journeys:journeys,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[ auditData,stages,personas,pages,journeys,_user]);
+  useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()){var d=snap.data();if(d.auditData)setAuditData(d.auditData);if(d.stages)setStages(d.stages);if(d.personas)setPersonas(d.personas);if(d.pages)setPages(d.pages);if(d.journeys)setJourneys(d.journeys);if(d.gaCards)setGaCards(d.gaCards);}});getDocs(collection(_db,"users",u.uid,"generatedAudits")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setGeneratedAudits(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});merged.sort(function(a,b){return a.id<b.id?-1:1;});return merged;});}).catch(function(){});}else{_setUser(null);}_setAuthLoading(false);});},[]);
+  useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,stages:stages,personas:personas,pages:pages,journeys:journeys,gaCards:gaCards,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[ auditData,stages,personas,pages,journeys,_user]);
   useEffect(function(){try{localStorage.setItem("gwi_generated_audits",JSON.stringify(generatedAudits));}catch(e){};},[generatedAudits]);
   function _handleLogin(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}signInWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/user-not-found'?'Invalid email or password.':'Sign-in failed. Try again.');});}
   function _handleRegister(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}if(password.length<6){_setLoginError('Password must be at least 6 characters.');return;}createUserWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/email-already-in-use'?'Account already exists. Try signing in.':err.code==='auth/weak-password'?'Password must be at least 6 characters.':'Registration failed. Try again.');});}
@@ -2325,10 +2317,10 @@ export default function App(){
         {view==="journey"&&<JourneyPage pages={pages} personas={personas} journeys={journeys} initialPersonaId={activePersonaForJourney} setView={setView}/>}
         {view==="flows"&&<UserFlowsPage setView={setView}/>}
         {view==="audit"&&<AuditPage personas={personas} pages={pages} auditData={auditData} setAuditData={setAuditData} onAddAction={function(){setShowAddAction(true);}}/>}
-        {view==="analytics"&&<AnalyticsPage/>}
+        {view==="analytics"&&<AnalyticsPage gaCards={gaCards}/>}
         {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit).catch(function(){});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
         {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id)).catch(function(){});}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
-        {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} journeys={journeys} setJourneys={setJourneys}/>}
+        {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards}/>}
       </div>
       {showAddAction&&<AddActionModal auditData={auditData} setAuditData={setAuditData} pages={pages} onClose={function(){setShowAddAction(false);}}/>}
     </div>
