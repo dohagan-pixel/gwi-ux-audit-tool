@@ -5,7 +5,7 @@ import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
-import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus } from "lucide-react";
+import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical } from "lucide-react";
 
 const C = {
   pink:"#FF0077",white:"#FFFFFF",black:"#101720",offBlack:"#2A3447",
@@ -1799,6 +1799,8 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
   var [gaCardSaved,setGaCardSaved]=useState({});
   var [showNewGaCard,setShowNewGaCard]=useState(false);
   var [newGaCard,setNewGaCard]=useState({iconKey:"BarChart2",title:"",desc:"",url:""});
+  var [gaDragIdx,setGaDragIdx]=useState(null);
+  var [gaOverIdx,setGaOverIdx]=useState(null);
   var isMobile=useWidth()<768;
   var sectionSet={};pages.forEach(function(p){sectionSet[p.section]=true;});var sections=Object.keys(sectionSet);
   var MULTI=["who","what","drives","bugs","grabs","concerns","whyUs","platform","website","gwi_goal","hmw","signupNote","push","pull","habit","anxiety"];
@@ -1810,6 +1812,10 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
   function flashSaved(id){setGaCardSaved(function(s){return Object.assign({},s,{[id]:true});});setTimeout(function(){setGaCardSaved(function(s){var n=Object.assign({},s);delete n[id];return n;});},1500);}
   function deleteGaCard(id){setGaCards(function(prev){return prev.filter(function(c){return c.id!==id;});});}
   function addGaCard(){if(!newGaCard.title||!newGaCard.url)return;setGaCards(function(prev){return prev.concat([Object.assign({},newGaCard,{id:"gc-"+Date.now()})]);});setNewGaCard({iconKey:"BarChart2",title:"",desc:"",url:""});setShowNewGaCard(false);}
+  function onGaDragStart(e,i){setGaDragIdx(i);e.dataTransfer.effectAllowed="move";}
+  function onGaDragOver(e,i){e.preventDefault();e.dataTransfer.dropEffect="move";if(gaOverIdx!==i)setGaOverIdx(i);}
+  function onGaDrop(e,i){e.preventDefault();if(gaDragIdx===null||gaDragIdx===i){setGaDragIdx(null);setGaOverIdx(null);return;}setGaCards(function(prev){var arr=prev.slice();var item=arr.splice(gaDragIdx,1)[0];arr.splice(i,0,item);return arr;});setGaDragIdx(null);setGaOverIdx(null);}
+  function onGaDragEnd(){setGaDragIdx(null);setGaOverIdx(null);}
   return(
     <PageWrap isMobile={isMobile}>
       <BlackHero eyebrow="GWI Website - UX" title="Settings" desc="The quality of every audit depends on the data behind it."/>
@@ -1972,8 +1978,15 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
             {(gaCards||[]).map(function(card,i,arr){
               var isSaved=gaCardSaved[card.id];
               return(
-                <div key={card.id} style={{padding:"12px 16px",borderBottom:i<arr.length-1?"1px solid "+C.grey3:"none"}}>
+                <div key={card.id}
+                  draggable={true}
+                  onDragStart={function(e){onGaDragStart(e,i);}}
+                  onDragOver={function(e){onGaDragOver(e,i);}}
+                  onDrop={function(e){onGaDrop(e,i);}}
+                  onDragEnd={onGaDragEnd}
+                  style={{padding:"12px 16px",borderBottom:i<arr.length-1?"1px solid "+C.grey3:"none",opacity:gaDragIdx===i?0.4:1,borderTop:gaOverIdx===i&&gaDragIdx!==i?"2px solid "+C.pink:"",background:gaOverIdx===i&&gaDragIdx!==i?"#FFF0F6":"inherit",transition:"opacity 0.15s",cursor:"default"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:isMobile?"wrap":"nowrap"}}>
+                    <div style={{color:C.grey6,cursor:"grab",flexShrink:0,display:"flex",alignItems:"center"}}><GripVertical size={14}/></div>
                     <div style={{flexShrink:0,width:isMobile?"100%":180}}>
                       <input value={card.title||""} onChange={function(e){var v=e.target.value;setGaCards(function(prev){return prev.map(function(c){return c.id===card.id?Object.assign({},c,{title:v}):c;});});}} placeholder="Card title" style={{width:"100%",padding:"6px 8px",border:"1px solid "+C.grey4,borderRadius:6,fontSize:13,fontWeight:600,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>
                     </div>
