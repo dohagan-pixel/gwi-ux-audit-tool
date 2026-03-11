@@ -16,8 +16,8 @@ export default async function handler(req, res) {
 
   const hasImages = Array.isArray(images) && images.length > 0;
 
-  // claude-3-7-sonnet-20250219 is the latest Sonnet (Feb 2025) — good quality + vision support.
-  const model = 'claude-3-7-sonnet-20250219';
+  // claude-sonnet-4-6 is the latest Claude Sonnet (Feb 2026) — excellent quality + vision support.
+  const model = 'claude-sonnet-4-6';
   const effectiveMaxTokens = Math.min(max_tokens || 1000, 4096);
 
   // Build message content — Anthropic uses base64 source objects for images
