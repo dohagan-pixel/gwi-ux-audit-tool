@@ -677,8 +677,8 @@ function PersonasPage({personas,journeys,setView,setActivePersonaForJourney,init
             var PERSONA_IMAGES={"insight-guru":"https://www.gwi.com/hubfs/UX-Aduit-Imagery/Insight%20Guru.png"};
             var img=PERSONA_IMAGES[p.id]||null;
             return(
-              <div style={{background:col.bg,border:"1px solid "+col.border,borderRadius:16,padding:24,marginBottom:24,display:"flex",gap:24,alignItems:"flex-start"}}>
-                {img&&<img src={img} alt={p.label} style={{width:120,height:120,objectFit:"cover",borderRadius:12,flexShrink:0}}/>}
+              <div style={{background:col.bg,border:"1px solid "+col.border,borderRadius:16,padding:24,marginBottom:24,display:"flex",gap:24,alignItems:"center"}}>
+                {img&&<img src={img} alt={p.label} style={{width:160,height:160,objectFit:"cover",borderRadius:12,flexShrink:0}}/>}
                 <div style={{flex:1}}>
                   <h2 style={{color:C.black,fontSize:24,fontWeight:700,margin:0}}>{p.label}</h2>
                   <p style={{color:C.black,marginTop:8,fontSize:18,fontWeight:600,lineHeight:1.3}}>{p.tagline}</p>
