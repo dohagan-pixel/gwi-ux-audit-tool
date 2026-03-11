@@ -1625,24 +1625,6 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
     p+="PERSONAS:\n"+personaCtx+"\n";
     p+="LIFECYCLE STAGES:\n"+lifecycleCtx+"\n";
 
-    p+="PRODUCE ALL SECTIONS BELOW IN THIS EXACT ORDER — DO NOT SKIP ANY:\n\n";
-    p+="## Executive Summary\n3-4 paragraphs. Open with the overall engagement number and what it means. Describe the single worst-performing channel by name with its exact rate. "+(hasHeatmaps?"Summarise what the heatmap reveals structurally. ":"")+"Close with one sentence naming the core problem.\n\n";
-
-    if(hasGa4||hasCsvFiles){p+="## Data Summary\nReproduce each channel as a markdown table row: Channel | Sessions | Eng. Rate | Avg. Eng. Time. Use the exact numbers from the data. Then write 4-6 Key Data Observations — each MUST open with the specific metric and number.\n\n";}
-    if(hasHeatmaps){p+="## Heatmap Observations\n**Scroll behaviour:** identify the warm/cold transition point, name the cutoff element, list everything below it.\n**Click behaviour:** name every click cluster, flag confusion clicks and missing clicks on key CTAs.\n**Mouse movement:** where attention concentrates and where it drops.\n\n";}
-
-    p+="## Persona-by-Persona Analysis\nFor EACH of the "+personas.length+" personas, write:\n### [Persona Name] — Arrives via [entry channel]\n**What they need:** (3-4 bullet points)\n**What the current page delivers:** (2-3 bullet points, cite data)\n**Friction points:** (2-3 points, cite a metric each). Do not skip any persona.\n\n";
-
-    p+="## Mobile UX Analysis\n";
-    p+="Analyse the mobile experience specifically. Cover ALL of the following:\n";
-    p+="**Traffic split:** If data is available, state the mobile vs desktop session split and how mobile engagement rate compares to desktop. If mobile engagement is lower, diagnose why.\n";
-    p+="**Touch targets & CTAs:** Are primary CTAs large enough to tap (min 44px)? Are any interactive elements too close together? Name specific elements.\n";
-    p+="**Navigation:** Is the mobile nav clear? Are key conversion paths reachable within 2 taps? Name any dead ends.\n";
-    p+="**Forms & inputs:** Any forms on this page — are they optimised for mobile keyboard? Are fields auto-typed correctly (email, tel)?\n";
-    p+="**Content hierarchy:** Does the page lead with the most important content on a small screen, or is critical information buried?\n";
-    p+="**Load & performance:** Note any likely performance concerns for mobile (heavy images, render-blocking elements).\n";
-    p+="**Heatmap mobile signals:** If heatmaps are attached, note any scroll or click patterns that suggest mobile-specific friction.\n\n";
-
     p+="AUDIT DIMENSIONS — use these as the lens for your findings. Do NOT write a separate checklist section. Every issue you spot in these areas must become a FINDING below:\n";
     p+="• First Impressions: value prop clarity in 5s, headline quality (benefit-led not feature-led), content hierarchy, readability, copy length (flag blocks over 60 words)\n";
     p+="• Copy & CTAs: flag every generic CTA label ('Learn more', 'Click here', 'Submit', 'Find out more') and write a specific replacement in quotes. Check copy tone — is it outcome-led for the user or feature-led for GWI?\n";
@@ -1652,11 +1634,22 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
     p+="• Accessibility (WCAG 2.1 AA): colour contrast failures, missing alt text, keyboard nav, focus states, heading order, ARIA labels — name specific failing elements\n";
     p+="• Performance: heavy images, render-blocking scripts, broken elements\n\n";
 
-    p+="## Prioritised UX Findings\nP1 = quick win (1 sprint), P2 = medium term, P3 = strategic.\nYou MUST produce a MINIMUM of 15 findings and up to 20. Do not stop early.\nDraw findings from ALL sections above: data, heatmaps, personas, mobile analysis, AND the structured UX audit.\nAT LEAST 3 findings must be mobile-specific — prefix their title with [Mobile].\nAT LEAST 2 findings must address copy or CTA labels specifically — prefix with [Copy] or [CTA].\nAT LEAST 1 finding must address accessibility — prefix with [Accessibility].\nEvery finding must have a specific anchor — a metric, a named element, a heatmap observation, or a structured audit item above.\n\nFORMAT — every finding MUST use EXACTLY this structure, all 4 fields, no exceptions:\n\nFINDING: [number]. [Title] — [P1/P2/P3] — [Personas served]\nSHOWS: [Specific evidence — quantified metric, named element, or direct observation. Not directional language.]\nWHY: [Behavioural/intent diagnosis — what does this tell you about the user's goal and where the page fails to meet it?]\nCHANGE: [One specific, scoped recommendation. Name the exact element to change and what to change it to.]\nMETRIC: [Specific metric + current baseline + target. E.g. 'CTA click rate on hero: 1.2% → 4%+']\n\n";
+    p+="PRODUCE ALL SECTIONS BELOW IN THIS EXACT ORDER — DO NOT SKIP ANY:\n\n";
 
-    p+="## Measurement Framework\nTable: Metric | Current Baseline | Target Direction. Include every channel engagement rate from the data. Include GA4 events that should be set up to track recommendations.\n\n";
+    p+="## Prioritised UX Findings\nP1 = quick win (1 sprint), P2 = medium term, P3 = strategic.\nYou MUST produce a MINIMUM of 15 findings and up to 20. Do not stop early.\nDraw findings from ALL context provided: data, heatmaps, personas, mobile, AND the audit dimensions above.\nAT LEAST 3 findings must be mobile-specific — prefix their title with [Mobile].\nAT LEAST 2 findings must address copy or CTA labels specifically — prefix with [Copy] or [CTA].\nAT LEAST 1 finding must address accessibility — prefix with [Accessibility].\nEvery finding must have a specific anchor — a metric, a named element, a heatmap observation, or an audit dimension item.\n\nFORMAT — every finding MUST use EXACTLY this structure, all 4 fields, no exceptions:\n\nFINDING: [number]. [Title] — [P1/P2/P3] — [Personas served]\nSHOWS: [Specific evidence — quantified metric, named element, or direct observation. Not directional language.]\nWHY: [Behavioural/intent diagnosis — what does this tell you about the user's goal and where the page fails to meet it?]\nCHANGE: [One specific, scoped recommendation. Name the exact element to change and what to change it to.]\nMETRIC: [Specific metric + current baseline + target. E.g. 'CTA click rate on hero: 1.2% → 4%+']\n\n";
 
-    p+="## Next Steps\n5-7 specific next steps by urgency. Name the responsible team for each.\n";
+    p+="## Executive Summary\n2-3 paragraphs. Open with the core problem in one sentence. "+(hasHeatmaps?"Include the key heatmap observation. ":"")+"Close with the single most important fix.\n\n";
+
+    if(hasGa4||hasCsvFiles){p+="## Data Summary\nMarkdown table: Channel | Sessions | Eng. Rate | Avg. Eng. Time. Use exact numbers. Then 3-4 bullet observations, each opening with a specific metric.\n\n";}
+    if(hasHeatmaps){p+="## Heatmap Observations\n- **Scroll:** name the warm/cold cutoff element and list what falls below it\n- **Clicks:** name every click cluster and every CTA with no clicks\n- **Attention:** where eyes concentrate and where they drop\n\n";}
+
+    p+="## Persona-by-Persona Analysis\nFor EACH of the "+personas.length+" personas — 2 bullet friction points maximum, cite one metric each. Do not skip any persona.\n\n";
+
+    p+="## Mobile UX Analysis\n3-5 bullet points covering: traffic split, touch target issues (name elements), nav reachability, content hierarchy on small screen, load concerns.\n\n";
+
+    p+="## Measurement Framework\nTable: Metric | Current Baseline | Target Direction. Include every channel engagement rate from the data.\n\n";
+
+    p+="## Next Steps\n5 specific next steps by urgency. Name the responsible team for each.\n";
 
     setAuditImages(images);
     setAuditPrompt(p);setGeneratedAuditText("");setShowUpgradeNotice(false);setShowModal(true);
