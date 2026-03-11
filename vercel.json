@@ -1,3 +1,11 @@
 {
-  "buildCommand": "vite build"
+  "buildCommand": "vite build",
+  "functions": {
+    "api/generate.ts": {
+      "maxDuration": 60
+    },
+    "api/models.ts": {
+      "maxDuration": 10
+    }
+  }
 }

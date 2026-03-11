@@ -16,10 +16,10 @@ export default async function handler(req, res) {
 
   const hasImages = Array.isArray(images) && images.length > 0;
 
-  // claude-sonnet-4-6 is the latest Claude Sonnet (Feb 2026) — excellent quality + vision support.
-  const model = 'claude-sonnet-4-6';
-  // claude-sonnet-4-6 supports up to 16000 output tokens — audit reports need 8-12k.
-  const effectiveMaxTokens = Math.min(max_tokens || 16000, 16000);
+  // claude-haiku-4-5 is fast and cheap — generates tokens ~4x faster than Sonnet.
+  const model = 'claude-haiku-4-5-20251001';
+  // Cap at 8192 tokens — enough for a full report, generated faster by Haiku.
+  const effectiveMaxTokens = Math.min(max_tokens || 8192, 8192);
 
   // Build message content — Anthropic uses base64 source objects for images
   const messageContent = hasImages
