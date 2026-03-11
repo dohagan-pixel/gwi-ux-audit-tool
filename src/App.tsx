@@ -449,124 +449,6 @@ function CardLink({label}){
   );
 }
 
-// ─── GA4 PASTE UPLOADER ───────────────────────────────────────────────────────
-function GA4Uploader({selectedPage,onDataParsed,onClear,parsedData}){
-  var [expanded,setExpanded]=useState(false);
-  var [text,setText]=useState("");
-  var [error,setError]=useState(null);
-
-  function parseCSVText(raw){
-    try{
-      // Strip comment lines and blank lines
-      var lines=raw.split(/\r?\n/).filter(function(l){
-        var t=l.trim();
-        return t.length>0&&t.charAt(0)!=="#";
-      });
-      if(lines.length<2){setError("Not enough data rows found. Make sure you paste the full CSV including headers.");return;}
-
-      // Parse header row manually
-      var headerLine=lines[0];
-      var headers=headerLine.split(",").map(function(h){return h.trim().replace(/^"|"$/g,"");});
-
-      // Parse data rows
-      var rows=lines.slice(1).map(function(line){
-        var vals=line.split(",").map(function(v){return v.trim().replace(/^"|"$/g,"");});
-        var obj={};
-        headers.forEach(function(h,i){
-          var raw=vals[i]||"";
-          var num=parseFloat(raw.replace(/%/g,""));
-          obj[h]=isNaN(num)?raw:num;
-        });
-        return obj;
-      }).filter(function(r){return Object.values(r).some(function(v){return v!==null&&v!==undefined&&v!=="";});});
-
-      if(rows.length===0){setError("No data rows found after the header.");return;}
-
-      // Find page path column
-      var pathCol=headers.find(function(h){return /page.?path|landing.?page|page.?location|page.?url/i.test(h);});
-      var pageRows=[];
-      if(pathCol&&selectedPage&&selectedPage!=="all"){
-        pageRows=rows.filter(function(r){
-          var val=String(r[pathCol]||"");
-          return val===selectedPage||val.includes(selectedPage);
-        });
-      }
-
-      var sourceRows=pageRows.length>0?pageRows:rows;
-      var metricCols=headers.filter(function(h){return h&&!/page.?path|landing|url|dimension|date|segment/i.test(h);});
-      var matchedPage=pageRows.length>0;
-      var isEventLevel=headers.some(function(h){return /event.?name|event.?count/i.test(h);});
-      var summary={};
-      metricCols.forEach(function(col){var vals=sourceRows.map(function(r){return r[col];}).filter(function(v){return typeof v==="number"&&!isNaN(v);});if(vals.length>0){var sum=vals.reduce(function(a,b){return a+b;},0);summary[col]=Math.round((vals.length>1?sum:vals[0])*100)/100;}});
-
-      var dataStr="GA4 DATA"+(matchedPage?" for "+selectedPage:" (site-wide)")+" — "+sourceRows.length+" rows:\n";
-      dataStr+="Columns: "+headers.join(", ")+"\n\n";
-      dataStr+="DATA ROWS:\n";
-      sourceRows.slice(0,20).forEach(function(r){
-        dataStr+=headers.map(function(k){return k+": "+r[k];}).join(" | ")+"\n";
-      });
-
-      onDataParsed({
-        text:dataStr,
-        matched:matchedPage,
-        rowCount:rows.length,
-        metrics:Object.keys(summary),
-        isEventLevel:isEventLevel,
-        fileName:"pasted CSV",
-        headers:headers,
-        pathCol:pathCol||"not detected",
-      });
-      setExpanded(false);
-      setText("");
-      setError(null);
-    }catch(err){
-      setError("Parse error: "+err.message);
-    }
-  }
-
-  if(parsedData){
-    return(
-      <div style={{background:"#E6F9F2",border:"1px solid #80D4B0",borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"flex-start",gap:10}}>
-        <div style={{fontSize:18,lineHeight:1}}>✓</div>
-        <div style={{flex:1}}>
-          <div style={{fontSize:12,fontWeight:700,color:"#005C3B",marginBottom:2}}>GA4 data included</div>
-          <div style={{fontSize:11,color:"#005C3B"}}>{parsedData.matched?"Matched to "+selectedPage:"Site-wide data"} · {parsedData.rowCount} rows · {parsedData.metrics.length} metrics</div>
-          <div style={{fontSize:10,color:"#005C3B",opacity:0.7,marginTop:2}}>Path col: {parsedData.pathCol} · {parsedData.headers.slice(0,4).join(", ")}{parsedData.headers.length>4?"…":""}</div>
-        </div>
-        <button onClick={function(){onClear();setText("");setExpanded(false);}} style={{background:"transparent",border:"none",color:"#005C3B",fontSize:11,fontWeight:600,cursor:"pointer",flexShrink:0}}>Remove</button>
-      </div>
-    );
-  }
-
-  if(!expanded){
-    return(
-      <button onClick={function(){setExpanded(true);}} style={{width:"100%",border:"1.5px dashed "+C.grey5,borderRadius:10,padding:"14px 20px",textAlign:"center",cursor:"pointer",background:C.grey3,fontSize:13,fontWeight:600,color:C.grey7,display:"block"}}>
-        + Paste GA4 CSV data (optional)
-      </button>
-    );
-  }
-
-  return(
-    <div style={{border:"1.5px solid "+C.grey4,borderRadius:10,overflow:"hidden"}}>
-      <div style={{background:C.black,padding:"8px 14px",fontSize:11,fontWeight:700,color:C.white}}>
-        Open your CSV in any text editor → Select All (Cmd+A) → Copy → Paste below
-      </div>
-      <textarea
-        value={text}
-        onChange={function(e){setText(e.target.value);setError(null);}}
-        placeholder={"# ----------------------------------------\n# GWI.NET | GA4\n# Homepage analysis\n# ----------------------------------------\nPage path,Sessions,Engagement rate\n/,1234,0.65"}
-        rows={7}
-        style={{width:"100%",padding:"10px 14px",border:"none",borderBottom:"1px solid "+C.grey4,fontSize:11,fontFamily:"monospace",color:C.offBlack,resize:"vertical",boxSizing:"border-box",background:C.grey3,display:"block"}}
-      />
-      {error&&<div style={{padding:"6px 14px",fontSize:11,color:"#CC0000",background:"#FFF0F0",borderBottom:"1px solid #FFAAAA"}}>{error}</div>}
-      <div style={{padding:"8px 12px",display:"flex",gap:8,justifyContent:"flex-end",background:C.white}}>
-        <button onClick={function(){setExpanded(false);setText("");setError(null);}} style={{background:"transparent",color:C.grey7,border:"1px solid "+C.grey4,borderRadius:7,padding:"6px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-        <button onClick={function(){if(text.trim())parseCSVText(text);else setError("Please paste some CSV content first.");}} style={{background:C.pink,color:C.white,border:"none",borderRadius:7,padding:"6px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Parse & Include</button>
-      </div>
-    </div>
-  );
-}
-// ─────────────────────────────────────────────────────────────────────────────
 
 function FileDropZone({onFile,files,onRemove}){
   var [dragging,setDragging]=useState(false);
@@ -1675,7 +1557,6 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
   var [auditPrompt,setAuditPrompt]=useState("");
   var [generatedAuditText,setGeneratedAuditText]=useState("");
   var [nudge,setNudge]=useState(null);
-  var [ga4Data,setGa4Data]=useState(null);
   var [extraFiles,setExtraFiles]=useState([]);
   var [auditImages,setAuditImages]=useState([]);
   var isMobile=useWidth()<768;
@@ -1701,7 +1582,6 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
     var images=extraFiles.filter(function(f){return f.type==="image";});
     var hasHeatmaps=images.length>0;
     var hasCsvFiles=csvFiles.length>0;
-    var hasGa4=!!ga4Data;
     var obj=visiblePages.find(function(p){return p.url===selectedPage;});
     var pageLabel=selectedPage==="all"?"the gwi.com website overall":(obj?obj.label+" page ("+selectedPage+")":selectedPage);
 
@@ -1712,7 +1592,6 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
 
     var p="You are a UX strategist auditing "+pageLabel+" for gwi.com.\n\n";
 
-    if(hasGa4){p+="=== ANALYTICS DATA ===\n"+ga4Data.text+"\n=== END DATA ===\n\n";}
     if(hasCsvFiles){p+="=== UPLOADED DATA ===\n";csvFiles.forEach(function(f){p+="File: "+f.name+"\n"+f.text.slice(0,3000)+(f.text.length>3000?"\n[truncated]":"")+"\n";});p+="=== END DATA ===\n\n";}
     if(hasHeatmaps){p+="Heatmap images are attached. Red/orange = high engagement, blue/grey = low.\n\n";}
 
@@ -1739,8 +1618,7 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
   function handleGeneratePrompt(){
     if(!selectedPage){setNudge("prompt");return;}
     setNudge(null);
-    var base=buildPrompt();
-    setGeneratedPrompt(ga4Data?base+"\n\nANALYTICS CONTEXT:\n"+ga4Data.text:base);
+    setGeneratedPrompt(buildPrompt());
   }
   function handleCopy(){navigator.clipboard.writeText(generatedPrompt).then(function(){setCopied(true);setTimeout(function(){setCopied(false);},2500);});}
   function handleModalClose(navigate){
@@ -1760,11 +1638,7 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
               <div style={{width:48,height:48,borderRadius:"50%",background:C.grey3,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}><Sparkles size={22} color={C.grey7}/></div>
               <h2 style={{fontSize:20,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Ready to generate</h2>
               <p style={{fontSize:14,color:C.grey7,lineHeight:1.7,margin:"0 0 4px"}}>Claude will analyse the selected page against all your personas, lifecycle stages and journey data.</p>
-              <p style={{fontSize:13,color:C.grey6,lineHeight:1.6,margin:0}}>Optionally include GA4 data, heatmap images, or CSV files to ground the audit in real behaviour.</p>
-            </div>
-            <div style={{marginBottom:16}}>
-              <div style={{fontSize:12,fontWeight:700,color:C.black,marginBottom:8}}>GA4 data <span style={{fontWeight:400,color:C.grey7}}>(optional)</span></div>
-              <GA4Uploader selectedPage={selectedPage} onDataParsed={setGa4Data} onClear={function(){setGa4Data(null);}} parsedData={ga4Data}/>
+              <p style={{fontSize:13,color:C.grey6,lineHeight:1.6,margin:0}}>Optionally include heatmap images or CSV files to ground the audit in real behaviour.</p>
             </div>
             <div style={{marginBottom:20}}>
               <div style={{fontSize:12,fontWeight:700,color:C.black,marginBottom:8}}>Heatmaps &amp; additional files <span style={{fontWeight:400,color:C.grey7}}>(optional)</span></div>
@@ -1814,7 +1688,7 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
       {generatedPrompt&&!showModal&&(
         <div style={{background:C.black,borderRadius:14,padding:24,marginBottom:24}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}}>
-            <div style={{fontSize:13,fontWeight:700,color:C.white}}>Generated prompt{ga4Data?" (includes GA4 data)":""}</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.white}}>Generated prompt</div>
             <button onClick={function(){setEditingPrompt(!editingPrompt);}} style={{background:"transparent",color:C.white,border:"1px solid "+C.grey7,borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{editingPrompt?"Done editing":"Edit instruction"}</button>
           </div>
           {editingPrompt&&<textarea value={promptInstruction} onChange={function(e){setPromptInstruction(e.target.value);}} rows={4} style={{width:"100%",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,padding:"10px 14px",fontSize:13,color:C.white,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box",marginBottom:12}}/>}
