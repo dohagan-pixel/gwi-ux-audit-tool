@@ -2136,7 +2136,7 @@ function MobileNav({view,setView}){
   var MAPPING=[{id:"mapping",label:"Mapping Overview"},{id:"journey",label:"Journey Mapper"},{id:"lifecycle",label:"Customer Mapping"},{id:"affinity",label:"Affinity Map"},{id:"flows",label:"User Flows"}];
   function Btn({id,label}){var active=view===id;return <button onClick={function(){setView(id);setMenuOpen(false);}} style={{padding:"12px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:active?C.pink:"transparent",color:active?C.white:C.grey7,textAlign:"left",width:"100%",display:"block"}}>{label}</button>;}
   return(
-    <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,flexShrink:0,position:"relative",zIndex:200}}>
+    <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,flexShrink:0,position:"relative",zIndex:50}}>
       <div style={{padding:"0 16px",height:52,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div style={{fontWeight:800,fontSize:15,color:C.white,letterSpacing:"-0.02em",cursor:"pointer"}} onClick={function(){setView("dashboard");setMenuOpen(false);}}>GWI UX</div>
         <button onClick={function(){setMenuOpen(!menuOpen);}} style={{background:"transparent",border:"none",cursor:"pointer",color:C.white,fontSize:13,fontWeight:600,padding:"4px 8px"}}>{menuOpen?"Close":"Menu"}</button>
@@ -2274,7 +2274,7 @@ function ConfirmResetScreen({oobCode}:{oobCode:string}){
   );
 }
 export default function App(){
-  var [view,setView]=useState("dashboard");
+  var [view,setView]=useState(function(){try{var v=localStorage.getItem("gwi_view");return v||"dashboard";}catch(e){return "dashboard";}});
   var [stages,setStages]=useState(INIT_STAGES);
   var [personas,setPersonas]=useState(INIT_PERSONAS);
   var [pages,setPages]=useState(INIT_PAGES);
@@ -2292,6 +2292,7 @@ export default function App(){
   useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()){var d=snap.data();if(d.auditData)setAuditData(d.auditData);if(d.stages)setStages(d.stages);if(d.personas)setPersonas(d.personas);if(d.pages)setPages(d.pages);if(d.journeys)setJourneys(d.journeys);if(d.gaCards)setGaCards(d.gaCards);}});getDocs(collection(_db,"users",u.uid,"generatedAudits")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setGeneratedAudits(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});merged.sort(function(a,b){return a.id<b.id?-1:1;});return merged;});}).catch(function(){});}else{_setUser(null);}_setAuthLoading(false);});},[]);
   useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,stages:stages,personas:personas,pages:pages,journeys:journeys,gaCards:gaCards,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[ auditData,stages,personas,pages,journeys,gaCards,_user]);
   useEffect(function(){try{localStorage.setItem("gwi_generated_audits",JSON.stringify(generatedAudits));}catch(e){};},[generatedAudits]);
+  useEffect(function(){try{localStorage.setItem("gwi_view",view);}catch(e){};},[view]);
   function _handleLogin(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}signInWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/user-not-found'?'Invalid email or password.':'Sign-in failed. Try again.');});}
   function _handleRegister(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}if(password.length<6){_setLoginError('Password must be at least 6 characters.');return;}createUserWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/email-already-in-use'?'Account already exists. Try signing in.':err.code==='auth/weak-password'?'Password must be at least 6 characters.':'Registration failed. Try again.');});}
   function _handleGoogleLogin(){_setLoginError(null);var p=new GoogleAuthProvider();p.setCustomParameters({hd:"gwi.com"});signInWithPopup(_auth,p).catch(function(err:any){_setLoginError(err.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':err.code==='auth/unauthorized-domain'?'This domain is not authorised in Firebase — contact your admin.':'Google sign-in failed. Try again. ('+( err.code||'')+')');});}
@@ -2302,11 +2303,11 @@ export default function App(){
 
 
   return(
-    <div style={{display:"flex",flexDirection:"column",height:"100vh",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+    <div style={{display:"flex",flexDirection:"column",height:"100vh",overflow:"hidden",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
       {isMobile?(
         <MobileNav view={view} setView={setView}/>
       ):(
-        <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,padding:"0 20px",height:52,flexShrink:0,display:"flex",alignItems:"center",gap:4}}>
+        <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,padding:"0 20px",height:52,flexShrink:0,display:"flex",alignItems:"center",gap:4,position:"relative",zIndex:50}}>
           <div style={{fontWeight:800,fontSize:15,color:C.white,marginRight:4,letterSpacing:"-0.02em",cursor:"pointer",flexShrink:0}} onClick={function(){setView("dashboard");}}>GWI UX</div>
           <button onClick={function(){setView("dashboard");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="dashboard"?C.pink:"transparent",color:view==="dashboard"?C.white:C.grey7,flexShrink:0}}>Dashboard</button>
           <button onClick={function(){setView("summary");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:(view==="summary"||view==="generated-audits")?C.pink:"transparent",color:(view==="summary"||view==="generated-audits")?C.white:C.grey7,flexShrink:0}}>UX Audit</button>
