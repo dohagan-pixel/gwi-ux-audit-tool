@@ -1363,11 +1363,13 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
                   <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
                     <div style={{width:28,height:28,borderRadius:"50%",background:C.white,border:"2px solid "+C.pink,color:C.black,fontSize:12,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{isAdded?"✓":i+1}</div>
                     <div style={{flex:1}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
-                        {priority&&<span style={{fontSize:11,fontWeight:700,color:priorityColor,background:priorityBg,padding:"2px 8px",borderRadius:99}}>{priority}</span>}
-                        {personas&&<span style={{fontSize:11,color:C.grey7}}>{personas}</span>}
-                      </div>
-                      <div style={{fontSize:14,fontWeight:700,color:C.black}}>{recTitle}</div>
+                      {(priority||personas)&&(
+                        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
+                          {priority&&<span style={{fontSize:11,fontWeight:700,color:priorityColor,background:priorityBg,padding:"2px 8px",borderRadius:99}}>{priority}</span>}
+                          {personas&&<span style={{fontSize:11,color:C.grey7}}>{personas}</span>}
+                        </div>
+                      )}
+                      <div style={{fontSize:14,fontWeight:700,color:C.black,paddingTop:(priority||personas)?0:5}}>{recTitle}</div>
                     </div>
                     <button onClick={function(){if(!isAdded)addToAudit(rec,audit.scope,i);}} style={{flexShrink:0,background:isAdded?"#E6F9F2":C.pink,color:isAdded?"#005C3B":C.white,border:"none",borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:isAdded?"default":"pointer",whiteSpace:"nowrap"}}>{isAdded?"Added":"Add to Actions"}</button>
                   </div>
