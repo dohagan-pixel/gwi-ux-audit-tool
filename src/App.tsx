@@ -674,7 +674,7 @@ function PersonasPage({personas,journeys,setView,setActivePersonaForJourney,init
       <div style={{flex:1,overflow:"auto",padding:isMobile?16:20,background:C.grey2}}>
         <div style={{maxWidth:920,margin:"0 auto",paddingBottom:80}}>
           {(function(){
-            var PERSONA_IMAGES={"insight-guru":"https://www.gwi.com/hubfs/UX-Aduit-Imagery/Insight%20Guru.png"};
+            var PERSONA_IMAGES={"insight-guru":"https://www.gwi.com/hubfs/UX-Aduit-Imagery/Insight%20Guru.png","inspiration-hunter":"https://www.gwi.com/hubfs/UX-Aduit-Imagery/Inspiration%20Hunter.png"};
             var img=PERSONA_IMAGES[p.id]||null;
             return(
               <div style={{background:col.bg,border:"1px solid "+col.border,borderRadius:16,padding:24,marginBottom:24,display:"flex",gap:24,alignItems:"center"}}>
