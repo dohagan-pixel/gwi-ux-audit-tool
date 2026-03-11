@@ -5,7 +5,7 @@ import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
-import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical } from "lucide-react";
+import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil } from "lucide-react";
 
 const C = {
   pink:"#FF0077",white:"#FFFFFF",black:"#101720",offBlack:"#2A3447",
@@ -1383,8 +1383,14 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
 function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditData,pages,setView}){
   var [activeAudit,setActiveAudit]=useState(audits.length>0?audits[audits.length-1].id:null);
   var [added,setAdded]=useState({});
+  var [editing,setEditing]=useState(false);
+  var [editLabel,setEditLabel]=useState("");
+  var [editDesc,setEditDesc]=useState("");
   var isMobile=useWidth()<768;
   var audit=audits.find(function(a){return a.id===activeAudit;});
+  function deleteActiveAudit(){var rem=audits.filter(function(x){return x.id!==activeAudit;});setAudits(rem);if(onDeleteAudit)onDeleteAudit(activeAudit);setActiveAudit(rem.length>0?rem[rem.length-1].id:null);}
+  function openEdit(){setEditLabel(audit?audit.pageLabel:"");setEditDesc(audit?audit.description||"":"");setEditing(true);}
+  function saveEdit(){setAudits(function(prev){return prev.map(function(a){return a.id===activeAudit?Object.assign({},a,{pageLabel:editLabel.trim()||a.pageLabel,description:editDesc.trim()}):a;});});setEditing(false);}
   function parseRecs(text){var recs=[];var blocks=text.split(/\n+/);var current=null;blocks.forEach(function(block){var t=block.trim();if(!t)return;var m=t.match(/^FINDING:\s*(\d+)\.\s+(.+)$/);if(m){if(current)recs.push(current);current={title:m[2].trim(),shows:"",why:"",change:"",metric:"",body:""};}else if(current){if(t.startsWith("SHOWS:")){current.shows=t.slice(6).trim();}else if(t.startsWith("WHY:")){current.why=t.slice(4).trim();}else if(t.startsWith("CHANGE:")){current.change=t.slice(7).trim();}else if(t.startsWith("METRIC:")){current.metric=t.slice(7).trim();}else{current.body=current.body?current.body+" "+t:t;}}});if(current)recs.push(current);return recs.filter(function(r){return r.title&&(r.shows||r.why||r.change||r.body);});}
   function isAlreadyAdded(rec,scope){var pageUrl=scope==="all"?"/":scope;var existing=auditData.find(function(p){return p.url===pageUrl;});if(!existing)return false;return existing.actions.some(function(a){return a.text===rec.title;});}
   function addToAudit(rec,scope,idx){
@@ -1404,13 +1410,10 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditD
         <div style={{padding:"14px 16px",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",borderBottom:"1px solid "+C.grey4}}>Generated Audits</div>
         {audits.slice().reverse().map(function(a){var isActive=a.id===activeAudit;return(
           <div key={a.id} style={{borderBottom:"1px solid "+C.grey3,background:isActive?C.grey3:"transparent"}}>
-            <button onClick={function(){setActiveAudit(a.id);}} style={{textAlign:"left",padding:"12px 16px 8px",borderLeft:"4px solid "+(isActive?C.pink:"transparent"),background:"transparent",color:isActive?C.black:C.grey8,border:"none",cursor:"pointer",width:"100%"}}>
+            <button onClick={function(){setActiveAudit(a.id);setEditing(false);}} style={{textAlign:"left",padding:"12px 16px",borderLeft:"4px solid "+(isActive?C.pink:"transparent"),background:"transparent",color:isActive?C.black:C.grey8,border:"none",cursor:"pointer",width:"100%"}}>
               <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>{a.pageLabel}</div>
               <div style={{fontSize:11,color:C.grey6}}>{a.date}</div>
             </button>
-            <div style={{padding:"0 12px 10px"}}>
-              <button onClick={function(){var rem=audits.filter(function(x){return x.id!==a.id;});setAudits(rem);if(onDeleteAudit)onDeleteAudit(a.id);if(activeAudit===a.id)setActiveAudit(rem.length>0?rem[rem.length-1].id:null);}} style={{background:"transparent",color:"#CC0000",border:"1px solid #FFAAAA",borderRadius:6,padding:"2px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>Delete</button>
-            </div>
           </div>
         );})}
       </div>
@@ -1418,9 +1421,33 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditD
         <div style={{paddingBottom:80}}>
         {audit&&(<>
           <div style={{background:C.black,borderRadius:16,padding:"24px 28px",marginBottom:24}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:6}}>Generated UX Audit</div>
-            <h2 style={{color:C.white,fontSize:22,fontWeight:800,margin:"0 0 4px"}}>{audit.pageLabel}</h2>
-            <p style={{color:C.grey6,fontSize:13,margin:0}}>{audit.date} · {recs.length} findings</p>
+            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Generated UX Audit</div>
+                {editing?(
+                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                    <input value={editLabel} onChange={function(e){setEditLabel(e.target.value);}} placeholder="Audit name" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 12px",fontSize:16,fontWeight:700,color:C.white,outline:"none",width:"100%"}}/>
+                    <textarea value={editDesc} onChange={function(e){setEditDesc(e.target.value);}} placeholder="Add a description (optional)" rows={2} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,padding:"8px 12px",fontSize:13,color:C.grey4,outline:"none",width:"100%",resize:"none",fontFamily:"inherit"}}/>
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={saveEdit} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Save</button>
+                      <button onClick={function(){setEditing(false);}} style={{background:"rgba(255,255,255,0.1)",color:C.grey4,border:"none",borderRadius:8,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+                    </div>
+                  </div>
+                ):(
+                  <>
+                    <h2 style={{color:C.white,fontSize:22,fontWeight:800,margin:"0 0 4px"}}>{audit.pageLabel}</h2>
+                    {audit.description&&<p style={{color:C.grey5,fontSize:13,margin:"0 0 4px",lineHeight:1.5}}>{audit.description}</p>}
+                    <p style={{color:C.grey6,fontSize:13,margin:0}}>{audit.date} · {recs.length} findings</p>
+                  </>
+                )}
+              </div>
+              {!editing&&(
+                <div style={{display:"flex",gap:8,flexShrink:0,paddingTop:2}}>
+                  <button onClick={openEdit} title="Rename / add description" style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.grey4}}><Pencil size={15}/></button>
+                  <button onClick={deleteActiveAudit} title="Delete audit" style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#FF6B6B"}}><Trash2 size={15}/></button>
+                </div>
+              )}
+            </div>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
             {recs.map(function(rec,i){
