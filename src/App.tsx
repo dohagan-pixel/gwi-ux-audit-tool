@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 
 import{initializeApp}from'firebase/app';
-import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut as fbSignOut,onAuthStateChanged,sendPasswordResetEmail}from'firebase/auth';
+import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut as fbSignOut,onAuthStateChanged,sendPasswordResetEmail,confirmPasswordReset}from'firebase/auth';
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
@@ -2083,6 +2083,45 @@ function LoginScreen({onLogin,onRegister,loginError}){
     </div>
   );
 }
+function ConfirmResetScreen({oobCode}:{oobCode:string}){
+  var [_pw,_setPw]=useState('');
+  var [_pw2,_setPw2]=useState('');
+  var [_msg,_setMsg]=useState('');
+  var [_done,_setDone]=useState(false);
+  var _inputStyle={padding:"10px 14px",background:"#1a1a1a",border:"1px solid #333",borderRadius:8,color:"#fff",fontSize:14,outline:"none",boxSizing:"border-box" as const,width:"100%"};
+  var _btnStyle={background:"#fff",color:"#000",border:"none",borderRadius:8,padding:"11px 0",fontSize:14,fontWeight:600,cursor:"pointer",marginTop:4};
+  function _submit(e:any){
+    e.preventDefault();
+    if(_pw.length<6){_setMsg('Password must be at least 6 characters.');return;}
+    if(_pw!==_pw2){_setMsg('Passwords do not match.');return;}
+    confirmPasswordReset(_auth,oobCode,_pw)
+      .then(function(){_setDone(true);window.history.replaceState({},'',window.location.pathname);})
+      .catch(function(err:any){_setMsg('Could not reset password. The link may have expired — request a new one. ('+( err.code||'unknown')+')');});
+  }
+  return(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",background:"#0a0a0a"}}>
+      <div style={{textAlign:"center",maxWidth:360,padding:32,boxSizing:"border-box" as const,width:"100%"}}>
+        <div style={{fontWeight:800,fontSize:36,color:"#fff",marginBottom:8}}>GWI UX</div>
+        {_done?(
+          <>
+            <div style={{fontSize:14,color:"#4ade80",marginBottom:32}}>Password updated! You can now sign in.</div>
+            <button onClick={function(){window.location.href=window.location.pathname;}} style={_btnStyle}>Go to sign in</button>
+          </>
+        ):(
+          <>
+            <div style={{fontSize:14,color:"#666",marginBottom:40}}>Set your new password</div>
+            <form onSubmit={_submit} style={{display:"flex",flexDirection:"column",gap:12}}>
+              <input type="password" placeholder="New password (min 6 chars)" value={_pw} onChange={function(e){_setPw(e.target.value);}} required style={_inputStyle}/>
+              <input type="password" placeholder="Confirm new password" value={_pw2} onChange={function(e){_setPw2(e.target.value);}} required style={_inputStyle}/>
+              <button type="submit" style={_btnStyle}>Set new password</button>
+            </form>
+            {_msg&&<div style={{color:"#f87171",fontSize:13,marginTop:12,textAlign:"left"}}>{_msg}</div>}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 export default function App(){
   var [view,setView]=useState("dashboard");
   var [stages,setStages]=useState(INIT_STAGES);
@@ -2103,6 +2142,8 @@ export default function App(){
   useEffect(function(){try{localStorage.setItem("gwi_generated_audits",JSON.stringify(generatedAudits));}catch(e){};},[generatedAudits]);
   function _handleLogin(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}signInWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/user-not-found'?'Invalid email or password.':'Sign-in failed. Try again.');});}
   function _handleRegister(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}if(password.length<6){_setLoginError('Password must be at least 6 characters.');return;}createUserWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/email-already-in-use'?'Account already exists. Try signing in.':err.code==='auth/weak-password'?'Password must be at least 6 characters.':'Registration failed. Try again.');});}
+  var _qp=new URLSearchParams(window.location.search);
+  if(_qp.get('mode')==='resetPassword'&&_qp.get('oobCode'))return(<ConfirmResetScreen oobCode={_qp.get('oobCode')!}/>);
   if(_authLoading)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#0a0a0a",color:"#fff",fontSize:16}}>Loading…</div>);
   if(!_user)return(<LoginScreen onLogin={_handleLogin} onRegister={_handleRegister} loginError={_loginError}/>);
 
