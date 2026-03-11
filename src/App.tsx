@@ -5,7 +5,7 @@ import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
-import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown } from "lucide-react";
+import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus } from "lucide-react";
 
 const C = {
   pink:"#FF0077",white:"#FFFFFF",black:"#101720",offBlack:"#2A3447",
@@ -1793,6 +1793,10 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
   var [stepDraft,setStepDraft]=useState({});
   var [showNewPersona,setShowNewPersona]=useState(false);
   var [newPersona,setNewPersona]=useState({label:"",tagline:"",entry:"",traits:"",who:"",what:"",drives:"",bugs:"",grabs:"",website:""});
+  var [gaDrafts,setGaDrafts]=useState({});
+  var [gaSaved,setGaSaved]=useState({});
+  var [showNewGaEntry,setShowNewGaEntry]=useState(false);
+  var [newGaEntry,setNewGaEntry]=useState({url:"",label:"",section:"Products",gaUrl:""});
   var isMobile=useWidth()<768;
   var sectionSet={};pages.forEach(function(p){sectionSet[p.section]=true;});var sections=Object.keys(sectionSet);
   var MULTI=["who","what","drives","bugs","grabs","concerns","whyUs","platform","website","gwi_goal","hmw","signupNote","push","pull","habit","anxiety"];
@@ -1801,6 +1805,9 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
   var STAGE_FIELDS=[["GWI Goal","gwi_goal"],["How Might We","hmw"],["Website role note","signupNote"],["Push","push"],["Pull","pull"],["Habit","habit"],["Anxiety","anxiety"]];
   function Inp({val,onChange,multi,rows}){if(multi)return <textarea value={val||""} onChange={function(e){onChange(e.target.value);}} rows={rows||2} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,resize:"vertical",fontFamily:"inherit",boxSizing:"border-box"}}/>;return <input value={val||""} onChange={function(e){onChange(e.target.value);}} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>;}
   function saveNewPersona(){if(!newPersona.label)return;var id=newPersona.label.toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"");var traits=newPersona.traits.split(",").map(function(t){return t.trim();}).filter(Boolean);setPersonas(function(prev){return prev.concat([Object.assign({},newPersona,{id:id,traits:traits,colorIndex:personas.length%DEFAULT_PERSONA_COLORS.length})]);});setJourneys(function(prev){var n=Object.assign({},prev);n[id]=[];return n;});setNewPersona({label:"",tagline:"",entry:"",traits:"",who:"",what:"",drives:"",bugs:"",grabs:"",website:""});setShowNewPersona(false);}
+  function saveGaUrl(pageUrl){var v=gaDrafts[pageUrl];if(v===undefined)return;setPages(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{gaUrl:v}):p;});});setGaDrafts(function(d){var n=Object.assign({},d);delete n[pageUrl];return n;});setGaSaved(function(s){return Object.assign({},s,{[pageUrl]:true});});setTimeout(function(){setGaSaved(function(s){var n=Object.assign({},s);delete n[pageUrl];return n;});},1500);}
+  function deleteGaPage(pageUrl){setPages(function(prev){return prev.filter(function(p){return p.url!==pageUrl;});});setGaDrafts(function(d){var n=Object.assign({},d);delete n[pageUrl];return n;});}
+  function addGaEntry(){if(!newGaEntry.url||!newGaEntry.label)return;setPages(function(prev){return prev.concat([{url:newGaEntry.url,label:newGaEntry.label,section:newGaEntry.section,hidden:false,gaUrl:newGaEntry.gaUrl}]);});setNewGaEntry({url:"",label:"",section:"Products",gaUrl:""});setShowNewGaEntry(false);}
   return(
     <PageWrap isMobile={isMobile}>
       <BlackHero eyebrow="GWI Website - UX" title="Settings" desc="The quality of every audit depends on the data behind it."/>
@@ -1939,11 +1946,29 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
       )}
       {tab==="ga"&&(
         <div>
-          <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"14px 20px",marginBottom:20,display:"flex",alignItems:"flex-start",gap:12}}>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:700,color:C.black,fontSize:14,marginBottom:4}}>Google Analytics URLs</div>
-              <div style={{color:C.grey7,fontSize:13}}>Paste the GA4 dashboard or report URL for each page. These will appear as quick-links inside each page audit card.</div>
-            </div>
+          <div style={{marginBottom:20}}>
+            {!showNewGaEntry&&(
+              <button onClick={function(){setShowNewGaEntry(true);}} style={{display:"flex",alignItems:"center",gap:8,background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}><Plus size={14}/>Add Page &amp; GA URL</button>
+            )}
+            {showNewGaEntry&&(
+              <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:20}}>
+                <h3 style={{fontWeight:700,color:C.black,fontSize:15,marginBottom:16}}>New Page</h3>
+                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"2fr 2fr 1fr",gap:10,marginBottom:12}}>
+                  <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>URL</div><input value={newGaEntry.url} onChange={function(e){setNewGaEntry(Object.assign({},newGaEntry,{url:e.target.value}));}} placeholder="https://gwi.ai/page" style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
+                  <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Label</div><input value={newGaEntry.label} onChange={function(e){setNewGaEntry(Object.assign({},newGaEntry,{label:e.target.value}));}} placeholder="Page Name" style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
+                  <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Section</div><select value={newGaEntry.section} onChange={function(e){setNewGaEntry(Object.assign({},newGaEntry,{section:e.target.value}));}} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,background:C.white}}>{sections.map(function(s){return <option key={s}>{s}</option>;})}</select></div>
+                </div>
+                <div style={{marginBottom:16}}><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Google Analytics URL</div><input value={newGaEntry.gaUrl} onChange={function(e){setNewGaEntry(Object.assign({},newGaEntry,{gaUrl:e.target.value}));}} placeholder="https://analytics.google.com/analytics/web/..." style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={addGaEntry} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add Page</button>
+                  <button onClick={function(){setShowNewGaEntry(false);setNewGaEntry({url:"",label:"",section:"Products",gaUrl:""}); }} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+                </div>
+              </div>
+            )}
+          </div>
+          <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"14px 20px",marginBottom:20}}>
+            <div style={{fontWeight:700,color:C.black,fontSize:14,marginBottom:4}}>Google Analytics URLs</div>
+            <div style={{color:C.grey7,fontSize:13}}>Paste the GA4 report URL for each page. These will appear as quick-links inside each page audit card.</div>
           </div>
           {sections.map(function(section){
             var sectionPages=pages.filter(function(p){return p.section===section;});
@@ -1952,15 +1977,22 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
               <div key={section} style={{marginBottom:20}}>
                 <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>{section}</div>
                 <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,overflow:"hidden"}}>
-                  {sectionPages.map(function(page,i,arr){return(
-                    <div key={page.url} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderBottom:i<arr.length-1?"1px solid "+C.grey3:"none",flexWrap:isMobile?"wrap":"nowrap"}}>
-                      <div style={{flexShrink:0,width:isMobile?"100%":220}}>
-                        <div style={{fontWeight:600,color:C.offBlack,fontSize:13}}>{page.label}</div>
-                        <div style={{fontFamily:"monospace",color:C.grey6,fontSize:11,marginTop:2}}>{page.url.replace("https://gwi.ai","gwi.ai").replace("https://trust.gwi.com","trust.gwi.com")}</div>
+                  {sectionPages.map(function(page,i,arr){
+                    var isDirty=gaDrafts[page.url]!==undefined;
+                    var isSaved=gaSaved[page.url];
+                    var inputVal=isDirty?gaDrafts[page.url]:(page.gaUrl||"");
+                    return(
+                      <div key={page.url} style={{display:"flex",alignItems:"center",gap:8,padding:"12px 16px",borderBottom:i<arr.length-1?"1px solid "+C.grey3:"none",flexWrap:isMobile?"wrap":"nowrap"}}>
+                        <div style={{flexShrink:0,width:isMobile?"100%":210}}>
+                          <div style={{fontWeight:600,color:C.offBlack,fontSize:13}}>{page.label}</div>
+                          <div style={{fontFamily:"monospace",color:C.grey6,fontSize:11,marginTop:2}}>{page.url.replace("https://gwi.ai","gwi.ai").replace("https://trust.gwi.com","trust.gwi.com")}</div>
+                        </div>
+                        <input value={inputVal} onChange={function(e){var v=e.target.value;setGaDrafts(function(d){return Object.assign({},d,{[page.url]:v});});}} placeholder="https://analytics.google.com/..." style={{flex:1,width:isMobile?"100%":"auto",padding:"7px 10px",border:"1px solid "+(isDirty?C.pink:C.grey4),borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box",outline:"none"}}/>
+                        <button onClick={function(){saveGaUrl(page.url);}} title="Save" style={{flexShrink:0,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:isSaved?"#E6F9F2":isDirty?C.pink:C.grey3,color:isSaved?"#00A86B":isDirty?C.white:C.grey6,border:isSaved?"1px solid #A3E6C8":"none",borderRadius:8,cursor:isDirty?"pointer":"default",transition:"all 0.2s"}}><Check size={14}/></button>
+                        <button onClick={function(){deleteGaPage(page.url);}} title="Delete" style={{flexShrink:0,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"#FFF0F0",color:"#CC0000",border:"1px solid #FFAAAA",borderRadius:8,cursor:"pointer"}}><Trash2 size={14}/></button>
                       </div>
-                      <input value={page.gaUrl||""} onChange={function(e){var v=e.target.value;setPages(function(prev){return prev.map(function(p){return p.url===page.url?Object.assign({},p,{gaUrl:v}):p;});});}} placeholder="https://analytics.google.com/analytics/web/..." style={{flex:1,width:isMobile?"100%":"auto",padding:"7px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>
-                    </div>
-                  );})}
+                    );
+                  })}
                 </div>
               </div>
             );
