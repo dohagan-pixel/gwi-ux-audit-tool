@@ -1310,12 +1310,12 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditD
   var [added,setAdded]=useState({});
   var isMobile=useWidth()<768;
   var audit=audits.find(function(a){return a.id===activeAudit;});
-  function parseRecs(text){var recs=[];var blocks=text.split(/\n+/);var current=null;blocks.forEach(function(block){var t=block.trim();if(!t)return;var m=t.match(/^REC:\s*(\d+)\.\s+(.+)$/);if(m){if(current)recs.push(current);current={title:m[2].trim(),body:""};}else if(current){current.body=current.body?current.body+" "+t:t;}});if(current)recs.push(current);return recs.filter(function(r){return r.title&&r.body;});}
+  function parseRecs(text){var recs=[];var blocks=text.split(/\n+/);var current=null;blocks.forEach(function(block){var t=block.trim();if(!t)return;var m=t.match(/^FINDING:\s*(\d+)\.\s+(.+)$/);if(m){if(current)recs.push(current);current={title:m[2].trim(),shows:"",why:"",change:"",metric:"",body:""};}else if(current){if(t.startsWith("SHOWS:")){current.shows=t.slice(6).trim();}else if(t.startsWith("WHY:")){current.why=t.slice(4).trim();}else if(t.startsWith("CHANGE:")){current.change=t.slice(7).trim();}else if(t.startsWith("METRIC:")){current.metric=t.slice(7).trim();}else{current.body=current.body?current.body+" "+t:t;}}});if(current)recs.push(current);return recs.filter(function(r){return r.title&&(r.shows||r.why||r.change||r.body);});}
   function isAlreadyAdded(rec,scope){var pageUrl=scope==="all"?"/":scope;var existing=auditData.find(function(p){return p.url===pageUrl;});if(!existing)return false;return existing.actions.some(function(a){return a.text===rec.title;});}
   function addToAudit(rec,scope,idx){
     var pageUrl=scope==="all"?"/":scope;
     var pageObj=pages.find(function(p){return p.url===pageUrl;});
-    var newAction={id:"a-"+Date.now()+Math.random(),text:rec.title,description:rec.body,status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:""};
+    var newAction={id:"a-"+Date.now()+Math.random(),text:rec.change||rec.title,description:rec.why||rec.body,status:"todo",metric:rec.metric||"",source:"",before:"",beforeDate:"",after:"",afterDate:""};
     var existing=auditData.find(function(p){return p.url===pageUrl;});
     if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}
     else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}
@@ -1344,16 +1344,39 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditD
           <div style={{background:C.black,borderRadius:16,padding:"24px 28px",marginBottom:24}}>
             <div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:6}}>Generated UX Audit</div>
             <h2 style={{color:C.white,fontSize:22,fontWeight:800,margin:"0 0 4px"}}>{audit.pageLabel}</h2>
-            <p style={{color:C.grey6,fontSize:13,margin:0}}>{audit.date} - {recs.length} recommendations</p>
+            <p style={{color:C.grey6,fontSize:13,margin:0}}>{audit.date} · {recs.length} findings</p>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
             {recs.map(function(rec,i){
               var isAdded=isAlreadyAdded(rec,audit.scope)||!!added[activeAudit+"-"+i];
+              var parts=rec.title.split(" — ");
+              var recTitle=parts[0];
+              var priority=parts[1]||"";
+              var personas=parts.slice(2).join(", ");
+              var priorityColor=priority==="P1"?"#D94F00":priority==="P2"?C.violet:"#005C3B";
+              var priorityBg=priority==="P1"?"#FFF0E8":priority==="P2"?"#EEEEFF":"#E6F9F2";
               return(
-                <div key={i} style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"18px 20px",display:"flex",gap:16,alignItems:"flex-start"}}>
-                  <div style={{width:28,height:28,borderRadius:"50%",background:C.white,border:"2px solid "+C.pink,color:C.black,fontSize:12,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{isAdded?"✓":i+1}</div>
-                  <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700,color:C.black,marginBottom:6}}>{rec.title}</div><p style={{fontSize:13,color:C.grey7,lineHeight:1.6,margin:0}}>{rec.body}</p></div>
-                  <button onClick={function(){if(!isAdded)addToAudit(rec,audit.scope,i);}} style={{flexShrink:0,background:isAdded?"#E6F9F2":C.pink,color:isAdded?"#005C3B":C.white,border:"none",borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:isAdded?"default":"pointer",whiteSpace:"nowrap"}}>{isAdded?"Added":"Add to Audit"}</button>
+                <div key={i} style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"18px 20px"}}>
+                  <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:rec.shows||rec.why||rec.change||rec.metric?12:0}}>
+                    <div style={{width:28,height:28,borderRadius:"50%",background:C.white,border:"2px solid "+C.pink,color:C.black,fontSize:12,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{isAdded?"✓":i+1}</div>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
+                        {priority&&<span style={{fontSize:11,fontWeight:700,color:priorityColor,background:priorityBg,padding:"2px 8px",borderRadius:99}}>{priority}</span>}
+                        {personas&&<span style={{fontSize:11,color:C.grey7}}>{personas}</span>}
+                      </div>
+                      <div style={{fontSize:14,fontWeight:700,color:C.black}}>{recTitle}</div>
+                    </div>
+                    <button onClick={function(){if(!isAdded)addToAudit(rec,audit.scope,i);}} style={{flexShrink:0,background:isAdded?"#E6F9F2":C.pink,color:isAdded?"#005C3B":C.white,border:"none",borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:isAdded?"default":"pointer",whiteSpace:"nowrap"}}>{isAdded?"Added":"Add to Actions"}</button>
+                  </div>
+                  {(rec.shows||rec.why||rec.change||rec.metric)&&(
+                    <div style={{display:"flex",flexDirection:"column",gap:8,paddingLeft:40}}>
+                      {rec.shows&&<div style={{fontSize:13,color:C.grey8,lineHeight:1.5}}><span style={{fontWeight:700,color:C.grey8}}>Data: </span>{rec.shows}</div>}
+                      {rec.why&&<div style={{fontSize:13,color:C.grey8,lineHeight:1.5}}><span style={{fontWeight:700,color:C.grey8}}>Why it matters: </span>{rec.why}</div>}
+                      {rec.change&&<div style={{fontSize:13,color:C.black,lineHeight:1.5}}><span style={{fontWeight:700,color:C.pink}}>Change: </span>{rec.change}</div>}
+                      {rec.metric&&<div style={{fontSize:13,color:C.grey8,lineHeight:1.5}}><span style={{fontWeight:700,color:C.grey8}}>Success metric: </span>{rec.metric}</div>}
+                      {!rec.shows&&rec.body&&<p style={{fontSize:13,color:C.grey7,lineHeight:1.6,margin:0}}>{rec.body}</p>}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -1595,7 +1618,7 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
 
     p+="## Persona-by-Persona Analysis\nFor EACH of the "+personas.length+" personas, write:\n### [Persona Name] — Arrives via [entry channel]\n**What they need:** (3-4 bullet points)\n**What the current page delivers:** (2-3 bullet points, cite data)\n**Friction points:** (2-3 points, cite a metric each). Do not skip any persona.\n\n";
 
-    p+="## Prioritised UX Recommendations\nP1 = quick win (1 sprint), P2 = medium term, P3 = strategic. At least 8 recommendations.\n\nFORMAT — every recommendation MUST use this exact pattern:\nREC: [number]. [Recommendation title] — [P1/P2/P3] — [Personas served]\n[Paragraph: the SPECIFIC data finding that triggers this (name the channel/metric/number), then the exact fix, then the success metric with a target number]\n\n";
+    p+="## Prioritised UX Findings\nP1 = quick win (1 sprint), P2 = medium term, P3 = strategic. Produce as many findings as the data justifies — up to 20. Quality over quantity: only include findings that have a specific data anchor.\n\nFORMAT — every finding MUST use EXACTLY this structure, all 4 fields, no exceptions:\n\nFINDING: [number]. [Title] — [P1/P2/P3] — [Personas served]\nSHOWS: [Specific metric or heatmap observation — quantified, not directional. E.g. 'Email: 1,371 sessions, 3.8% engagement, 1.1s avg time' not 'low engagement']\nWHY: [Behavioural/intent diagnosis — what this tells you about the user's goal and where the page fails to meet it. Not a UI description — a human failure.]\nCHANGE: [One specific, scoped recommendation. Not 'improve the page' — one concrete implementable change.]\nMETRIC: [Specific metric to track + current baseline + target. E.g. 'Email engagement rate: 3.8% → 15%+']\n\nExample:\nFINDING: 1. Add trending content above the fold for email visitors — P1 — Inspiration Hunter\nSHOWS: Email channel: 1,371 sessions but 3.8% engagement and 1.1s average time — worst performing channel by far despite being the third largest source.\nWHY: Newsletter subscribers click through expecting a trend report or insight. They land on a product homepage. The intent mismatch is total — there is nothing here for them, so they leave in under 2 seconds.\nCHANGE: Add a 'Latest from GWI' strip directly below the hero featuring the 3 most recent trend reports with visual thumbnails. CMS update only — no dev work needed.\nMETRIC: Email channel engagement rate. Baseline: 3.8%. Target: 15%+ within 4 weeks of going live.\n\n";
 
     p+="## Measurement Framework\nTable: Metric | Current Baseline | Target Direction. Include every channel engagement rate from the data. Include GA4 events that should be set up to track recommendations.\n\n";
 
