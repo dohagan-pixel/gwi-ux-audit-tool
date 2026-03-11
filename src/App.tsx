@@ -5,7 +5,7 @@ import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
-import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight } from "lucide-react";
+import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown } from "lucide-react";
 
 const C = {
   pink:"#FF0077",white:"#FFFFFF",black:"#101720",offBlack:"#2A3447",
@@ -272,8 +272,12 @@ function UserMenu({user,onSignOut,onSettings,activeView}){
   var _item={display:"block" as const,width:"100%",textAlign:"left" as const,padding:"10px 16px",fontSize:13,fontWeight:600,background:"transparent",border:"none",cursor:"pointer",color:C.grey8};
   return(
     <div ref={ref} style={{position:"relative"}}>
-      <button onClick={function(){setOpen(!open);}} style={{display:"flex",alignItems:"center",justifyContent:"center",width:30,height:30,borderRadius:"50%",overflow:"hidden",border:"2px solid "+(open||activeView==="settings"?C.pink:C.offBlack),background:C.offBlack,cursor:"pointer",padding:0,flexShrink:0}}>
-        {user.photoURL?<img src={user.photoURL} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:11,fontWeight:700,color:C.white,lineHeight:1}}>{initials}</span>}
+      <button onClick={function(){setOpen(!open);}} style={{display:"flex",alignItems:"center",gap:5,background:"transparent",border:"none",cursor:"pointer",padding:"4px 2px",borderRadius:8}}>
+        <div style={{width:28,height:28,borderRadius:"50%",overflow:"hidden",border:"2px solid "+(open||activeView==="settings"?C.pink:C.offBlack),background:C.offBlack,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          {user.photoURL?<img src={user.photoURL} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:11,fontWeight:700,color:C.white,lineHeight:1}}>{initials}</span>}
+        </div>
+        <Cog size={13} color={open||activeView==="settings"?C.pink:C.grey7}/>
+        <ChevronDown size={11} color={open||activeView==="settings"?C.pink:C.grey7} style={{transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}/>
       </button>
       {open&&(
         <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:C.white,border:"1px solid "+C.grey4,borderRadius:10,boxShadow:"0 8px 24px rgba(0,0,0,0.1)",zIndex:200,minWidth:200,overflow:"hidden",whiteSpace:"nowrap"}}>
