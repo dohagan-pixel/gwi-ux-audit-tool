@@ -2046,9 +2046,10 @@ function LoginScreen({onLogin,onRegister,loginError}){
   function _handleReset(e){
     e.preventDefault();
     if(!_em.endsWith('@gwi.com')){_setResetMsg('Enter your @gwi.com email above.');return;}
+    _setResetMsg('Sending…');
     sendPasswordResetEmail(_auth,_em)
-      .then(function(){_setResetMsg('Check your inbox — a reset link has been sent.');})
-      .catch(function(){_setResetMsg('Could not send reset email. Check the address and try again.');});
+      .then(function(){_setResetMsg('Check your inbox (and spam folder) — a reset link has been sent.');})
+      .catch(function(err:any){_setResetMsg('Error: '+(err.code||err.message||'unknown'));});
   }
   if(_forgotMode)return(
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",background:"#0a0a0a"}}>
