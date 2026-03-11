@@ -535,8 +535,23 @@ function FileDropZone({onFile,files,onRemove}){
       if(!isImage&&!isCsv)return;
       var reader=new FileReader();
       if(isImage){
-        reader.onload=function(e){onFile({type:"image",name:file.name,dataUrl:String(e.target.result),mimeType:file.type});};
-        reader.readAsDataURL(file);
+        var _img=new window.Image();
+        var _objUrl=URL.createObjectURL(file);
+        _img.onload=function(){
+          URL.revokeObjectURL(_objUrl);
+          var MAX=1600;
+          var w=_img.naturalWidth,h=_img.naturalHeight;
+          var scale=Math.min(1,MAX/Math.max(w,h));
+          var canvas=document.createElement("canvas");
+          canvas.width=Math.round(w*scale);
+          canvas.height=Math.round(h*scale);
+          var ctx=canvas.getContext("2d");
+          if(ctx)ctx.drawImage(_img,0,0,canvas.width,canvas.height);
+          var dataUrl=canvas.toDataURL("image/jpeg",0.82);
+          onFile({type:"image",name:file.name,dataUrl:dataUrl,mimeType:"image/jpeg"});
+        };
+        _img.onerror=function(){URL.revokeObjectURL(_objUrl);};
+        _img.src=_objUrl;
       }else{
         reader.onload=function(e){onFile({type:"csv",name:file.name,text:String(e.target.result)});};
         reader.readAsText(file);
