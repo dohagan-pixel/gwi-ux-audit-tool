@@ -673,14 +673,23 @@ function PersonasPage({personas,journeys,setView,setActivePersonaForJourney,init
       )}
       <div style={{flex:1,overflow:"auto",padding:isMobile?16:20,background:C.grey2}}>
         <div style={{maxWidth:920,margin:"0 auto",paddingBottom:80}}>
-          <div style={{background:col.bg,border:"1px solid "+col.border,borderRadius:16,padding:24,marginBottom:24}}>
-            <h2 style={{color:C.black,fontSize:24,fontWeight:700,margin:0}}>{p.label}</h2>
-            <p style={{color:C.black,marginTop:8,fontSize:18,fontWeight:600,lineHeight:1.3}}>{p.tagline}</p>
-            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:16}}>
-              {p.entry.split(",").map(function(t){return <span key={t} style={{background:col.tag.bg,color:col.tag.text,border:"1px solid "+col.border,fontSize:12,fontWeight:600,padding:"4px 10px",borderRadius:99}}>{t.trim()}</span>;})}
-            </div>
-            <p style={{color:C.black,marginTop:12,fontSize:13,fontWeight:500,lineHeight:1.5}}>{p.traits.join(" · ")}</p>
-          </div>
+          {(function(){
+            var PERSONA_IMAGES={"insight-guru":"https://www.gwi.com/hubfs/UX-Aduit-Imagery/Insight%20Guru.png"};
+            var img=PERSONA_IMAGES[p.id]||null;
+            return(
+              <div style={{background:col.bg,border:"1px solid "+col.border,borderRadius:16,padding:24,marginBottom:24,display:"flex",gap:24,alignItems:"flex-start"}}>
+                {img&&<img src={img} alt={p.label} style={{width:120,height:120,objectFit:"cover",borderRadius:12,flexShrink:0}}/>}
+                <div style={{flex:1}}>
+                  <h2 style={{color:C.black,fontSize:24,fontWeight:700,margin:0}}>{p.label}</h2>
+                  <p style={{color:C.black,marginTop:8,fontSize:18,fontWeight:600,lineHeight:1.3}}>{p.tagline}</p>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:16}}>
+                    {p.entry.split(",").map(function(t){return <span key={t} style={{background:col.tag.bg,color:col.tag.text,border:"1px solid "+col.border,fontSize:12,fontWeight:600,padding:"4px 10px",borderRadius:99}}>{t.trim()}</span>;})}
+                  </div>
+                  <p style={{color:C.black,marginTop:12,fontSize:13,fontWeight:500,lineHeight:1.5}}>{p.traits.join(" · ")}</p>
+                </div>
+              </div>
+            );
+          })()}
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:16}}>
             {cards.map(function(card){return(
               <div key={card.key} style={{gridColumn:card.span?"1 / -1":"auto",background:card.dark?C.black:C.white,border:"1px solid "+(card.dark?C.black:C.grey4),borderRadius:12,padding:16}}>
