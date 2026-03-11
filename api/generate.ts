@@ -9,32 +9,37 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'prompt is required' });
   }
 
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: 'API key not configured' });
   }
 
   const hasImages = Array.isArray(images) && images.length > 0;
-  const model = hasImages ? 'meta-llama/llama-4-scout-17b-16e-instruct' : 'llama-3.3-70b-versatile';
-  // llama-4-scout max output is 8192; llama-3.3-70b-versatile supports up to 32768
-  const modelMaxTokens = hasImages ? 8192 : 32768;
-  const effectiveMaxTokens = Math.min(max_tokens || 1000, modelMaxTokens);
+  const model = 'claude-3-5-sonnet-20241022';
+  const effectiveMaxTokens = Math.min(max_tokens || 1000, 8192);
+
+  // Build message content — Anthropic uses base64 source objects for images
   const messageContent = hasImages
     ? [
         { type: 'text', text: prompt },
-        ...images.map((img: { dataUrl: string }) => ({
-          type: 'image_url',
-          image_url: { url: img.dataUrl }
-        }))
+        ...images.map((img: { dataUrl: string }) => {
+          const [header, data] = img.dataUrl.split(',');
+          const mediaType = header.split(':')[1].split(';')[0]; // e.g. "image/jpeg"
+          return {
+            type: 'image',
+            source: { type: 'base64', media_type: mediaType, data }
+          };
+        })
       ]
     : prompt;
 
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
         model,
@@ -46,11 +51,11 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
-      return res.status(500).json({ error: data.error?.message || 'Groq API error' });
+      return res.status(500).json({ error: data.error?.message || 'Anthropic API error' });
     }
 
-    const text = data?.choices?.[0]?.message?.content ?? '';
-    // Return in Anthropic-compatible shape so the frontend needs no changes
+    // Response shape matches what the frontend already expects
+    const text = data?.content?.[0]?.text ?? '';
     return res.status(200).json({ content: [{ text }] });
   } catch (err) {
     return res.status(500).json({ error: 'Failed to contact AI service' });
