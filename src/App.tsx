@@ -1666,52 +1666,28 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
     var lifecycleCtx="";
     stages.forEach(function(s){lifecycleCtx+="- "+s.label+": Goal: "+s.gwi_goal+". Anxiety: "+s.anxiety+".\n";});
 
-    var p="You are a senior UX strategist producing a professional audit report for gwi.com.\n\n";
-    p+="ABSOLUTE RULE — NO GENERIC ADVICE: Every single sentence must be grounded in the data provided. Never write vague statements.\n";
-    p+="BAD (forbidden): 'Enhance scroll engagement — users are not engaging with page content.'\n";
-    p+="GOOD (required): 'Email sends 1,371 sessions but only 3.8% engage and avg time is 1.1s — subscribers expect content, not a product homepage. Fix: make a trending content strip the first visible section on landing. Target: Email engagement from 3.8% to 15%+.'\n\n";
+    var p="You are a UX strategist auditing "+pageLabel+" for gwi.com.\n\n";
 
-    if(hasGa4){p+="=== GA4 ANALYTICS DATA ===\n"+ga4Data.text+"\n=== END GA4 DATA ===\n\n";}
-    if(hasCsvFiles){p+="=== UPLOADED DATA FILES ===\n";csvFiles.forEach(function(f){p+="\nFile: "+f.name+"\n"+f.text.slice(0,5000)+(f.text.length>5000?"\n[truncated]":"")+"\n";});p+="=== END DATA FILES ===\n\n";}
-    if(hasHeatmaps){p+="=== HEATMAP IMAGES ATTACHED ===\nRed/orange = high engagement, blue/grey = low. For scroll heatmaps: identify the EXACT element where warm turns cold — that is the scroll cutoff. List every important element (CTAs, logos, testimonials, pricing) below it. For click heatmaps: name every click cluster and every interactive element with no clicks.\n=== END HEATMAP NOTES ===\n\n";}
+    if(hasGa4){p+="=== ANALYTICS DATA ===\n"+ga4Data.text+"\n=== END DATA ===\n\n";}
+    if(hasCsvFiles){p+="=== UPLOADED DATA ===\n";csvFiles.forEach(function(f){p+="File: "+f.name+"\n"+f.text.slice(0,3000)+(f.text.length>3000?"\n[truncated]":"")+"\n";});p+="=== END DATA ===\n\n";}
+    if(hasHeatmaps){p+="Heatmap images are attached. Red/orange = high engagement, blue/grey = low.\n\n";}
 
-    if(hasGa4||hasCsvFiles){
-      p+="PRE-ANALYSIS — COMPLETE THIS FIRST, BEFORE WRITING ANY SECTION:\n";
-      p+="Read the data above carefully and list your top 5 findings:\n";
-      p+="FINDING 1: [channel/metric name] — [exact number] — [what this means for UX]\n";
-      p+="FINDING 2: ...\nFINDING 3: ...\nFINDING 4: ...\nFINDING 5: ...\n";
-      p+="Each of these 5 findings MUST appear by name and number in the report sections below.\n\n";
-    }
+    p+="PERSONAS: "+personas.map(function(pe){return pe.label+" ("+pe.tagline+")";}).join("; ")+".\n\n";
 
-    p+="PAGE BEING AUDITED: "+pageLabel+"\n\n";
-    p+="PERSONAS:\n"+personaCtx+"\n";
-    p+="LIFECYCLE STAGES:\n"+lifecycleCtx+"\n";
-
-    p+="AUDIT DIMENSIONS — use these as the lens for your findings. Do NOT write a separate checklist section. Every issue you spot in these areas must become a FINDING below:\n";
-    p+="• First Impressions: value prop clarity in 5s, headline quality (benefit-led not feature-led), content hierarchy, readability, copy length (flag blocks over 60 words)\n";
-    p+="• Copy & CTAs: flag every generic CTA label ('Learn more', 'Click here', 'Submit', 'Find out more') and write a specific replacement in quotes. Check copy tone — is it outcome-led for the user or feature-led for GWI?\n";
-    p+="• Navigation & IA: menu label clarity, search visibility, wayfinding, consistency\n";
-    p+="• Visual design: white space, brand consistency, visual hierarchy, clutter\n";
-    p+="• Conversion: CTA visibility and quantity, form friction, distractions (popups, chat widgets, competing CTAs)\n";
-    p+="• Accessibility (WCAG 2.1 AA): colour contrast failures, missing alt text, keyboard nav, focus states, heading order, ARIA labels — name specific failing elements\n";
-    p+="• Performance: heavy images, render-blocking scripts, broken elements\n\n";
-
-    p+="PRODUCE ALL SECTIONS BELOW IN THIS EXACT ORDER — DO NOT SKIP ANY:\n\n";
-
-    p+="## Prioritised UX Findings\nP1 = quick win (1 sprint), P2 = medium term, P3 = strategic.\nYou MUST produce a MINIMUM of 15 findings and up to 20. Do not stop early.\nDraw findings from ALL context provided: data, heatmaps, personas, mobile, AND the audit dimensions above.\nAT LEAST 3 findings must be mobile-specific — prefix their title with [Mobile].\nAT LEAST 2 findings must address copy or CTA labels specifically — prefix with [Copy] or [CTA].\nAT LEAST 1 finding must address accessibility — prefix with [Accessibility].\nEvery finding must have a specific anchor — a metric, a named element, a heatmap observation, or an audit dimension item.\n\nFORMAT — every finding MUST use EXACTLY this structure, all 4 fields, no exceptions:\n\nFINDING: [number]. [Title] — [P1/P2/P3] — [Personas served]\nSHOWS: [Specific evidence — quantified metric, named element, or direct observation. Not directional language.]\nWHY: [Behavioural/intent diagnosis — what does this tell you about the user's goal and where the page fails to meet it?]\nCHANGE: [One specific, scoped recommendation. Name the exact element to change and what to change it to.]\nMETRIC: [Specific metric + current baseline + target. E.g. 'CTA click rate on hero: 1.2% → 4%+']\n\n";
-
-    p+="## Executive Summary\n2-3 paragraphs. Open with the core problem in one sentence. "+(hasHeatmaps?"Include the key heatmap observation. ":"")+"Close with the single most important fix.\n\n";
-
-    if(hasGa4||hasCsvFiles){p+="## Data Summary\nMarkdown table: Channel | Sessions | Eng. Rate | Avg. Eng. Time. Use exact numbers. Then 3-4 bullet observations, each opening with a specific metric.\n\n";}
-    if(hasHeatmaps){p+="## Heatmap Observations\n- **Scroll:** name the warm/cold cutoff element and list what falls below it\n- **Clicks:** name every click cluster and every CTA with no clicks\n- **Attention:** where eyes concentrate and where they drop\n\n";}
-
-    p+="## Persona-by-Persona Analysis\nFor EACH of the "+personas.length+" personas — 2 bullet friction points maximum, cite one metric each. Do not skip any persona.\n\n";
-
-    p+="## Mobile UX Analysis\n3-5 bullet points covering: traffic split, touch target issues (name elements), nav reachability, content hierarchy on small screen, load concerns.\n\n";
-
-    p+="## Measurement Framework\nTable: Metric | Current Baseline | Target Direction. Include every channel engagement rate from the data.\n\n";
-
-    p+="## Next Steps\n5 specific next steps by urgency. Name the responsible team for each.\n";
+    p+="Produce exactly 8 UX findings for this page. Output ONLY the findings — no intro, no summary, no other sections.\n\n";
+    p+="Use this EXACT format for every finding (all 4 fields required):\n\n";
+    p+="FINDING: 1. Title of finding\n";
+    p+="SHOWS: What the evidence or observation shows\n";
+    p+="WHY: Why this is a problem for users\n";
+    p+="CHANGE: The specific fix recommended\n";
+    p+="METRIC: Metric to track success\n\n";
+    p+="FINDING: 2. Next finding title\n";
+    p+="SHOWS: ...\n";
+    p+="WHY: ...\n";
+    p+="CHANGE: ...\n";
+    p+="METRIC: ...\n\n";
+    p+="...and so on up to FINDING: 8.\n\n";
+    p+="Start your response directly with FINDING: 1. — no preamble.";
 
     setAuditImages(images);
     setAuditPrompt(p);setGeneratedAuditText("");setShowUpgradeNotice(false);setShowModal(true);
