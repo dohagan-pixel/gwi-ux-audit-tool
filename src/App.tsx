@@ -1796,7 +1796,6 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
   var [stepDraft,setStepDraft]=useState({});
   var [showNewPersona,setShowNewPersona]=useState(false);
   var [newPersona,setNewPersona]=useState({label:"",tagline:"",entry:"",traits:"",who:"",what:"",drives:"",bugs:"",grabs:"",website:""});
-  var [gaCardDrafts,setGaCardDrafts]=useState({});
   var [gaCardSaved,setGaCardSaved]=useState({});
   var [showNewGaCard,setShowNewGaCard]=useState(false);
   var [newGaCard,setNewGaCard]=useState({iconKey:"BarChart2",title:"",desc:"",url:""});
@@ -1808,8 +1807,8 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
   var STAGE_FIELDS=[["GWI Goal","gwi_goal"],["How Might We","hmw"],["Website role note","signupNote"],["Push","push"],["Pull","pull"],["Habit","habit"],["Anxiety","anxiety"]];
   function Inp({val,onChange,multi,rows}){if(multi)return <textarea value={val||""} onChange={function(e){onChange(e.target.value);}} rows={rows||2} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,resize:"vertical",fontFamily:"inherit",boxSizing:"border-box"}}/>;return <input value={val||""} onChange={function(e){onChange(e.target.value);}} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>;}
   function saveNewPersona(){if(!newPersona.label)return;var id=newPersona.label.toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"");var traits=newPersona.traits.split(",").map(function(t){return t.trim();}).filter(Boolean);setPersonas(function(prev){return prev.concat([Object.assign({},newPersona,{id:id,traits:traits,colorIndex:personas.length%DEFAULT_PERSONA_COLORS.length})]);});setJourneys(function(prev){var n=Object.assign({},prev);n[id]=[];return n;});setNewPersona({label:"",tagline:"",entry:"",traits:"",who:"",what:"",drives:"",bugs:"",grabs:"",website:""});setShowNewPersona(false);}
-  function saveGaCard(id){var d=gaCardDrafts[id];if(!d||Object.keys(d).length===0)return;setGaCards(function(prev){return prev.map(function(c){if(c.id!==id)return c;var updated=Object.assign({},c);if(d.url!==undefined)updated.url=d.url;if(d.title!==undefined)updated.title=d.title;if(d.desc!==undefined)updated.desc=d.desc;return updated;});});setGaCardDrafts(function(x){var n=Object.assign({},x);delete n[id];return n;});setGaCardSaved(function(s){return Object.assign({},s,{[id]:true});});setTimeout(function(){setGaCardSaved(function(s){var n=Object.assign({},s);delete n[id];return n;});},1500);}
-  function deleteGaCard(id){setGaCards(function(prev){return prev.filter(function(c){return c.id!==id;});});setGaCardDrafts(function(x){var n=Object.assign({},x);delete n[id];return n;});}
+  function flashSaved(id){setGaCardSaved(function(s){return Object.assign({},s,{[id]:true});});setTimeout(function(){setGaCardSaved(function(s){var n=Object.assign({},s);delete n[id];return n;});},1500);}
+  function deleteGaCard(id){setGaCards(function(prev){return prev.filter(function(c){return c.id!==id;});});}
   function addGaCard(){if(!newGaCard.title||!newGaCard.url)return;setGaCards(function(prev){return prev.concat([Object.assign({},newGaCard,{id:"gc-"+Date.now()})]);});setNewGaCard({iconKey:"BarChart2",title:"",desc:"",url:""});setShowNewGaCard(false);}
   return(
     <PageWrap isMobile={isMobile}>
@@ -1971,18 +1970,14 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
           </div>
           <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,overflow:"hidden"}}>
             {(gaCards||[]).map(function(card,i,arr){
-              var draft=gaCardDrafts[card.id]||{};
-              var isDirty=!!gaCardDrafts[card.id];
               var isSaved=gaCardSaved[card.id];
-              var urlVal=draft.url!==undefined?draft.url:card.url;
-              var titleVal=draft.title!==undefined?draft.title:card.title;
               return(
                 <div key={card.id} style={{display:"flex",alignItems:"center",gap:8,padding:"12px 16px",borderBottom:i<arr.length-1?"1px solid "+C.grey3:"none",flexWrap:isMobile?"wrap":"nowrap"}}>
                   <div style={{flexShrink:0,width:isMobile?"100%":180}}>
-                    <input value={titleVal} onChange={function(e){var v=e.target.value;setGaCardDrafts(function(d){return Object.assign({},d,{[card.id]:Object.assign({},d[card.id]||{},{ title:v})});});}} style={{width:"100%",padding:"6px 8px",border:"1px solid "+(isDirty?C.pink:C.grey4),borderRadius:6,fontSize:13,fontWeight:600,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>
+                    <input value={card.title||""} onChange={function(e){var v=e.target.value;setGaCards(function(prev){return prev.map(function(c){return c.id===card.id?Object.assign({},c,{title:v}):c;});});}} style={{width:"100%",padding:"6px 8px",border:"1px solid "+C.grey4,borderRadius:6,fontSize:13,fontWeight:600,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>
                   </div>
-                  <input value={urlVal} onChange={function(e){var v=e.target.value;setGaCardDrafts(function(d){return Object.assign({},d,{[card.id]:Object.assign({},d[card.id]||{},{url:v})});});}} placeholder="https://analytics.google.com/..." style={{flex:1,width:isMobile?"100%":"auto",padding:"7px 10px",border:"1px solid "+(isDirty?C.pink:C.grey4),borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box",outline:"none"}}/>
-                  <button onClick={function(){saveGaCard(card.id);}} title="Save" style={{flexShrink:0,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:isSaved?"#E6F9F2":isDirty?C.pink:C.grey3,color:isSaved?"#00A86B":isDirty?C.white:C.grey6,border:isSaved?"1px solid #A3E6C8":"none",borderRadius:8,cursor:isDirty?"pointer":"default",transition:"all 0.2s"}}><Check size={14}/></button>
+                  <input value={card.url||""} onChange={function(e){var v=e.target.value;setGaCards(function(prev){return prev.map(function(c){return c.id===card.id?Object.assign({},c,{url:v}):c;});});}} placeholder="https://analytics.google.com/..." style={{flex:1,width:isMobile?"100%":"auto",padding:"7px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box",outline:"none"}}/>
+                  <button onClick={function(){flashSaved(card.id);}} title="Save" style={{flexShrink:0,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:isSaved?"#E6F9F2":C.grey3,color:isSaved?"#00A86B":C.grey6,border:isSaved?"1px solid #A3E6C8":"none",borderRadius:8,cursor:"pointer",transition:"all 0.2s"}}><Check size={14}/></button>
                   <button onClick={function(){deleteGaCard(card.id);}} title="Delete" style={{flexShrink:0,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:"#FFF0F0",color:"#CC0000",border:"1px solid #FFAAAA",borderRadius:8,cursor:"pointer"}}><Trash2 size={14}/></button>
                 </div>
               );
