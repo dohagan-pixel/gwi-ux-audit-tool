@@ -1338,9 +1338,34 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
     if(hasFetched.current)return;
     hasFetched.current=true;
     var hasImages=images&&images.length>0;
-    fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:32000,images:hasImages?images.map(function(i){return{dataUrl:i.dataUrl,mimeType:i.mimeType};}):undefined})})
-      .then(function(r){return r.text().then(function(raw){try{return JSON.parse(raw);}catch(e){return{error:"Server error (not JSON): "+raw.slice(0,300)};}});})
-      .then(function(data){if(data.error){setErrorMsg(data.error);setStatus("error");return;}var text=data.content&&data.content[0]?data.content[0].text:"";if(!text){setErrorMsg("No content returned from API.");setStatus("error");return;}onDone(text);setStatus("done");})
+    fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:8192,images:hasImages?images.map(function(i){return{dataUrl:i.dataUrl,mimeType:i.mimeType};}):undefined})})
+      .then(function(r){
+        var ct=r.headers.get("content-type")||"";
+        if(!ct.includes("text/event-stream")){
+          return r.text().then(function(raw){try{var d=JSON.parse(raw);setErrorMsg(d.error||"Unknown error");}catch(e){setErrorMsg("Server error: "+raw.slice(0,300));}setStatus("error");});
+        }
+        var reader=r.body.getReader();
+        var decoder=new TextDecoder();
+        var fullText="";
+        var buf="";
+        var finished=false;
+        function finish(text){if(finished)return;finished=true;if(text){onDone(text);setStatus("done");}else{setErrorMsg("No content returned from API.");setStatus("error");}}
+        function pump(){
+          reader.read().then(function(result){
+            if(result.done){finish(fullText);return;}
+            buf+=decoder.decode(result.value,{stream:true});
+            var lines=buf.split("\n");buf=lines.pop()||"";
+            lines.forEach(function(line){
+              if(!line.startsWith("data: "))return;
+              var data=line.slice(6).trim();
+              if(data==="[DONE]"){finish(fullText);return;}
+              try{var parsed=JSON.parse(data);if(parsed.error){setErrorMsg(parsed.error);setStatus("error");finished=true;return;}if(parsed.t)fullText+=parsed.t;}catch(e){}
+            });
+            if(!finished)pump();
+          }).catch(function(err){setErrorMsg(err&&err.message?err.message:"Stream read error");setStatus("error");});
+        }
+        pump();
+      })
       .catch(function(err){setErrorMsg(err&&err.message?err.message:"Network error — check your connection.");setStatus("error");});
   },[]);
   return(
