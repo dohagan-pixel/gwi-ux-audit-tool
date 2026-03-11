@@ -2289,37 +2289,75 @@ function ConfirmResetScreen({oobCode}:{oobCode:string}){
     </div>
   );
 }
-function WireframesPage({wireframes,setWireframes,onDeleteWireframe}){
+function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWireframe}){
   var [activeId,setActiveId]=useState(wireframes.length>0?wireframes[wireframes.length-1].id:null);
+  var [editing,setEditing]=useState(false);
+  var [editLabel,setEditLabel]=useState("");
   var isMobile=useWidth()<768;
   var active=wireframes.find(function(w){return w.id===activeId;});
+  var starredWireframes=wireframes.filter(function(w){return w.starred;});
+  var unstarredWireframes=wireframes.filter(function(w){return !w.starred;}).slice().reverse();
   function deleteActive(){var rem=wireframes.filter(function(w){return w.id!==activeId;});setWireframes(rem);if(onDeleteWireframe)onDeleteWireframe(activeId);setActiveId(rem.length>0?rem[rem.length-1].id:null);}
   function download(){if(!active)return;var blob=new Blob([active.html],{type:"text/html"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(active.pageLabel||"wireframe").replace(/\s+/g,"-").toLowerCase()+"-wireframe.html";a.click();}
+  function toggleStar(){if(!active)return;var updated=Object.assign({},active,{starred:!active.starred});setWireframes(function(prev){return prev.map(function(w){return w.id===activeId?updated:w;});});if(onUpdateWireframe)onUpdateWireframe(updated);}
+  function openEdit(){setEditLabel(active?active.pageLabel:"");setEditing(true);}
+  function saveEdit(){if(!active)return;var updated=Object.assign({},active,{pageLabel:editLabel.trim()||active.pageLabel});setWireframes(function(prev){return prev.map(function(w){return w.id===activeId?updated:w;});});if(onUpdateWireframe)onUpdateWireframe(updated);setEditing(false);}
   if(wireframes.length===0){return(<div style={{background:C.grey2,height:"100%",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center",padding:32}}><div style={{marginBottom:16,color:C.grey6,display:"flex",justifyContent:"center"}}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></div><h2 style={{fontSize:20,fontWeight:800,color:C.black,marginBottom:8}}>No saved wireframes yet</h2><p style={{fontSize:14,color:C.grey7,marginBottom:4}}>Generate a wireframe from the Actions page, then click Save Wireframe.</p></div></div>);}
   return(
     <div style={{display:"flex",flexDirection:isMobile?"column":"row",flex:1,minHeight:0,background:C.grey2}}>
       <div style={{width:isMobile?"100%":220,background:C.white,borderRight:"1px solid "+C.grey4,flexShrink:0,display:"flex",flexDirection:"column",overflow:"auto"}}>
         <div style={{padding:"14px 16px",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",borderBottom:"1px solid "+C.grey4}}>Saved Wireframes</div>
-        {wireframes.slice().reverse().map(function(w){var isActive=w.id===activeId;return(
+        {unstarredWireframes.map(function(w){var isActive=w.id===activeId;return(
           <div key={w.id} style={{borderBottom:"1px solid "+C.grey3,background:isActive?C.grey3:"transparent"}}>
-            <button onClick={function(){setActiveId(w.id);}} style={{textAlign:"left",padding:"12px 16px",borderLeft:"4px solid "+(isActive?C.pink:"transparent"),background:"transparent",color:isActive?C.black:C.grey8,border:"none",cursor:"pointer",width:"100%"}}>
+            <button onClick={function(){setActiveId(w.id);setEditing(false);}} style={{textAlign:"left",padding:"12px 16px",borderLeft:"4px solid "+(isActive?C.pink:"transparent"),background:"transparent",color:isActive?C.black:C.grey8,border:"none",cursor:"pointer",width:"100%"}}>
               <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>{w.pageLabel}</div>
               <div style={{fontSize:11,color:C.grey6}}>{w.date}</div>
             </button>
           </div>
         );})}
+        {starredWireframes.length>0&&(<>
+          <div style={{padding:"14px 16px",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",borderTop:"2px solid "+C.grey4,borderBottom:"1px solid "+C.grey4,display:"flex",alignItems:"center",gap:6}}>
+            <Star size={11} fill="#FFC107" color="#FFC107"/><span>Starred</span>
+          </div>
+          {starredWireframes.map(function(w){var isActive=w.id===activeId;return(
+            <div key={"star-"+w.id} style={{borderBottom:"1px solid "+C.grey3,background:isActive?C.grey3:"transparent"}}>
+              <button onClick={function(){setActiveId(w.id);setEditing(false);}} style={{textAlign:"left",padding:"12px 16px",borderLeft:"4px solid "+(isActive?"#FFC107":"transparent"),background:"transparent",color:isActive?C.black:C.grey8,border:"none",cursor:"pointer",width:"100%"}}>
+                <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>{w.pageLabel}</div>
+                <div style={{fontSize:11,color:C.grey6}}>{w.date}</div>
+              </button>
+            </div>
+          );})}
+        </>)}
       </div>
       {active&&(
         <div style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
-          <div style={{background:C.black,padding:"0 20px",height:48,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-            <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.grey5} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-              <span style={{color:C.white,fontSize:13,fontWeight:700}}>{active.pageLabel}</span>
-              <span style={{color:C.grey6,fontSize:12}}>{active.date}</span>
-            </div>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={download} style={{background:"rgba(255,255,255,0.1)",color:C.white,border:"none",borderRadius:8,padding:"5px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Download HTML</button>
-              <button onClick={deleteActive} style={{background:"rgba(255,100,100,0.15)",color:"#FF9999",border:"none",borderRadius:8,padding:"5px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Delete</button>
+          <div style={{background:C.black,padding:"20px 28px",flexShrink:0}}>
+            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Saved Wireframe</div>
+                {editing?(
+                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                    <input value={editLabel} onChange={function(e){setEditLabel(e.target.value);}} placeholder="Wireframe name" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 12px",fontSize:16,fontWeight:700,color:C.white,outline:"none",width:"100%",boxSizing:"border-box" as const}}/>
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={saveEdit} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Save</button>
+                      <button onClick={function(){setEditing(false);}} style={{background:"rgba(255,255,255,0.1)",color:C.grey4,border:"none",borderRadius:8,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+                    </div>
+                  </div>
+                ):(
+                  <>
+                    <h2 style={{color:C.white,fontSize:22,fontWeight:800,margin:"0 0 4px"}}>{active.pageLabel}</h2>
+                    <p style={{color:C.grey6,fontSize:13,margin:0}}>{active.date} · wireframe</p>
+                  </>
+                )}
+              </div>
+              {!editing&&(
+                <div style={{display:"flex",gap:8,flexShrink:0,paddingTop:2}}>
+                  <button onClick={toggleStar} title={active.starred?"Remove from starred":"Add to starred"} style={{background:active.starred?"rgba(255,193,7,0.15)":"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:active.starred?"#FFC107":C.grey4}}><Star size={15} fill={active.starred?"#FFC107":"none"}/></button>
+                  <button onClick={openEdit} title="Rename" style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.grey4}}><Pencil size={15}/></button>
+                  <button onClick={download} title="Download HTML" style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.grey4}}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+                  <button onClick={deleteActive} title="Delete wireframe" style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#FF6B6B"}}><Trash2 size={15}/></button>
+                </div>
+              )}
             </div>
           </div>
           <iframe srcDoc={active.html} title="Wireframe" style={{flex:1,border:"none",background:"#fff"}} sandbox="allow-same-origin"/>
@@ -2395,7 +2433,7 @@ export default function App(){
         {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit).catch(function(){});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
         {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id)).catch(function(){});}} onUpdateAudit={function(updated){if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",updated.id),updated).catch(function(){});}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
         {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards}/>}
-        {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}}/>}
+        {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}}/>}
       </div>
       {showAddAction&&<AddActionModal auditData={auditData} setAuditData={setAuditData} pages={pages} onClose={function(){setShowAddAction(false);}}/>}
     </div>
