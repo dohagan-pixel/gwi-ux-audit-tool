@@ -2229,7 +2229,7 @@ export default function App(){
       {isMobile?(
         <MobileNav view={view} setView={setView}/>
       ):(
-        <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,padding:"0 20px",height:52,display:"flex",alignItems:"center",gap:4,position:"fixed",top:0,left:0,right:0,width:"100%",zIndex:100}}>
+        <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,padding:"0 20px",height:52,display:"flex",alignItems:"center",gap:4,position:"fixed",top:0,left:0,right:0,zIndex:100,boxSizing:"border-box"}}>
           <div style={{fontWeight:800,fontSize:15,color:C.white,marginRight:4,letterSpacing:"-0.02em",cursor:"pointer",flexShrink:0}} onClick={function(){setView("dashboard");}}>GWI UX</div>
           <button onClick={function(){setView("dashboard");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="dashboard"?C.pink:"transparent",color:view==="dashboard"?C.white:C.grey7,flexShrink:0}}>Dashboard</button>
           <button onClick={function(){setView("summary");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:(view==="summary"||view==="generated-audits")?C.pink:"transparent",color:(view==="summary"||view==="generated-audits")?C.white:C.grey7,flexShrink:0}}>UX Audit</button>
