@@ -1041,6 +1041,7 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
   var [generating,setGenerating]=useState({});
   var [whyPage,setWhyPage]=useState(null);
   var [wireframePage,setWireframePage]=useState(null);
+  var [personasOpen,setPersonasOpen]=useState({});
   var isMobile=useWidth()<768;
   var prevOpen=useRef(null);
   var pageDrag=useDragList(auditData,setAuditData);
@@ -1125,11 +1126,16 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
                       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
                         <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em"}}>Issue</div>
                         {page.issue&&!generating[page.id]&&<button onClick={function(){regenerate(page);}} title="Regenerate" style={{background:"transparent",border:"none",padding:0,cursor:"pointer",display:"flex",alignItems:"center",color:C.grey7,lineHeight:1}} onMouseEnter={function(e){e.currentTarget.style.color=C.pink;}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey7;}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>}
+                        {page.personas&&page.personas.length>0&&<button onClick={function(){setPersonasOpen(function(prev){var n=Object.assign({},prev);n[page.id]=!prev[page.id];return n;});}} title="View personas" style={{background:"transparent",border:"none",padding:0,cursor:"pointer",display:"flex",alignItems:"center",color:personasOpen[page.id]?C.pink:C.grey7,lineHeight:1}} onMouseEnter={function(e){e.currentTarget.style.color=C.pink;}} onMouseLeave={function(e){e.currentTarget.style.color=personasOpen[page.id]?C.pink:C.grey7;}}><Users size={11}/></button>}
                       </div>
+                      {personasOpen[page.id]&&page.personas&&page.personas.length>0&&(
+                        <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>
+                          {page.personas.map(function(pid){var p=personas.find(function(x){return x.id===pid;});if(!p)return null;var col=getPersonaColor(p);return <span key={pid} style={{background:col.bg,color:col.text,border:"1px solid "+col.border,fontSize:11,fontWeight:600,padding:"2px 10px",borderRadius:99}}>{p.label}</span>;})}
+                        </div>
+                      )}
                       {generating[page.id]?<p style={{fontSize:13,color:C.grey6,lineHeight:1.6,margin:0,fontStyle:"italic"}}>Generating diagnosis...</p>:page.issue?<p style={{fontSize:13,color:C.offBlack,lineHeight:1.6,margin:0}}>{page.issue}</p>:<p style={{fontSize:13,color:C.grey6,lineHeight:1.6,margin:0,fontStyle:"italic"}}>{page.actions.length===0?"Add actions to generate a diagnosis.":"Generating..."}</p>}
-                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginTop:8}}>
-                        <div>{page.personas&&page.personas.length>0&&<PersonaToggle personaIds={page.personas} personas={personas}/>}</div>
-                        <button onClick={function(){setWireframePage(page);}} style={{background:C.white,color:C.pink,border:"1px solid "+C.pink,borderRadius:6,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Generate Wireframe</button>
+                      <div style={{marginTop:8}}>
+                        <button onClick={function(){setWireframePage(page);}} style={{background:C.black,color:C.white,border:"none",borderRadius:6,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:5,transition:"background 0.15s"}} onMouseEnter={function(e){e.currentTarget.style.background=C.pink;}} onMouseLeave={function(e){e.currentTarget.style.background=C.black;}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Generate Wireframe</button>
                       </div>
                     </div>
                     <ActionList pageId={page.id} actions={page.actions} reorderActions={reorderActions} openAction={openAction} setOpenAction={setOpenAction} statusCfg={statusCfg} setActionStatus={setActionStatus} updateAction={updateAction} deleteAction={deleteAction} calcDelta={calcDelta} isMobile={isMobile}/>
