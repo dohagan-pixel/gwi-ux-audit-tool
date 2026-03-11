@@ -1300,7 +1300,7 @@ function WireframeModal({page,personas,onClose,onSave}){
     hasFetched.current=true;
     var actionLines=page.actions.map(function(a,i){return(i+1)+". "+a.text+(a.description?" — "+a.description:"");}).join("\n");
     var personaNames=personas.map(function(p){return p.label+" ("+p.tagline+")";}).join(", ");
-    var prompt="You are a UX wireframe designer. Create a low-fidelity HTML wireframe for the gwi.com "+page.label+" page ("+page.url+").\n\nThis wireframe shows the IMPROVED version of the page incorporating these UX recommendations:\n"+actionLines+"\n\nPersonas this page serves: "+personaNames+".\n\nWireframe rules:\n- Use ONLY grey tones: backgrounds #f5f5f5 and #e8e8e8, borders #d0d0d0, text #666 and #333\n- Use Arial/sans-serif fonts only\n- Replace all images with labelled grey rectangles using inline styles\n- Include realistic section structure but use short [PLACEHOLDER] text\n- Add a small comment label in the top-left of each section (e.g. '// HERO', '// SOCIAL PROOF', '// FEATURES GRID')\n- For each section that addresses one of the recommendations, add a small badge in the top-right corner with the recommendation number and a #FF0077 pink background, white text, 10px font, pill shape\n- Full self-contained HTML page with all CSS inline or in a <style> tag\n- Max content width 1200px, centred\n- Desktop layout\n- No JavaScript\n\nOutput ONLY the raw HTML — no explanation, no markdown fences, nothing else.";
+    var prompt="You are a UX wireframe designer creating Figma-ready SVG wireframes.\n\nCreate a low-fidelity SVG wireframe for the gwi.com "+page.label+" page ("+page.url+").\n\nThis wireframe shows the IMPROVED version incorporating these UX recommendations:\n"+actionLines+"\n\nPersonas this page serves: "+personaNames+".\n\nSVG RULES — follow exactly:\n1. Root element: <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1280\" viewBox=\"0 0 1280 [TOTAL_HEIGHT]\" font-family=\"Arial, sans-serif\">\n2. Wrap each section in <g id=\"[section-id]\"> — these become named layers when imported into Figma\n3. Use ONLY these tones: fill=\"#f5f5f5\" (page bg), fill=\"#ffffff\" (white sections), fill=\"#e8e8e8\" (cards/placeholders), fill=\"#d0d0d0\" (borders), fill=\"#999999\" (secondary text), fill=\"#666666\" (body text), fill=\"#333333\" (headings), fill=\"#111111\" (nav/footer bg)\n4. Section label: top-left of each section, <text fill=\"#bbbbbb\" font-size=\"10\" font-weight=\"600\">// SECTION NAME</text>\n5. Image placeholders: <rect fill=\"#e8e8e8\" rx=\"4\"/> with a centered <text fill=\"#999999\" font-size=\"12\">[IMAGE LABEL]</text>\n6. All text copy uses [PLACEHOLDER] format — no real copy\n7. For sections addressing a recommendation, add a pink badge near the section label: <rect fill=\"#FF0077\" rx=\"10\" height=\"20\"/> with <text fill=\"#ffffff\" font-size=\"9\" font-weight=\"700\">Rec #N</text>\n8. Buttons: <rect fill=\"#111111\" rx=\"20\"/> with <text fill=\"#ffffff\" font-size=\"13\">[BUTTON LABEL]</text>\n9. Dividers and borders use stroke=\"#d0d0d0\" stroke-width=\"1\"\n10. Build sections top-to-bottom. Typical heights: Nav 64px, Hero 460px, Metrics strip 100px, Features 420px, Data preview 380px, Social proof 320px, CTA 220px, Footer 180px — adjust as needed\n11. NO <style> blocks, NO CSS classes, NO JavaScript — inline SVG attributes only\n12. Calculate total height from all sections combined and use it in viewBox\n\nOutput ONLY the raw SVG element starting with <svg — no XML declaration, no explanation, no markdown fences.";
     fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:8192})})
       .then(function(r){
         var ct=r.headers.get("content-type")||"";
@@ -1312,7 +1312,7 @@ function WireframeModal({page,personas,onClose,onSave}){
       })
       .catch(function(err){setErrorMsg(err&&err.message?err.message:"Network error");setStatus("error");});
   },[]);
-  function downloadHtml(){var blob=new Blob([html],{type:"text/html"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(page.label||"wireframe").replace(/\s+/g,"-").toLowerCase()+"-wireframe.html";a.click();}
+  function downloadSvg(){var blob=new Blob([html],{type:"image/svg+xml"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(page.label||"wireframe").replace(/\s+/g,"-").toLowerCase()+"-wireframe.svg";a.click();}
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:2000,display:"flex",flexDirection:"column"}}>
       <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,padding:"0 20px",height:52,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
@@ -1322,7 +1322,7 @@ function WireframeModal({page,personas,onClose,onSave}){
           {status==="done"&&<span style={{color:C.grey6,fontSize:12}}>· {page.actions.length} recommendations applied</span>}
         </div>
         <div style={{display:"flex",gap:8}}>
-          {status==="done"&&<button onClick={downloadHtml} style={{background:"rgba(255,255,255,0.1)",color:C.white,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Download HTML</button>}
+          {status==="done"&&<button onClick={downloadSvg} style={{background:"rgba(255,255,255,0.1)",color:C.white,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Download SVG</button>}
           {status==="done"&&<button onClick={function(){if(!saved&&onSave){onSave({id:"wf-"+Date.now(),pageLabel:page.label,pageUrl:page.url,date:new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}),html:html});setSaved(true);}}} style={{background:saved?"rgba(34,197,94,0.2)":C.pink,color:saved?"#22C55E":C.white,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:saved?"default":"pointer"}}>{saved?"Saved ✓":"Save Wireframe"}</button>}
           <button onClick={onClose} style={{background:"rgba(255,255,255,0.1)",color:C.grey4,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Close</button>
         </div>
@@ -1338,7 +1338,7 @@ function WireframeModal({page,personas,onClose,onSave}){
           </div>
         </div>
       )}
-      {status==="done"&&<iframe srcDoc={html} title="Wireframe" style={{flex:1,border:"none",background:"#fff"}} sandbox="allow-same-origin"/>}
+      {status==="done"&&<iframe srcDoc={"<html><body style='margin:0;padding:32px;background:#e0e0e0;min-height:100vh'>"+html+"</body></html>"} title="Wireframe" style={{flex:1,border:"none",background:"#e0e0e0"}} sandbox="allow-same-origin"/>}
       {status==="error"&&(
         <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <div style={{textAlign:"center",maxWidth:400,padding:32}}>
@@ -2298,7 +2298,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   var starredWireframes=wireframes.filter(function(w){return w.starred;});
   var unstarredWireframes=wireframes.filter(function(w){return !w.starred;}).slice().reverse();
   function deleteActive(){var rem=wireframes.filter(function(w){return w.id!==activeId;});setWireframes(rem);if(onDeleteWireframe)onDeleteWireframe(activeId);setActiveId(rem.length>0?rem[rem.length-1].id:null);}
-  function download(){if(!active)return;var blob=new Blob([active.html],{type:"text/html"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(active.pageLabel||"wireframe").replace(/\s+/g,"-").toLowerCase()+"-wireframe.html";a.click();}
+  function download(){if(!active)return;var blob=new Blob([active.html],{type:"image/svg+xml"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(active.pageLabel||"wireframe").replace(/\s+/g,"-").toLowerCase()+"-wireframe.svg";a.click();}
   function toggleStar(){if(!active)return;var updated=Object.assign({},active,{starred:!active.starred});setWireframes(function(prev){return prev.map(function(w){return w.id===activeId?updated:w;});});if(onUpdateWireframe)onUpdateWireframe(updated);}
   function openEdit(){setEditLabel(active?active.pageLabel:"");setEditing(true);}
   function saveEdit(){if(!active)return;var updated=Object.assign({},active,{pageLabel:editLabel.trim()||active.pageLabel});setWireframes(function(prev){return prev.map(function(w){return w.id===activeId?updated:w;});});if(onUpdateWireframe)onUpdateWireframe(updated);setEditing(false);}
@@ -2363,7 +2363,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
             </div>
           </div>
           <div style={{flex:1,padding:isMobile?"16px":"24px 28px 28px",minHeight:0,display:"flex",flexDirection:"column"}}>
-            <iframe srcDoc={active.html} title="Wireframe" style={{flex:1,border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}} sandbox="allow-same-origin"/>
+            <iframe srcDoc={"<html><body style='margin:0;padding:32px;background:#e0e0e0;min-height:100vh'>"+active.html+"</body></html>"} title="Wireframe" style={{flex:1,border:"none",borderRadius:12,background:"#e0e0e0",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}} sandbox="allow-same-origin"/>
           </div>
         </div>
       )}
