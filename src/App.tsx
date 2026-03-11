@@ -1805,7 +1805,7 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
     <PageWrap isMobile={isMobile}>
       <BlackHero eyebrow="GWI Website - UX" title="Settings" desc="The quality of every audit depends on the data behind it."/>
       <div style={{display:"flex",gap:4,marginBottom:28,background:C.grey4,borderRadius:10,padding:4,width:isMobile?"100%":"fit-content",overflowX:"auto"}}>
-        {[["pages","Pages"],["personas","Personas"],["stages","Lifecycle Stages"],["journeys","Journey Steps"]].map(function(x){return(
+        {[["pages","Pages"],["personas","Personas"],["stages","Lifecycle Stages"],["journeys","Journey Steps"],["ga","Google Analytics"]].map(function(x){return(
           <button key={x[0]} onClick={function(){setTab(x[0]);}} style={{padding:"8px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:tab===x[0]?C.pink:"transparent",color:tab===x[0]?C.white:C.grey7,flexShrink:0,whiteSpace:"nowrap"}}>{x[1]}</button>
         );})}
       </div>
@@ -1932,6 +1932,36 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
                     <button onClick={function(){setJourneys(function(prev){var n=Object.assign({},prev);n[p.id]=[...(prev[p.id]||[]),{stage:stages[0]?stages[0].label:"Awareness",pages:[],note:""}];return n;});}} style={{background:C.grey3,color:C.grey8,border:"1px solid "+C.grey5,borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",marginTop:4}}>Add Step</button>
                   </div>
                 )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {tab==="ga"&&(
+        <div>
+          <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"14px 20px",marginBottom:20,display:"flex",alignItems:"flex-start",gap:12}}>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,color:C.black,fontSize:14,marginBottom:4}}>Google Analytics URLs</div>
+              <div style={{color:C.grey7,fontSize:13}}>Paste the GA4 dashboard or report URL for each page. These will appear as quick-links inside each page audit card.</div>
+            </div>
+          </div>
+          {sections.map(function(section){
+            var sectionPages=pages.filter(function(p){return p.section===section;});
+            if(!sectionPages.length)return null;
+            return(
+              <div key={section} style={{marginBottom:20}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>{section}</div>
+                <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,overflow:"hidden"}}>
+                  {sectionPages.map(function(page,i,arr){return(
+                    <div key={page.url} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderBottom:i<arr.length-1?"1px solid "+C.grey3:"none",flexWrap:isMobile?"wrap":"nowrap"}}>
+                      <div style={{flexShrink:0,width:isMobile?"100%":220}}>
+                        <div style={{fontWeight:600,color:C.offBlack,fontSize:13}}>{page.label}</div>
+                        <div style={{fontFamily:"monospace",color:C.grey6,fontSize:11,marginTop:2}}>{page.url.replace("https://gwi.ai","gwi.ai").replace("https://trust.gwi.com","trust.gwi.com")}</div>
+                      </div>
+                      <input value={page.gaUrl||""} onChange={function(e){var v=e.target.value;setPages(function(prev){return prev.map(function(p){return p.url===page.url?Object.assign({},p,{gaUrl:v}):p;});});}} placeholder="https://analytics.google.com/analytics/web/..." style={{flex:1,width:isMobile?"100%":"auto",padding:"7px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>
+                    </div>
+                  );})}
+                </div>
               </div>
             );
           })}
