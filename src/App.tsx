@@ -264,6 +264,33 @@ function Dropdown({label,items,activeView,setView,onLabelClick,forceActive}){
   );
 }
 
+function UserMenu({user,onSignOut,onSettings,activeView}){
+  var [open,setOpen]=useState(false);
+  var ref=useRef(null);
+  useEffect(function(){function h(e){if(ref.current&&!(ref.current as any).contains(e.target))setOpen(false);}document.addEventListener("mousedown",h);return function(){document.removeEventListener("mousedown",h);};},[]);
+  var initials=(user.email||"?").slice(0,2).toUpperCase();
+  var _item={display:"block" as const,width:"100%",textAlign:"left" as const,padding:"10px 16px",fontSize:13,fontWeight:600,background:"transparent",border:"none",cursor:"pointer",color:C.grey8};
+  return(
+    <div ref={ref} style={{position:"relative"}}>
+      <button onClick={function(){setOpen(!open);}} style={{display:"flex",alignItems:"center",justifyContent:"center",width:30,height:30,borderRadius:"50%",overflow:"hidden",border:"2px solid "+(open||activeView==="settings"?C.pink:C.offBlack),background:C.offBlack,cursor:"pointer",padding:0,flexShrink:0}}>
+        {user.photoURL?<img src={user.photoURL} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:11,fontWeight:700,color:C.white,lineHeight:1}}>{initials}</span>}
+      </button>
+      {open&&(
+        <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:C.white,border:"1px solid "+C.grey4,borderRadius:10,boxShadow:"0 8px 24px rgba(0,0,0,0.1)",zIndex:200,minWidth:200,overflow:"hidden",whiteSpace:"nowrap"}}>
+          <div style={{padding:"10px 16px 8px",fontSize:12,color:C.grey6,borderBottom:"1px solid "+C.grey3}}>{user.email}</div>
+          <button style={_item} onClick={function(){onSettings();setOpen(false);}}
+            onMouseEnter={function(e){e.currentTarget.style.background=C.grey3;}}
+            onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>Settings</button>
+          <div style={{height:1,background:C.grey3,margin:"4px 0"}}/>
+          <button style={{..._item,color:C.grey8}} onClick={function(){onSignOut();setOpen(false);}}
+            onMouseEnter={function(e){e.currentTarget.style.background=C.grey3;}}
+            onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>Sign out</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Arrow({label,isHighlight,isActive,onClick,wide,first}){
   var bg=isActive?C.pink:isHighlight?C.white:C.offBlack;
   var text=isActive?C.white:isHighlight?C.pink:C.white;
@@ -2217,8 +2244,7 @@ export default function App(){
           <Dropdown label="Mapping" items={MAPPING_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("mapping");}} forceActive={view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"}/>
           <button onClick={function(){setView("analytics");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="analytics"?C.pink:"transparent",color:view==="analytics"?C.white:C.grey7,flexShrink:0}}>Analytics</button>
           <div style={{flex:1}}/>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginRight:8}}>{_user.photoURL&&<img src={_user.photoURL} alt="" style={{width:26,height:26,borderRadius:"50%"}}/>}<button onClick={function(){fbSignOut(_auth);}} style={{background:"transparent",border:"1px solid #444",borderRadius:6,color:"#aaa",padding:"4px 10px",fontSize:12,cursor:"pointer"}}>Sign out</button></div>
-          <button onClick={function(){setView("settings");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="settings"?C.pink:"transparent",color:view==="settings"?C.white:C.grey7,flexShrink:0}}>Settings</button>
+          <UserMenu user={_user} onSignOut={function(){fbSignOut(_auth);}} onSettings={function(){setView("settings");}} activeView={view}/>
         </div>
       )}
       <div style={{flex:1,overflow:"hidden"}}>
