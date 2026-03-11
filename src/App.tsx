@@ -2067,8 +2067,10 @@ function LoginScreen({onLogin,onRegister,onGoogleLogin,loginError}){
   var [_isReg,_setIsReg]=useState(false);
   var [_forgotMode,_setForgotMode]=useState(false);
   var [_resetMsg,_setResetMsg]=useState('');
-  var _inputStyle={padding:"10px 14px",background:"#1a1a1a",border:"1px solid #333",borderRadius:8,color:"#fff",fontSize:14,outline:"none",boxSizing:"border-box" as const,width:"100%"};
-  var _btnStyle={background:"#fff",color:"#000",border:"none",borderRadius:8,padding:"11px 0",fontSize:14,fontWeight:600,cursor:"pointer",marginTop:4};
+  var _inputStyle={padding:"10px 14px",background:C.white,border:"1px solid "+C.grey5,borderRadius:8,color:C.black,fontSize:14,outline:"none",boxSizing:"border-box" as const,width:"100%",fontFamily:"inherit"};
+  var _primaryBtn={background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"11px 0",fontSize:14,fontWeight:700,cursor:"pointer",marginTop:4,width:"100%",letterSpacing:"0.01em"};
+  var _wrap={display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center",minHeight:"100vh",background:C.grey2,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"};
+  var _card={background:C.white,borderRadius:16,boxShadow:"0 4px 24px rgba(16,23,32,0.10)",padding:"40px 36px",maxWidth:380,width:"100%",boxSizing:"border-box" as const};
   function _submit(e){e.preventDefault();_isReg?onRegister(_em,_pw):onLogin(_em,_pw);}
   function _handleReset(e){
     e.preventDefault();
@@ -2079,42 +2081,51 @@ function LoginScreen({onLogin,onRegister,onGoogleLogin,loginError}){
       .catch(function(err:any){_setResetMsg('Error: '+(err.code||err.message||'unknown'));});
   }
   if(_forgotMode)return(
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",background:"#0a0a0a"}}>
-      <div style={{textAlign:"center",maxWidth:360,padding:32,boxSizing:"border-box" as const,width:"100%"}}>
-        <div style={{fontWeight:800,fontSize:36,color:"#fff",marginBottom:8}}>GWI UX</div>
-        <div style={{fontSize:14,color:"#666",marginBottom:40}}>Reset your password</div>
+    <div style={_wrap}>
+      <div style={_card}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:28}}>
+          <div style={{width:32,height:32,borderRadius:8,background:C.pink,display:"flex",alignItems:"center",justifyContent:"center"}}><Sparkles size={16} color={C.white}/></div>
+          <span style={{fontWeight:800,fontSize:20,color:C.black,letterSpacing:"-0.02em"}}>GWI UX Audit</span>
+        </div>
+        <div style={{fontSize:18,fontWeight:700,color:C.black,marginBottom:4}}>Reset password</div>
+        <div style={{fontSize:14,color:C.grey7,marginBottom:28}}>Enter your email and we'll send a reset link.</div>
         <form onSubmit={_handleReset} style={{display:"flex",flexDirection:"column",gap:12}}>
           <input type="email" placeholder="your@gwi.com" value={_em} onChange={function(e){_setEm(e.target.value);}} required style={_inputStyle}/>
-          <button type="submit" style={_btnStyle}>Send reset email</button>
+          <button type="submit" style={_primaryBtn}>Send reset email</button>
         </form>
-        {_resetMsg&&<div style={{color:_resetMsg.startsWith('Check')?'#4ade80':'#f87171',fontSize:13,marginTop:12,textAlign:"left"}}>{_resetMsg}</div>}
-        <button type="button" onClick={function(){_setForgotMode(false);_setResetMsg('');}} style={{background:"transparent",border:"none",color:"#666",fontSize:13,cursor:"pointer",marginTop:16,padding:0}}>← Back to sign in</button>
+        {_resetMsg&&<div style={{color:_resetMsg.startsWith('Check')?'#00875A':C.pink,fontSize:13,marginTop:12,textAlign:"left",lineHeight:1.5}}>{_resetMsg}</div>}
+        <button type="button" onClick={function(){_setForgotMode(false);_setResetMsg('');}} style={{background:"transparent",border:"none",color:C.grey7,fontSize:13,cursor:"pointer",marginTop:20,padding:0,display:"flex",alignItems:"center",gap:4}}>← Back to sign in</button>
       </div>
     </div>
   );
   return(
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",background:"#0a0a0a"}}>
-      <div style={{textAlign:"center",maxWidth:360,padding:32,boxSizing:"border-box" as const,width:"100%"}}>
-        <div style={{fontWeight:800,fontSize:36,color:"#fff",marginBottom:8}}>GWI UX</div>
-        <div style={{fontSize:14,color:"#666",marginBottom:32}}>UX Audit Platform</div>
-        <button type="button" onClick={onGoogleLogin} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:"#fff",color:"#333",border:"none",borderRadius:8,padding:"11px 0",fontSize:14,fontWeight:600,cursor:"pointer",width:"100%",marginBottom:20}}>
-          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-          Sign in with Google
-        </button>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
-          <div style={{flex:1,height:1,background:"#2a2a2a"}}/>
-          <span style={{color:"#555",fontSize:12}}>or</span>
-          <div style={{flex:1,height:1,background:"#2a2a2a"}}/>
+    <div style={_wrap}>
+      <div style={_card}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:28}}>
+          <div style={{width:32,height:32,borderRadius:8,background:C.pink,display:"flex",alignItems:"center",justifyContent:"center"}}><Sparkles size={16} color={C.white}/></div>
+          <span style={{fontWeight:800,fontSize:20,color:C.black,letterSpacing:"-0.02em"}}>GWI UX Audit</span>
         </div>
-        <form onSubmit={_submit} style={{display:"flex",flexDirection:"column",gap:12}}>
+        <div style={{fontSize:18,fontWeight:700,color:C.black,marginBottom:2}}>{_isReg?"Create account":"Welcome back"}</div>
+        <div style={{fontSize:14,color:C.grey7,marginBottom:24}}>{_isReg?"Sign up with your @gwi.com account":"Sign in to your GWI UX Audit workspace"}</div>
+        <button type="button" onClick={onGoogleLogin} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:C.white,color:C.black,border:"1px solid "+C.grey5,borderRadius:8,padding:"10px 0",fontSize:14,fontWeight:600,cursor:"pointer",width:"100%",marginBottom:16}}>
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Continue with Google
+        </button>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
+          <div style={{flex:1,height:1,background:C.grey4}}/>
+          <span style={{color:C.grey6,fontSize:12}}>or</span>
+          <div style={{flex:1,height:1,background:C.grey4}}/>
+        </div>
+        <form onSubmit={_submit} style={{display:"flex",flexDirection:"column",gap:10}}>
           <input type="email" placeholder="your@gwi.com" value={_em} onChange={function(e){_setEm(e.target.value);}} required style={_inputStyle}/>
           <input type="password" placeholder="Password" value={_pw} onChange={function(e){_setPw(e.target.value);}} required style={_inputStyle}/>
-          {!_isReg&&<button type="button" onClick={function(){_setForgotMode(true);_setResetMsg('');}} style={{background:"transparent",border:"none",color:"#555",fontSize:12,cursor:"pointer",textAlign:"right",padding:0,marginTop:-4}}>Forgot password?</button>}
-          <button type="submit" style={_btnStyle}>{_isReg?"Create Account":"Sign In"}</button>
+          {!_isReg&&<button type="button" onClick={function(){_setForgotMode(true);_setResetMsg('');}} style={{background:"transparent",border:"none",color:C.grey7,fontSize:12,cursor:"pointer",textAlign:"right" as const,padding:0,marginTop:-2}}>Forgot password?</button>}
+          <button type="submit" style={_primaryBtn}>{_isReg?"Create Account":"Sign In"}</button>
         </form>
-        {loginError&&<div style={{color:"#f87171",fontSize:13,marginTop:12,textAlign:"left"}}>{loginError}</div>}
-        <button type="button" onClick={function(){_setIsReg(!_isReg);}} style={{background:"transparent",border:"none",color:"#666",fontSize:13,cursor:"pointer",marginTop:16,padding:0}}>{_isReg?"Already have an account? Sign in":"No account yet? Create one"}</button>
-        <div style={{fontSize:12,color:"#555",marginTop:16}}>Access restricted to @gwi.com accounts</div>
+        {loginError&&<div style={{color:C.pink,fontSize:13,marginTop:12,textAlign:"left",lineHeight:1.5}}>{loginError}</div>}
+        <div style={{height:1,background:C.grey3,margin:"20px 0"}}/>
+        <button type="button" onClick={function(){_setIsReg(!_isReg);}} style={{background:"transparent",border:"none",color:C.grey7,fontSize:13,cursor:"pointer",padding:0,width:"100%",textAlign:"center" as const}}>{_isReg?"Already have an account? Sign in":"No account yet? Create one"}</button>
+        <div style={{fontSize:11,color:C.grey6,marginTop:12,textAlign:"center" as const}}>Access restricted to @gwi.com accounts</div>
       </div>
     </div>
   );
@@ -2124,34 +2135,41 @@ function ConfirmResetScreen({oobCode}:{oobCode:string}){
   var [_pw2,_setPw2]=useState('');
   var [_msg,_setMsg]=useState('');
   var [_done,_setDone]=useState(false);
-  var _inputStyle={padding:"10px 14px",background:"#1a1a1a",border:"1px solid #333",borderRadius:8,color:"#fff",fontSize:14,outline:"none",boxSizing:"border-box" as const,width:"100%"};
-  var _btnStyle={background:"#fff",color:"#000",border:"none",borderRadius:8,padding:"11px 0",fontSize:14,fontWeight:600,cursor:"pointer",marginTop:4};
+  var _inputStyle={padding:"10px 14px",background:C.white,border:"1px solid "+C.grey5,borderRadius:8,color:C.black,fontSize:14,outline:"none",boxSizing:"border-box" as const,width:"100%",fontFamily:"inherit"};
+  var _primaryBtn={background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"11px 0",fontSize:14,fontWeight:700,cursor:"pointer",marginTop:4,width:"100%"};
+  var _wrap={display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center",minHeight:"100vh",background:C.grey2,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"};
+  var _card={background:C.white,borderRadius:16,boxShadow:"0 4px 24px rgba(16,23,32,0.10)",padding:"40px 36px",maxWidth:380,width:"100%",boxSizing:"border-box" as const};
   function _submit(e:any){
     e.preventDefault();
     if(_pw.length<6){_setMsg('Password must be at least 6 characters.');return;}
     if(_pw!==_pw2){_setMsg('Passwords do not match.');return;}
     confirmPasswordReset(_auth,oobCode,_pw)
       .then(function(){_setDone(true);window.history.replaceState({},'',window.location.pathname);})
-      .catch(function(err:any){_setMsg('Could not reset password. The link may have expired — request a new one. ('+( err.code||'unknown')+')');});
+      .catch(function(err:any){_setMsg('Could not reset password. The link may have expired — request a new one. ('+(err.code||'unknown')+')');});
   }
   return(
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",background:"#0a0a0a"}}>
-      <div style={{textAlign:"center",maxWidth:360,padding:32,boxSizing:"border-box" as const,width:"100%"}}>
-        <div style={{fontWeight:800,fontSize:36,color:"#fff",marginBottom:8}}>GWI UX</div>
+    <div style={_wrap}>
+      <div style={_card}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:28}}>
+          <div style={{width:32,height:32,borderRadius:8,background:C.pink,display:"flex",alignItems:"center",justifyContent:"center"}}><Sparkles size={16} color={C.white}/></div>
+          <span style={{fontWeight:800,fontSize:20,color:C.black,letterSpacing:"-0.02em"}}>GWI UX Audit</span>
+        </div>
         {_done?(
           <>
-            <div style={{fontSize:14,color:"#4ade80",marginBottom:32}}>Password updated! You can now sign in.</div>
-            <button onClick={function(){window.location.href=window.location.pathname;}} style={_btnStyle}>Go to sign in</button>
+            <div style={{fontSize:18,fontWeight:700,color:C.black,marginBottom:8}}>Password updated</div>
+            <div style={{fontSize:14,color:C.grey7,marginBottom:24}}>You can now sign in with your new password.</div>
+            <button onClick={function(){window.location.href=window.location.pathname;}} style={_primaryBtn}>Go to sign in</button>
           </>
         ):(
           <>
-            <div style={{fontSize:14,color:"#666",marginBottom:40}}>Set your new password</div>
-            <form onSubmit={_submit} style={{display:"flex",flexDirection:"column",gap:12}}>
+            <div style={{fontSize:18,fontWeight:700,color:C.black,marginBottom:4}}>Set new password</div>
+            <div style={{fontSize:14,color:C.grey7,marginBottom:24}}>Choose a new password for your account.</div>
+            <form onSubmit={_submit} style={{display:"flex",flexDirection:"column",gap:10}}>
               <input type="password" placeholder="New password (min 6 chars)" value={_pw} onChange={function(e){_setPw(e.target.value);}} required style={_inputStyle}/>
               <input type="password" placeholder="Confirm new password" value={_pw2} onChange={function(e){_setPw2(e.target.value);}} required style={_inputStyle}/>
-              <button type="submit" style={_btnStyle}>Set new password</button>
+              <button type="submit" style={_primaryBtn}>Set new password</button>
             </form>
-            {_msg&&<div style={{color:"#f87171",fontSize:13,marginTop:12,textAlign:"left"}}>{_msg}</div>}
+            {_msg&&<div style={{color:C.pink,fontSize:13,marginTop:12,textAlign:"left",lineHeight:1.5}}>{_msg}</div>}
           </>
         )}
       </div>
@@ -2181,7 +2199,7 @@ export default function App(){
   function _handleGoogleLogin(){_setLoginError(null);var p=new GoogleAuthProvider();p.setCustomParameters({hd:"gwi.com"});signInWithPopup(_auth,p).catch(function(err:any){_setLoginError(err.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':err.code==='auth/unauthorized-domain'?'This domain is not authorised in Firebase — contact your admin.':'Google sign-in failed. Try again. ('+( err.code||'')+')');});}
   var _qp=new URLSearchParams(window.location.search);
   if(_qp.get('mode')==='resetPassword'&&_qp.get('oobCode'))return(<ConfirmResetScreen oobCode={_qp.get('oobCode')!}/>);
-  if(_authLoading)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#0a0a0a",color:"#fff",fontSize:16}}>Loading…</div>);
+  if(_authLoading)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:C.grey2,color:C.grey7,fontSize:14,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>Loading…</div>);
   if(!_user)return(<LoginScreen onLogin={_handleLogin} onRegister={_handleRegister} onGoogleLogin={_handleGoogleLogin} loginError={_loginError}/>);
 
 
