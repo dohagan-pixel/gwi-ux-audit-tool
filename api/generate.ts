@@ -18,7 +18,8 @@ export default async function handler(req, res) {
 
   // claude-sonnet-4-6 is the latest Claude Sonnet (Feb 2026) — excellent quality + vision support.
   const model = 'claude-sonnet-4-6';
-  const effectiveMaxTokens = Math.min(max_tokens || 1000, 4096);
+  // claude-sonnet-4-6 supports up to 16000 output tokens — audit reports need 8-12k.
+  const effectiveMaxTokens = Math.min(max_tokens || 16000, 16000);
 
   // Build message content — Anthropic uses base64 source objects for images
   const messageContent = hasImages
