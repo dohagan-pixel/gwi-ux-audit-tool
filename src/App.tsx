@@ -1303,7 +1303,7 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
     if(hasFetched.current)return;
     hasFetched.current=true;
     var hasImages=images&&images.length>0;
-    fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:hasImages?8000:8000,images:hasImages?images.map(function(i){return{dataUrl:i.dataUrl,mimeType:i.mimeType};}):undefined})})
+    fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:32000,images:hasImages?images.map(function(i){return{dataUrl:i.dataUrl,mimeType:i.mimeType};}):undefined})})
       .then(function(r){return r.json();})
       .then(function(data){if(data.error){setStatus("error");return;}var text=data.content&&data.content[0]?data.content[0].text:"";if(!text){setStatus("error");return;}onDone(text);setStatus("done");})
       .catch(function(){setStatus("error");});
@@ -1643,44 +1643,14 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
     p+="**Load & performance:** Note any likely performance concerns for mobile (heavy images, render-blocking elements).\n";
     p+="**Heatmap mobile signals:** If heatmaps are attached, note any scroll or click patterns that suggest mobile-specific friction.\n\n";
 
-    p+="## Structured UX Audit\n";
-    p+="Work through EVERY item below. For each give: RAG status (✅ Pass / ⚠️ Issue / ❌ Fail) + one sentence of specific evidence or observation. Do not skip any item.\n\n";
-
-    p+="### First Impressions & Content\n";
-    p+="- **Value proposition:** Is the core offer clear within 5 seconds of landing? Does the hero communicate what GWI does and who it is for, without needing to scroll?\n";
-    p+="- **Headline & hero:** Is the headline benefit-led, specific, and relevant to the persona arriving? Flag any headline that is vague, jargon-heavy, or feature-led rather than outcome-led.\n";
-    p+="- **Content hierarchy:** Does the most important information appear first? Is there anything critical buried that should be surfaced earlier?\n";
-    p+="- **Readability:** Is text legible (min 16px body, sufficient contrast)? Are paragraphs short enough to scan? Flag any copy blocks over 60 words that should be split or cut.\n";
-    p+="- **Copy length:** Identify the 2-3 longest copy sections. Are they justified by the page goal, or are they padding? Recommend specific cuts.\n";
-    p+="- **Copy suggestions:** For any failing headline, CTA, or value proposition — rewrite it with a stronger, more specific alternative in quotes.\n\n";
-
-    p+="### Navigation & Information Architecture\n";
-    p+="- **Menu structure:** Are nav labels intuitive? Do they match the language users would use, not internal GWI terminology?\n";
-    p+="- **Search functionality:** Is there a visible search bar? Is it easy to find? Does it surface relevant results?\n";
-    p+="- **Consistency:** Are navigation elements, labels, and interactions consistent across pages on this site?\n";
-    p+="- **Wayfinding:** Can a new visitor understand where they are and how to get to the next step without thinking?\n\n";
-
-    p+="### Visual Design & Layout\n";
-    p+="- **White space:** Is white space used effectively to reduce cognitive load, or does the page feel cluttered?\n";
-    p+="- **Brand consistency:** Are colours, fonts, and tone consistent with the broader GWI brand?\n";
-    p+="- **Responsiveness:** Does the layout adapt correctly to mobile (375px)? Any broken layouts, overflowing text, or inaccessible elements at small screen sizes?\n";
-    p+="- **Visual hierarchy:** Does the eye flow naturally to the most important element (CTA, key stat, headline)?\n\n";
-
-    p+="### CTAs, Copy & Conversion\n";
-    p+="- **CTA labels:** Are button labels action-oriented and specific? Flag any generic labels ('Learn more', 'Click here', 'Submit') and rewrite each with a stronger specific alternative (e.g. 'See GWI pricing', 'Start free trial', 'Get the report').\n";
-    p+="- **CTA visibility:** Are CTAs prominent, high-contrast, and positioned where user intent peaks? Name the exact CTA and its position.\n";
-    p+="- **CTA quantity:** Are there too many competing CTAs on the page causing decision paralysis, or too few?\n";
-    p+="- **Forms:** Are forms concise (minimum required fields only)? Are input types correct (email, tel, number)? Are error messages helpful?\n";
-    p+="- **Distractions:** Are there popups, chat widgets, cookie banners, or secondary CTAs that interrupt the primary conversion path? Name each one.\n";
-    p+="- **Copy tone:** Is the copy written for the user's outcome, or for GWI's product features? Flag any feature-led copy and rewrite it as a user benefit.\n\n";
-
-    p+="### Performance & Accessibility\n";
-    p+="- **Page load:** Are there any likely performance bottlenecks (large hero images, render-blocking scripts, excessive animations)?\n";
-    p+="- **Broken elements:** Any missing images, broken links, console errors, or non-functional interactive elements?\n";
-    p+="- **WCAG 2.1 AA — Colour contrast:** Do all text/background combinations meet minimum 4.5:1 ratio? Name any likely failures.\n";
-    p+="- **WCAG 2.1 AA — Alt text:** Do all meaningful images have descriptive alt text? Are decorative images marked as such?\n";
-    p+="- **WCAG 2.1 AA — Keyboard navigation:** Can all interactive elements be reached and activated by keyboard alone? Are focus states visible?\n";
-    p+="- **WCAG 2.1 AA — ARIA & semantics:** Are headings in logical order (h1 → h2 → h3)? Are interactive elements correctly labelled for screen readers?\n\n";
+    p+="AUDIT DIMENSIONS — use these as the lens for your findings. Do NOT write a separate checklist section. Every issue you spot in these areas must become a FINDING below:\n";
+    p+="• First Impressions: value prop clarity in 5s, headline quality (benefit-led not feature-led), content hierarchy, readability, copy length (flag blocks over 60 words)\n";
+    p+="• Copy & CTAs: flag every generic CTA label ('Learn more', 'Click here', 'Submit', 'Find out more') and write a specific replacement in quotes. Check copy tone — is it outcome-led for the user or feature-led for GWI?\n";
+    p+="• Navigation & IA: menu label clarity, search visibility, wayfinding, consistency\n";
+    p+="• Visual design: white space, brand consistency, visual hierarchy, clutter\n";
+    p+="• Conversion: CTA visibility and quantity, form friction, distractions (popups, chat widgets, competing CTAs)\n";
+    p+="• Accessibility (WCAG 2.1 AA): colour contrast failures, missing alt text, keyboard nav, focus states, heading order, ARIA labels — name specific failing elements\n";
+    p+="• Performance: heavy images, render-blocking scripts, broken elements\n\n";
 
     p+="## Prioritised UX Findings\nP1 = quick win (1 sprint), P2 = medium term, P3 = strategic.\nYou MUST produce a MINIMUM of 15 findings and up to 20. Do not stop early.\nDraw findings from ALL sections above: data, heatmaps, personas, mobile analysis, AND the structured UX audit.\nAT LEAST 3 findings must be mobile-specific — prefix their title with [Mobile].\nAT LEAST 2 findings must address copy or CTA labels specifically — prefix with [Copy] or [CTA].\nAT LEAST 1 finding must address accessibility — prefix with [Accessibility].\nEvery finding must have a specific anchor — a metric, a named element, a heatmap observation, or a structured audit item above.\n\nFORMAT — every finding MUST use EXACTLY this structure, all 4 fields, no exceptions:\n\nFINDING: [number]. [Title] — [P1/P2/P3] — [Personas served]\nSHOWS: [Specific evidence — quantified metric, named element, or direct observation. Not directional language.]\nWHY: [Behavioural/intent diagnosis — what does this tell you about the user's goal and where the page fails to meet it?]\nCHANGE: [One specific, scoped recommendation. Name the exact element to change and what to change it to.]\nMETRIC: [Specific metric + current baseline + target. E.g. 'CTA click rate on hero: 1.2% → 4%+']\n\n";
 
