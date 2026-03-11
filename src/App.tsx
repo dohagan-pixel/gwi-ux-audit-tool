@@ -1283,7 +1283,7 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
   function openEdit(){setEditLabel(audit?audit.pageLabel:"");setEditDesc(audit?audit.description||"":"");setEditing(true);}
   function saveEdit(){var updated=Object.assign({},audit,{pageLabel:editLabel.trim()||audit.pageLabel,description:editDesc.trim()});setAudits(function(prev){return prev.map(function(a){return a.id===activeAudit?updated:a;});});if(onUpdateAudit)onUpdateAudit(updated);setEditing(false);}
   function toggleStar(){var updated=Object.assign({},audit,{starred:!audit.starred});setAudits(function(prev){return prev.map(function(a){return a.id===activeAudit?updated:a;});});if(onUpdateAudit)onUpdateAudit(updated);}
-  function parseRecs(text){var recs=[];var blocks=text.split(/\n+/);var current=null;blocks.forEach(function(block){var t=block.trim();if(!t)return;var m=t.match(/^FINDING:\s*(\d+)\.\s+(.+)$/);if(m){if(current)recs.push(current);current={title:m[2].trim(),shows:"",why:"",change:"",metric:"",body:""};}else if(current){if(t.startsWith("SHOWS:")){current.shows=t.slice(6).trim();}else if(t.startsWith("WHY:")){current.why=t.slice(4).trim();}else if(t.startsWith("CHANGE:")){current.change=t.slice(7).trim();}else if(t.startsWith("METRIC:")){current.metric=t.slice(7).trim();}else{current.body=current.body?current.body+" "+t:t;}}});if(current)recs.push(current);return recs.filter(function(r){return r.title&&(r.shows||r.why||r.change||r.body);});}
+  function parseRecs(text){var recs=[];var blocks=text.split(/\n+/);var current=null;blocks.forEach(function(block){var t=block.trim();if(!t)return;var m=t.match(/^FINDING:\s*(\d+)\.\s+(.+)$/);if(m){if(current)recs.push(current);current={title:m[2].trim(),shows:"",why:"",change:"",metric:"",body:"",heatmapX:null,heatmapY:null};}else if(current){if(t.startsWith("SHOWS:")){current.shows=t.slice(6).trim();}else if(t.startsWith("WHY:")){current.why=t.slice(4).trim();}else if(t.startsWith("CHANGE:")){current.change=t.slice(7).trim();}else if(t.startsWith("METRIC:")){current.metric=t.slice(7).trim();}else if(t.startsWith("HEATMAP_X:")){var xv=parseFloat(t.slice(10).trim());if(!isNaN(xv))current.heatmapX=Math.max(0,Math.min(100,xv));}else if(t.startsWith("HEATMAP_Y:")){var yv=parseFloat(t.slice(10).trim());if(!isNaN(yv))current.heatmapY=Math.max(0,Math.min(100,yv));}else{current.body=current.body?current.body+" "+t:t;}}});if(current)recs.push(current);return recs.filter(function(r){return r.title&&(r.shows||r.why||r.change||r.body);});}
   function isAlreadyAdded(rec,scope){var pageUrl=scope==="all"?"/":scope;var existing=auditData.find(function(p){return p.url===pageUrl;});if(!existing)return false;return existing.actions.some(function(a){return a.text===rec.title;});}
   function addToAudit(rec,scope,idx){
     var pageUrl=scope==="all"?"/":scope;
@@ -1357,6 +1357,23 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
               )}
             </div>
           </div>
+          {audit.images&&audit.images.length>0&&recs.some(function(r){return r.heatmapX!==null&&r.heatmapY!==null;})&&(
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:10}}>Heatmap annotations</div>
+              <div style={{position:"relative",display:"inline-block",maxWidth:"100%",borderRadius:12,overflow:"hidden",border:"1px solid "+C.grey4}}>
+                <img src={audit.images[0].dataUrl} alt="Heatmap" style={{display:"block",maxWidth:"100%",height:"auto"}}/>
+                {recs.map(function(rec,i){
+                  if(rec.heatmapX===null||rec.heatmapY===null)return null;
+                  return(
+                    <div key={i} title={rec.title} style={{position:"absolute",left:rec.heatmapX+"%",top:rec.heatmapY+"%",transform:"translate(-50%,-50%)",width:26,height:26,borderRadius:"50%",background:C.pink,color:C.white,fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid white",boxShadow:"0 2px 8px rgba(0,0,0,0.5)",cursor:"default",zIndex:10,pointerEvents:"none"}}>
+                      {i+1}
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{fontSize:11,color:C.grey6,marginTop:6}}>Numbers show where each finding appears on the page. Findings without a clear location are not marked.</div>
+            </div>
+          )}
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
             {recs.map(function(rec,i){
               var isAdded=isAlreadyAdded(rec,audit.scope)||!!added[activeAudit+"-"+i];
@@ -1616,12 +1633,16 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
     p+="SHOWS: What the evidence or observation shows\n";
     p+="WHY: Why this is a problem for users\n";
     p+="CHANGE: The specific fix recommended\n";
-    p+="METRIC: Metric to track success\n\n";
+    p+="METRIC: Metric to track success\n";
+    if(hasHeatmaps){p+="HEATMAP_X: [0-100 percentage from left edge — ONLY include if you can clearly see where this issue appears on the image, otherwise omit this line entirely]\nHEATMAP_Y: [0-100 percentage from top edge — ONLY include if you can clearly see where this issue appears on the image, otherwise omit this line entirely]\n";}
+    p+="\n";
     p+="FINDING: 2. Next finding title\n";
     p+="SHOWS: ...\n";
     p+="WHY: ...\n";
     p+="CHANGE: ...\n";
-    p+="METRIC: ...\n\n";
+    p+="METRIC: ...\n";
+    if(hasHeatmaps){p+="HEATMAP_X: [omit if not clearly visible]\nHEATMAP_Y: [omit if not clearly visible]\n";}
+    p+="\n";
     p+="...and so on up to FINDING: 12.\n\n";
     p+="Start your response directly with FINDING: 1. — no preamble.";
 
@@ -1638,7 +1659,7 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
     setShowModal(false);
     if(navigate&&generatedAuditText){
       var obj=visiblePages.find(function(p){return p.url===selectedPage;});
-      onAuditGenerated({id:"gen-"+Date.now(),pageLabel:selectedPage==="all"?"All Pages":(obj?obj.label:selectedPage),scope:selectedPage,date:new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}),content:generatedAuditText});
+      onAuditGenerated({id:"gen-"+Date.now(),pageLabel:selectedPage==="all"?"All Pages":(obj?obj.label:selectedPage),scope:selectedPage,date:new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}),content:generatedAuditText,images:auditImages.length>0?auditImages:undefined});
     }
   }
 
@@ -2227,7 +2248,7 @@ export default function App(){
   var [_loginError,_setLoginError]=useState(null);
   useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()){var d=snap.data();if(d.auditData)setAuditData(d.auditData);if(d.stages)setStages(d.stages);if(d.personas)setPersonas(d.personas);if(d.pages)setPages(d.pages);if(d.journeys)setJourneys(d.journeys);if(d.gaCards)setGaCards(d.gaCards);}});getDocs(collection(_db,"users",u.uid,"generatedAudits")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setGeneratedAudits(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});merged.sort(function(a,b){return a.id<b.id?-1:1;});return merged;});}).catch(function(){});}else{_setUser(null);}_setAuthLoading(false);});},[]);
   useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,stages:stages,personas:personas,pages:pages,journeys:journeys,gaCards:gaCards,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[ auditData,stages,personas,pages,journeys,gaCards,_user]);
-  useEffect(function(){try{localStorage.setItem("gwi_generated_audits",JSON.stringify(generatedAudits));}catch(e){};},[generatedAudits]);
+  useEffect(function(){try{localStorage.setItem("gwi_generated_audits",JSON.stringify(generatedAudits.map(function(a){var o=Object.assign({},a);delete o.images;return o;})));}catch(e){};},[generatedAudits]);
   useEffect(function(){function onHash(){setViewRaw(hashToView(window.location.hash));}window.addEventListener("hashchange",onHash);return function(){window.removeEventListener("hashchange",onHash);};},[]);
   function _handleLogin(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}signInWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/user-not-found'?'Invalid email or password.':'Sign-in failed. Try again.');});}
   function _handleRegister(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}if(password.length<6){_setLoginError('Password must be at least 6 characters.');return;}createUserWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/email-already-in-use'?'Account already exists. Try signing in.':err.code==='auth/weak-password'?'Password must be at least 6 characters.':'Registration failed. Try again.');});}
@@ -2266,7 +2287,7 @@ export default function App(){
         {view==="flows"&&<UserFlowsPage setView={setView}/>}
         {view==="audit"&&<AuditPage personas={personas} pages={pages} auditData={auditData} setAuditData={setAuditData} onAddAction={function(){setShowAddAction(true);}}/>}
         {view==="analytics"&&<AnalyticsPage gaCards={gaCards}/>}
-        {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit).catch(function(){});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
+        {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user){var auditNoImg=Object.assign({},audit);delete auditNoImg.images;setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),auditNoImg).catch(function(){});}setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
         {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id)).catch(function(){});}} onUpdateAudit={function(updated){if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",updated.id),updated).catch(function(){});}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
         {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards}/>}
       </div>
