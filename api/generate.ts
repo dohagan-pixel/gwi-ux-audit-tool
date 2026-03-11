@@ -16,6 +16,9 @@ export default async function handler(req, res) {
 
   const hasImages = Array.isArray(images) && images.length > 0;
   const model = hasImages ? 'meta-llama/llama-4-scout-17b-16e-instruct' : 'llama-3.3-70b-versatile';
+  // llama-4-scout max output is 8192; llama-3.3-70b-versatile supports up to 32768
+  const modelMaxTokens = hasImages ? 8192 : 32768;
+  const effectiveMaxTokens = Math.min(max_tokens || 1000, modelMaxTokens);
   const messageContent = hasImages
     ? [
         { type: 'text', text: prompt },
@@ -35,7 +38,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model,
-        max_tokens: max_tokens || 1000,
+        max_tokens: effectiveMaxTokens,
         messages: [{ role: 'user', content: messageContent }]
       })
     });
