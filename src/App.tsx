@@ -1290,20 +1290,30 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
   var starredAudits=audits.filter(function(a){return a.starred;});
   var unstarredAudits=audits.filter(function(a){return !a.starred;}).slice().reverse();
   return(
-    <div style={{display:"flex",flex:1,minHeight:0,background:C.grey2}}>
-      <div style={{width:220,flexShrink:0,background:C.white,borderRight:"1px solid "+C.grey4,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-        <div style={{overflowY:"auto",flex:1}}>
-          <div style={{padding:"16px 16px 8px",fontSize:11,fontWeight:700,color:C.grey6,textTransform:"uppercase",letterSpacing:"0.08em"}}>Generated Audits</div>
-          {unstarredAudits.map(function(a){var isActive=a.id===activeAudit;return(
-            <button key={a.id} onClick={function(){setActiveAudit(a.id);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 16px",fontSize:13,fontWeight:isActive?700:500,color:isActive?C.black:C.grey7,background:isActive?"#F5F5F5":"transparent",border:"none",borderLeft:"3px solid "+(isActive?C.pink:"transparent"),cursor:"pointer",display:"block",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",boxSizing:"border-box"}}>{a.pageLabel}</button>
+    <div style={{display:"flex",flexDirection:isMobile?"column":"row",flex:1,minHeight:0,background:C.grey2}}>
+      <div style={{width:isMobile?"100%":220,background:C.white,borderRight:"1px solid "+C.grey4,flexShrink:0,display:"flex",flexDirection:"column",overflow:"auto"}}>
+        <div style={{padding:"14px 16px",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",borderBottom:"1px solid "+C.grey4}}>Generated Audits</div>
+        {unstarredAudits.map(function(a){var isActive=a.id===activeAudit;return(
+          <div key={a.id} style={{borderBottom:"1px solid "+C.grey3,background:isActive?C.grey3:"transparent"}}>
+            <button onClick={function(){setActiveAudit(a.id);setEditing(false);}} style={{textAlign:"left",padding:"12px 16px",borderLeft:"4px solid "+(isActive?C.pink:"transparent"),background:"transparent",color:isActive?C.black:C.grey8,border:"none",cursor:"pointer",width:"100%"}}>
+              <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>{a.pageLabel}</div>
+              <div style={{fontSize:11,color:C.grey6}}>{a.date}</div>
+            </button>
+          </div>
+        );})}
+        {audits.some(function(a){return a.starred;})&&(<>
+          <div style={{padding:"14px 16px",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",borderTop:"2px solid "+C.grey4,borderBottom:"1px solid "+C.grey4,display:"flex",alignItems:"center",gap:6}}>
+            <Star size={11} fill="#FFC107" color="#FFC107"/><span>Starred</span>
+          </div>
+          {starredAudits.map(function(a){var isActive=a.id===activeAudit;return(
+            <div key={"star-"+a.id} style={{borderBottom:"1px solid "+C.grey3,background:isActive?C.grey3:"transparent"}}>
+              <button onClick={function(){setActiveAudit(a.id);setEditing(false);}} style={{textAlign:"left",padding:"12px 16px",borderLeft:"4px solid "+(isActive?"#FFC107":"transparent"),background:"transparent",color:isActive?C.black:C.grey8,border:"none",cursor:"pointer",width:"100%"}}>
+                <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>{a.pageLabel}</div>
+                <div style={{fontSize:11,color:C.grey6}}>{a.date}</div>
+              </button>
+            </div>
           );})}
-          {starredAudits.length>0&&(<>
-            <div style={{padding:"16px 16px 8px",fontSize:11,fontWeight:700,color:C.grey6,textTransform:"uppercase",letterSpacing:"0.08em",display:"flex",alignItems:"center",gap:6,marginTop:4,borderTop:"1px solid "+C.grey4}}><Star size={10} fill="#FFC107" color="#FFC107"/>Starred</div>
-            {starredAudits.map(function(a){var isActive=a.id===activeAudit;return(
-              <button key={a.id} onClick={function(){setActiveAudit(a.id);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 16px",fontSize:13,fontWeight:isActive?700:500,color:isActive?C.black:C.grey7,background:isActive?"#FFF9E6":"transparent",border:"none",borderLeft:"3px solid "+(isActive?"#FFC107":"transparent"),cursor:"pointer",display:"block",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",boxSizing:"border-box"}}>{a.pageLabel}</button>
-            );})}
-          </>)}
-        </div>
+        </>)}
       </div>
       <div style={{flex:1,overflow:"auto",padding:isMobile?16:28}}>
         <div style={{paddingBottom:80}}>
