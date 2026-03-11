@@ -1287,33 +1287,24 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
   }
   if(audits.length===0){return(<div style={{background:C.grey2,height:"100%",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center",padding:32}}><div style={{marginBottom:16,color:C.grey6,display:"flex",justifyContent:"center"}}><ClipboardList size={32}/></div><h2 style={{fontSize:20,fontWeight:800,color:C.black,marginBottom:8}}>No generated audits yet</h2><p style={{fontSize:14,color:C.grey7,marginBottom:20}}>Generate your first audit from the UX Audit page.</p><button onClick={function(){setView("summary");}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Go to UX Audit</button></div></div>);}
   var recs=audit?parseRecs(audit.content):[];
+  var starredAudits=audits.filter(function(a){return a.starred;});
+  var unstarredAudits=audits.filter(function(a){return !a.starred;}).slice().reverse();
   return(
-    <div style={{display:"flex",flexDirection:isMobile?"column":"row",flex:1,minHeight:0,background:C.grey2}}>
-      <div style={{width:isMobile?"100%":220,background:C.white,borderRight:"1px solid "+C.grey4,flexShrink:0,display:"flex",flexDirection:"column",overflow:"auto"}}>
-        <div style={{padding:"14px 16px",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",borderBottom:"1px solid "+C.grey4}}>Generated Audits</div>
-        {audits.filter(function(a){return !a.starred;}).slice().reverse().map(function(a){var isActive=a.id===activeAudit;return(
-          <div key={a.id} style={{borderBottom:"1px solid "+C.grey3,background:isActive?C.grey3:"transparent"}}>
-            <button onClick={function(){setActiveAudit(a.id);setEditing(false);}} style={{textAlign:"left",padding:"12px 16px",borderLeft:"4px solid "+(isActive?C.pink:"transparent"),background:"transparent",color:isActive?C.black:C.grey8,border:"none",cursor:"pointer",width:"100%"}}>
-              <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>{a.pageLabel}</div>
-              <div style={{fontSize:11,color:C.grey6}}>{a.date}</div>
-            </button>
+    <div style={{flex:1,overflowY:"auto",background:C.grey2}}>
+      <div style={{background:C.white,borderBottom:"1px solid "+C.grey4,padding:"0 28px",display:"flex",alignItems:"center",gap:4,overflowX:"auto",flexShrink:0}}>
+        {starredAudits.length>0&&(<>
+          <div style={{display:"flex",alignItems:"center",gap:4,paddingRight:8,marginRight:4,borderRight:"1px solid "+C.grey4}}>
+            <Star size={11} fill="#FFC107" color="#FFC107"/>
+            {starredAudits.map(function(a){var isActive=a.id===activeAudit;return(
+              <button key={a.id} onClick={function(){setActiveAudit(a.id);setEditing(false);}} style={{padding:"14px 14px",fontSize:13,fontWeight:isActive?700:500,color:isActive?C.black:C.grey7,background:"transparent",border:"none",borderBottom:"2px solid "+(isActive?"#FFC107":"transparent"),cursor:"pointer",whiteSpace:"nowrap"}}>{a.pageLabel}</button>
+            );})}
           </div>
-        );})}
-        {audits.some(function(a){return a.starred;})&&(<>
-          <div style={{padding:"14px 16px",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",borderTop:"2px solid "+C.grey4,borderBottom:"1px solid "+C.grey4,display:"flex",alignItems:"center",gap:6}}>
-            <Star size={11} fill="#FFC107" color="#FFC107"/><span>Starred</span>
-          </div>
-          {audits.filter(function(a){return a.starred;}).reverse().map(function(a){var isActive=a.id===activeAudit;return(
-            <div key={"star-"+a.id} style={{borderBottom:"1px solid "+C.grey3,background:isActive?C.grey3:"transparent"}}>
-              <button onClick={function(){setActiveAudit(a.id);setEditing(false);}} style={{textAlign:"left",padding:"12px 16px",borderLeft:"4px solid "+(isActive?"#FFC107":"transparent"),background:"transparent",color:isActive?C.black:C.grey8,border:"none",cursor:"pointer",width:"100%"}}>
-                <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>{a.pageLabel}</div>
-                <div style={{fontSize:11,color:C.grey6}}>{a.date}</div>
-              </button>
-            </div>
-          );})}
         </>)}
+        {unstarredAudits.map(function(a){var isActive=a.id===activeAudit;return(
+          <button key={a.id} onClick={function(){setActiveAudit(a.id);setEditing(false);}} style={{padding:"14px 14px",fontSize:13,fontWeight:isActive?700:500,color:isActive?C.black:C.grey7,background:"transparent",border:"none",borderBottom:"2px solid "+(isActive?C.pink:"transparent"),cursor:"pointer",whiteSpace:"nowrap"}}>{a.pageLabel}</button>
+        );})}
       </div>
-      <div style={{flex:1,overflow:"auto",padding:isMobile?16:28}}>
+      <div style={{padding:isMobile?16:28}}>
         <div style={{paddingBottom:80}}>
         {audit&&(<>
           <div style={{background:C.black,borderRadius:16,padding:"24px 28px",marginBottom:24}}>
