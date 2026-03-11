@@ -1324,6 +1324,7 @@ function AnalyticsPage({gaCards}){
 
 function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
   var [status,setStatus]=useState("loading");
+  var [errorMsg,setErrorMsg]=useState("");
   var [progress,setProgress]=useState(0);
   var intervalRef=useRef(null);
   var hasFetched=useRef(false);
@@ -1339,8 +1340,8 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
     var hasImages=images&&images.length>0;
     fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:32000,images:hasImages?images.map(function(i){return{dataUrl:i.dataUrl,mimeType:i.mimeType};}):undefined})})
       .then(function(r){return r.json();})
-      .then(function(data){if(data.error){setStatus("error");return;}var text=data.content&&data.content[0]?data.content[0].text:"";if(!text){setStatus("error");return;}onDone(text);setStatus("done");})
-      .catch(function(){setStatus("error");});
+      .then(function(data){if(data.error){setErrorMsg(data.error);setStatus("error");return;}var text=data.content&&data.content[0]?data.content[0].text:"";if(!text){setErrorMsg("No content returned from API.");setStatus("error");return;}onDone(text);setStatus("done");})
+      .catch(function(err){setErrorMsg(err&&err.message?err.message:"Network error — check your connection.");setStatus("error");});
   },[]);
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -1348,7 +1349,7 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
       <div style={{background:C.white,borderRadius:16,padding:32,width:440,maxWidth:"90vw",textAlign:"center"}}>
         {status==="loading"&&(<><div style={{width:48,height:48,borderRadius:"50%",border:"4px solid "+C.grey4,borderTop:"4px solid "+C.pink,margin:"0 auto 20px",animation:"spin 0.8s linear infinite"}}/><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Generating your audit</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 6px"}}>{images&&images.length>0?"Reading heatmaps and analysing scroll depth, click patterns, and attention zones…":"Analysing "+pageLabel+" against all personas, lifecycle stages and journey data."}</p><p style={{fontSize:12,color:C.grey6,margin:"0 0 24px"}}>This usually takes around a minute — the more context, the sharper the output.</p><div style={{background:C.grey3,borderRadius:99,height:8,overflow:"hidden",marginBottom:8}}><div style={{width:progress+"%",background:C.pink,height:"100%",borderRadius:99,transition:"width 0.4s ease"}}/></div><div style={{fontSize:12,color:C.grey6,textAlign:"right"}}>{Math.round(progress)}%</div></>)}
         {status==="done"&&(<><div style={{width:48,height:48,borderRadius:"50%",background:"#E6F9F2",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:24}}>✓</div><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Audit ready</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 24px"}}>Your {pageLabel} audit has been generated.</p><div style={{display:"flex",gap:10,justifyContent:"center"}}><button onClick={function(){onClose(false);}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Close</button><button onClick={function(){onClose(true);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>View audit</button></div></>)}
-        {status==="error"&&(<><div style={{width:48,height:48,borderRadius:"50%",background:"#FFF0F0",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:24}}>✗</div><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Something went wrong</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 24px"}}>The audit could not be generated.</p><button onClick={function(){onClose(false);}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Close</button></>)}
+        {status==="error"&&(<><div style={{width:48,height:48,borderRadius:"50%",background:"#FFF0F0",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:24}}>✗</div><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Something went wrong</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 8px"}}>The audit could not be generated.</p>{errorMsg&&<p style={{fontSize:12,color:"#CC0000",background:"#FFF0F0",border:"1px solid #FFAAAA",borderRadius:8,padding:"8px 12px",margin:"0 0 20px",textAlign:"left",wordBreak:"break-word"}}>{errorMsg}</p>}<button onClick={function(){onClose(false);}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Close</button></>)}
       </div>
     </div>
   );
