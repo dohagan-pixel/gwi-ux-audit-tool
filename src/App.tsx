@@ -1122,9 +1122,9 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
                 {isOpen&&(
                   <div style={{borderTop:"1px solid "+C.grey4}}>
                     <div style={{padding:"16px 20px",background:C.grey3}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
                         <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em"}}>Issue</div>
-                        {page.issue&&!generating[page.id]&&<button onClick={function(){regenerate(page);}} style={{background:"transparent",color:C.pink,border:"1px solid "+C.pink,borderRadius:6,padding:"2px 10px",fontSize:10,fontWeight:700,cursor:"pointer"}}>Regenerate</button>}
+                        {page.issue&&!generating[page.id]&&<button onClick={function(){regenerate(page);}} title="Regenerate" style={{background:"transparent",border:"none",padding:0,cursor:"pointer",display:"flex",alignItems:"center",color:C.grey7,lineHeight:1}} onMouseEnter={function(e){e.currentTarget.style.color=C.pink;}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey7;}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>}
                       </div>
                       {generating[page.id]?<p style={{fontSize:13,color:C.grey6,lineHeight:1.6,margin:0,fontStyle:"italic"}}>Generating diagnosis...</p>:page.issue?<p style={{fontSize:13,color:C.offBlack,lineHeight:1.6,margin:0}}>{page.issue}</p>:<p style={{fontSize:13,color:C.grey6,lineHeight:1.6,margin:0,fontStyle:"italic"}}>{page.actions.length===0?"Add actions to generate a diagnosis.":"Generating..."}</p>}
                       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginTop:8}}>
