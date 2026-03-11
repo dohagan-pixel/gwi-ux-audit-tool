@@ -1369,7 +1369,7 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
                           {personas&&<span style={{fontSize:11,color:C.grey7}}>{personas}</span>}
                         </div>
                       )}
-                      <div style={{fontSize:14,fontWeight:700,color:C.black,paddingTop:(priority||personas)?0:5}}>{recTitle}</div>
+                      <div style={{fontSize:14,fontWeight:700,color:C.black,paddingTop:(priority||personas)?0:7}}>{recTitle}</div>
                     </div>
                     <button onClick={function(){if(!isAdded)addToAudit(rec,audit.scope,i);}} style={{flexShrink:0,background:isAdded?"#E6F9F2":C.pink,color:isAdded?"#005C3B":C.white,border:"none",borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:isAdded?"default":"pointer",whiteSpace:"nowrap"}}>{isAdded?"Added":"Add to Actions"}</button>
                   </div>
