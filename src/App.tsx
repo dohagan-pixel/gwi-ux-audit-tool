@@ -1076,7 +1076,7 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction}){
   var doneActions=auditData.reduce(function(s,p){return s+p.actions.filter(function(a){return a.status==="done";}).length;},0);
   var inProgActions=auditData.reduce(function(s,p){return s+p.actions.filter(function(a){return a.status==="inprogress";}).length;},0);
 
-  return(
+  return(<>
     <PageWrap isMobile={isMobile}>
       {whyPage&&<WhyModal url={whyPage.url} label={whyPage.label} onClose={function(){setWhyPage(null);}}/>}
       <BlackHero eyebrow="GWI Website - UX" title="Audit Actions" desc="All the actions you have decided to work on, in one place." why="This is where audit findings become real work.">
@@ -1143,7 +1143,7 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction}){
       </div>
     </PageWrap>
     {wireframePage&&<WireframeModal page={wireframePage} personas={personas} onClose={function(){setWireframePage(null);}}/>}
-  );
+  </>);
 }
 
 function AnalyticsPage({gaCards}){
