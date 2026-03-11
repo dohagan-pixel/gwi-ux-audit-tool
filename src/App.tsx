@@ -1383,6 +1383,8 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
 function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditData,pages,setView}){
   var [activeAudit,setActiveAudit]=useState(audits.length>0?audits[audits.length-1].id:null);
   var [added,setAdded]=useState({});
+  var [visibleCount,setVisibleCount]=useState(10);
+  useEffect(function(){setVisibleCount(10);},[activeAudit]);
   var isMobile=useWidth()<768;
   var audit=audits.find(function(a){return a.id===activeAudit;});
   function parseRecs(text){var recs=[];var blocks=text.split(/\n+/);var current=null;blocks.forEach(function(block){var t=block.trim();if(!t)return;var m=t.match(/^FINDING:\s*(\d+)\.\s+(.+)$/);if(m){if(current)recs.push(current);current={title:m[2].trim(),shows:"",why:"",change:"",metric:"",body:""};}else if(current){if(t.startsWith("SHOWS:")){current.shows=t.slice(6).trim();}else if(t.startsWith("WHY:")){current.why=t.slice(4).trim();}else if(t.startsWith("CHANGE:")){current.change=t.slice(7).trim();}else if(t.startsWith("METRIC:")){current.metric=t.slice(7).trim();}else{current.body=current.body?current.body+" "+t:t;}}});if(current)recs.push(current);return recs.filter(function(r){return r.title&&(r.shows||r.why||r.change||r.body);});}
@@ -1423,7 +1425,7 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditD
             <p style={{color:C.grey6,fontSize:13,margin:0}}>{audit.date} · {recs.length} findings</p>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
-            {recs.map(function(rec,i){
+            {recs.slice(0,visibleCount).map(function(rec,i){
               var isAdded=isAlreadyAdded(rec,audit.scope)||!!added[activeAudit+"-"+i];
               var parts=rec.title.split(" — ");
               var recTitle=parts[0];
@@ -1431,9 +1433,10 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditD
               var personas=parts.slice(2).join(", ");
               var priorityColor=priority==="P1"?"#D94F00":priority==="P2"?C.violet:"#005C3B";
               var priorityBg=priority==="P1"?"#FFF0E8":priority==="P2"?"#EEEEFF":"#E6F9F2";
+              var hasBody=!!(rec.shows||rec.why||rec.change||rec.metric||rec.body);
               return(
-                <div key={i} style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"18px 20px"}}>
-                  <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:rec.shows||rec.why||rec.change||rec.metric?12:0}}>
+                <div key={i} style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"20px"}}>
+                  <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
                     <div style={{width:28,height:28,borderRadius:"50%",background:C.white,border:"2px solid "+C.pink,color:C.black,fontSize:12,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{isAdded?"✓":i+1}</div>
                     <div style={{flex:1}}>
                       <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
@@ -1444,7 +1447,8 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditD
                     </div>
                     <button onClick={function(){if(!isAdded)addToAudit(rec,audit.scope,i);}} style={{flexShrink:0,background:isAdded?"#E6F9F2":C.pink,color:isAdded?"#005C3B":C.white,border:"none",borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:isAdded?"default":"pointer",whiteSpace:"nowrap"}}>{isAdded?"Added":"Add to Actions"}</button>
                   </div>
-                  {(rec.shows||rec.why||rec.change||rec.metric)&&(
+                  {hasBody&&<div style={{borderTop:"1px solid "+C.grey4,margin:"16px 0"}}/>}
+                  {hasBody&&(
                     <div style={{display:"flex",flexDirection:"column",gap:8,paddingLeft:40}}>
                       {rec.shows&&<div style={{fontSize:13,color:C.grey8,lineHeight:1.5}}><span style={{fontWeight:700,color:C.grey8}}>Data: </span>{rec.shows}</div>}
                       {rec.why&&<div style={{fontSize:13,color:C.grey8,lineHeight:1.5}}><span style={{fontWeight:700,color:C.grey8}}>Why it matters: </span>{rec.why}</div>}
@@ -1456,6 +1460,12 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,setAuditData,auditD
                 </div>
               );
             })}
+            {recs.length>visibleCount&&(
+              <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"20px",textAlign:"center"}}>
+                <p style={{fontSize:13,color:C.grey7,margin:"0 0 12px"}}>There are <strong style={{color:C.black}}>{recs.length-visibleCount} more findings</strong> — would you like to see them now?</p>
+                <button onClick={function(){setVisibleCount(recs.length);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Load {recs.length-visibleCount} more findings</button>
+              </div>
+            )}
           </div>
         </>)}
         </div>
@@ -1674,7 +1684,7 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
 
     p+="PERSONAS: "+personas.map(function(pe){return pe.label+" ("+pe.tagline+")";}).join("; ")+".\n\n";
 
-    p+="Produce exactly 8 UX findings for this page. Output ONLY the findings — no intro, no summary, no other sections.\n\n";
+    p+="Produce exactly 20 UX findings for this page. Output ONLY the findings — no intro, no summary, no other sections.\n\n";
     p+="Use this EXACT format for every finding (all 4 fields required):\n\n";
     p+="FINDING: 1. Title of finding\n";
     p+="SHOWS: What the evidence or observation shows\n";
@@ -1686,7 +1696,7 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
     p+="WHY: ...\n";
     p+="CHANGE: ...\n";
     p+="METRIC: ...\n\n";
-    p+="...and so on up to FINDING: 8.\n\n";
+    p+="...and so on up to FINDING: 20.\n\n";
     p+="Start your response directly with FINDING: 1. — no preamble.";
 
     setAuditImages(images);
