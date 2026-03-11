@@ -373,7 +373,7 @@ function JourneySummaryPanel({personaId,journeys,setView,setActivePersonaForJour
 }
 
 function PageWrap({children,isMobile}){
-  return(<div style={{background:C.grey2,height:"100%",overflow:"auto",padding:isMobile?"20px 16px":"40px 32px"}}><div style={{maxWidth:920,margin:"0 auto"}}>{children}</div></div>);
+  return(<div style={{background:C.grey2,height:"100%",overflow:"auto",padding:isMobile?"20px 16px 80px":"40px 32px 80px"}}><div style={{maxWidth:920,margin:"0 auto"}}>{children}</div></div>);
 }
 
 function BlackHero({eyebrow,title,desc,children,why}){
