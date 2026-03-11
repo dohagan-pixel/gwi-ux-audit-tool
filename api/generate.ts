@@ -15,19 +15,24 @@ export default async function handler(req, res) {
   }
 
   const hasImages = Array.isArray(images) && images.length > 0;
-  const model = 'claude-3-5-sonnet-20241022';
-  const effectiveMaxTokens = Math.min(max_tokens || 1000, 8192);
+
+  // claude-3-haiku is available on all Anthropic tiers including new accounts.
+  // Upgrade to claude-3-5-sonnet-20241022 once the account has full model access.
+  const model = hasImages ? 'claude-3-haiku-20240307' : 'claude-3-haiku-20240307';
+  const effectiveMaxTokens = Math.min(max_tokens || 1000, 4096);
 
   // Build message content — Anthropic uses base64 source objects for images
   const messageContent = hasImages
     ? [
         { type: 'text', text: prompt },
         ...images.map((img: { dataUrl: string }) => {
-          const [header, data] = img.dataUrl.split(',');
+          const commaIdx = img.dataUrl.indexOf(',');
+          const header = img.dataUrl.slice(0, commaIdx);
+          const b64data = img.dataUrl.slice(commaIdx + 1);
           const mediaType = header.split(':')[1].split(';')[0]; // e.g. "image/jpeg"
           return {
             type: 'image',
-            source: { type: 'base64', media_type: mediaType, data }
+            source: { type: 'base64', media_type: mediaType, data: b64data }
           };
         })
       ]
@@ -51,13 +56,17 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
-      return res.status(500).json({ error: data.error?.message || 'Anthropic API error' });
+      // Return full error detail so the UI can show exactly what went wrong
+      const errMsg = data?.error?.message
+        || data?.error?.type
+        || (typeof data?.error === 'string' ? data.error : null)
+        || `HTTP ${response.status}: ${JSON.stringify(data)}`;
+      return res.status(500).json({ error: errMsg });
     }
 
-    // Response shape matches what the frontend already expects
     const text = data?.content?.[0]?.text ?? '';
     return res.status(200).json({ content: [{ text }] });
-  } catch (err) {
-    return res.status(500).json({ error: 'Failed to contact AI service' });
+  } catch (err: any) {
+    return res.status(500).json({ error: err?.message || 'Failed to contact AI service' });
   }
 }
