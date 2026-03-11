@@ -1339,7 +1339,7 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
     hasFetched.current=true;
     var hasImages=images&&images.length>0;
     fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:32000,images:hasImages?images.map(function(i){return{dataUrl:i.dataUrl,mimeType:i.mimeType};}):undefined})})
-      .then(function(r){return r.json();})
+      .then(function(r){return r.text().then(function(raw){try{return JSON.parse(raw);}catch(e){return{error:"Server error (not JSON): "+raw.slice(0,300)};}});})
       .then(function(data){if(data.error){setErrorMsg(data.error);setStatus("error");return;}var text=data.content&&data.content[0]?data.content[0].text:"";if(!text){setErrorMsg("No content returned from API.");setStatus("error");return;}onDone(text);setStatus("done");})
       .catch(function(err){setErrorMsg(err&&err.message?err.message:"Network error — check your connection.");setStatus("error");});
   },[]);
