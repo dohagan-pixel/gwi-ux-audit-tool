@@ -2330,8 +2330,9 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
         </>)}
       </div>
       {active&&(
-        <div style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
-          <div style={{background:C.black,padding:"20px 28px",flexShrink:0}}>
+        <div style={{flex:1,display:"flex",flexDirection:"column",minHeight:0,background:C.grey2,overflow:"hidden"}}>
+          <div style={{padding:isMobile?"16px 16px 0":"28px 28px 0",flexShrink:0}}>
+            <div style={{background:C.black,borderRadius:16,padding:isMobile?"20px":"24px 28px"}}>
             <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16}}>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Saved Wireframe</div>
@@ -2359,8 +2360,11 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                 </div>
               )}
             </div>
+            </div>
           </div>
-          <iframe srcDoc={active.html} title="Wireframe" style={{flex:1,border:"none",background:"#fff"}} sandbox="allow-same-origin"/>
+          <div style={{flex:1,padding:isMobile?"16px":"24px 28px 28px",minHeight:0,display:"flex",flexDirection:"column"}}>
+            <iframe srcDoc={active.html} title="Wireframe" style={{flex:1,border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}} sandbox="allow-same-origin"/>
+          </div>
         </div>
       )}
     </div>
