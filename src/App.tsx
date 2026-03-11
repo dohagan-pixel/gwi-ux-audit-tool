@@ -1301,7 +1301,7 @@ function WireframeModal({page,personas,onClose,onSave}){
     hasFetched.current=true;
     var actionLines=page.actions.map(function(a,i){return(i+1)+". "+a.text+(a.description?" — "+a.description:"");}).join("\n");
     var personaNames=personas.map(function(p){return p.label+" ("+p.tagline+")";}).join(", ");
-    var prompt="You are a UX wireframe designer. Create a low-fidelity HTML wireframe for the gwi.com "+page.label+" page ("+page.url+").\n\nThis wireframe shows the IMPROVED version of the page incorporating these UX recommendations:\n"+actionLines+"\n\nPersonas this page serves: "+personaNames+".\n\nWireframe rules:\n- Use ONLY grey tones: backgrounds #f5f5f5 and #e8e8e8, borders #d0d0d0, text #666 and #333\n- Use Arial/sans-serif fonts only\n- Replace all images with labelled grey rectangles using inline styles\n- Include realistic section structure but use short [PLACEHOLDER] text\n- Add a small comment label in the top-left of each section (e.g. '// HERO', '// SOCIAL PROOF', '// FEATURES GRID')\n- For each section that addresses one of the recommendations, add a small badge in the top-right corner with the recommendation number and a #FF0077 pink background, white text, 10px font, pill shape\n- Full self-contained HTML page with all CSS inline or in a <style> tag\n- Max content width 1200px, centred\n- Desktop layout\n- No JavaScript\n\nOutput ONLY the raw HTML — no explanation, no markdown fences, nothing else.";
+    var prompt="You are a UX wireframe designer. Create a low-fidelity HTML wireframe for the gwi.com "+page.label+" page ("+page.url+").\n\nThis wireframe shows the IMPROVED version of the page incorporating these UX recommendations:\n"+actionLines+"\n\nPersonas this page serves: "+personaNames+".\n\nWireframe rules:\n- Use ONLY grey tones: backgrounds #f5f5f5 and #e8e8e8, borders #d0d0d0, text #666 and #333\n- Use Arial/sans-serif fonts only\n- Replace all images with labelled grey rectangles using inline styles\n- Include realistic section structure but use short [PLACEHOLDER] text\n- Add a small comment label in the top-left of each section (e.g. '// HERO', '// SOCIAL PROOF', '// FEATURES GRID')\n- For each section that addresses one of the recommendations, add a clickable badge positioned top-right inside the section: <span data-rec=\"N\" style=\"position:absolute;top:10px;right:10px;background:#FF0077;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;cursor:pointer\">Rec #N</span> — N must match the exact recommendation number from the list above. Every section container that holds a badge must have position:relative so the badge sits correctly\n- Full self-contained HTML page with all CSS inline or in a <style> tag\n- Max content width 1200px, centred\n- Desktop layout\n- No JavaScript\n\nOutput ONLY the raw HTML — no explanation, no markdown fences, nothing else.";
     fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:8192})})
       .then(function(r){
         var ct=r.headers.get("content-type")||"";
@@ -1324,7 +1324,7 @@ function WireframeModal({page,personas,onClose,onSave}){
         </div>
         <div style={{display:"flex",gap:8}}>
           {status==="done"&&<button onClick={downloadHtml} style={{background:"rgba(255,255,255,0.1)",color:C.white,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Download HTML</button>}
-          {status==="done"&&<button onClick={function(){if(!saved&&onSave){onSave({id:"wf-"+Date.now(),pageLabel:page.label,pageUrl:page.url,date:new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}),html:html});setSaved(true);}}} style={{background:saved?"rgba(34,197,94,0.2)":C.pink,color:saved?"#22C55E":C.white,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:saved?"default":"pointer"}}>{saved?"Saved ✓":"Save Wireframe"}</button>}
+          {status==="done"&&<button onClick={function(){if(!saved&&onSave){onSave({id:"wf-"+Date.now(),pageLabel:page.label,pageUrl:page.url,date:new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}),html:html,actions:page.actions||[]});setSaved(true);}}} style={{background:saved?"rgba(34,197,94,0.2)":C.pink,color:saved?"#22C55E":C.white,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:saved?"default":"pointer"}}>{saved?"Saved ✓":"Save Wireframe"}</button>}
           <button onClick={onClose} style={{background:"rgba(255,255,255,0.1)",color:C.grey4,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Close</button>
         </div>
       </div>
@@ -2290,10 +2290,11 @@ function ConfirmResetScreen({oobCode}:{oobCode:string}){
     </div>
   );
 }
-function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWireframe}){
+function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWireframe,auditData}){
   var [activeId,setActiveId]=useState(wireframes.length>0?wireframes[wireframes.length-1].id:null);
   var [editing,setEditing]=useState(false);
   var [editLabel,setEditLabel]=useState("");
+  var [activeRec,setActiveRec]=useState(null);
   var isMobile=useWidth()<768;
   var active=wireframes.find(function(w){return w.id===activeId;});
   var starredWireframes=wireframes.filter(function(w){return w.starred;});
@@ -2303,6 +2304,12 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   function toggleStar(){if(!active)return;var updated=Object.assign({},active,{starred:!active.starred});setWireframes(function(prev){return prev.map(function(w){return w.id===activeId?updated:w;});});if(onUpdateWireframe)onUpdateWireframe(updated);}
   function openEdit(){setEditLabel(active?active.pageLabel:"");setEditing(true);}
   function saveEdit(){if(!active)return;var updated=Object.assign({},active,{pageLabel:editLabel.trim()||active.pageLabel});setWireframes(function(prev){return prev.map(function(w){return w.id===activeId?updated:w;});});if(onUpdateWireframe)onUpdateWireframe(updated);setEditing(false);}
+  useEffect(function(){setActiveRec(null);},[activeId]);
+  useEffect(function(){function onMsg(e){if(e.data&&e.data.type==="rec-click")setActiveRec(e.data.recNum);}window.addEventListener("message",onMsg);return function(){window.removeEventListener("message",onMsg);};},[]);
+  function injectRecScript(html){var script='<script>document.addEventListener("click",function(e){var el=e.target;for(var i=0;i<8;i++){if(!el||el===document.body)break;var r=el.getAttribute("data-rec");if(r){window.parent.postMessage({type:"rec-click",recNum:parseInt(r)},"*");return;}el=el.parentElement;}});<\/script>';var idx=html.lastIndexOf("</body>");if(idx>=0)return html.slice(0,idx)+script+html.slice(idx);return html+script;}
+  var _ap=active&&auditData?auditData.find(function(p){return p.url===active.pageUrl;}):null;
+  var activeActions=active&&active.actions&&active.actions.length?active.actions:(_ap?_ap.actions:[]);
+  var activeRecAction=activeRec!==null?activeActions[activeRec-1]||null:null;
   if(wireframes.length===0){return(<div style={{background:C.grey2,height:"100%",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center",padding:32}}><div style={{marginBottom:16,color:C.grey6,display:"flex",justifyContent:"center"}}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></div><h2 style={{fontSize:20,fontWeight:800,color:C.black,marginBottom:8}}>No saved wireframes yet</h2><p style={{fontSize:14,color:C.grey7,marginBottom:4}}>Generate a wireframe from the Actions page, then click Save Wireframe.</p></div></div>);}
   return(
     <div style={{display:"flex",flexDirection:isMobile?"column":"row",flex:1,minHeight:0,background:C.grey2}}>
@@ -2331,7 +2338,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
         </>)}
       </div>
       {active&&(
-        <div style={{flex:1,display:"flex",flexDirection:"column",minHeight:0,background:C.grey2,overflow:"hidden"}}>
+        <div style={{flex:1,display:"flex",flexDirection:"column",minHeight:0,background:C.grey2,overflow:"hidden",position:"relative"}}>
           <div style={{padding:isMobile?"16px 16px 0":"28px 28px 0",flexShrink:0}}>
             <div style={{background:C.black,borderRadius:16,padding:isMobile?"20px":"24px 28px"}}>
             <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16}}>
@@ -2364,8 +2371,20 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
             </div>
           </div>
           <div style={{flex:1,padding:isMobile?"16px":"24px 28px 28px",minHeight:0,display:"flex",flexDirection:"column"}}>
-            <iframe srcDoc={active.html} title="Wireframe" style={{flex:1,border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}} sandbox="allow-same-origin"/>
+            <iframe srcDoc={injectRecScript(active.html)} title="Wireframe" style={{flex:1,border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}} sandbox="allow-same-origin allow-scripts"/>
           </div>
+          {activeRecAction&&(
+            <div onClick={function(){setActiveRec(null);}} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:20}}>
+              <div onClick={function(e){e.stopPropagation();}} style={{background:C.white,borderRadius:16,padding:"28px 32px",maxWidth:480,width:"calc(100% - 64px)",boxShadow:"0 8px 48px rgba(0,0,0,0.3)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18}}>
+                  <span style={{background:C.pink,color:C.white,fontSize:11,fontWeight:700,padding:"3px 12px",borderRadius:99,flexShrink:0}}>Rec #{activeRec}</span>
+                  <button onClick={function(){setActiveRec(null);}} style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",color:C.grey6,fontSize:24,lineHeight:1,padding:"0 0 2px",display:"flex",alignItems:"center"}}>×</button>
+                </div>
+                <p style={{fontSize:15,fontWeight:800,color:C.black,margin:"0 0 12px",lineHeight:1.45}}>{activeRecAction.text}</p>
+                {activeRecAction.description&&<p style={{fontSize:13,color:C.grey7,margin:0,lineHeight:1.7}}>{activeRecAction.description}</p>}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -2438,7 +2457,7 @@ export default function App(){
         {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit).catch(function(){});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
         {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id)).catch(function(){});}} onUpdateAudit={function(updated){if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",updated.id),updated).catch(function(){});}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
         {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards}/>}
-        {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}}/>}
+        {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData}/>}
       </div>
       {showAddAction&&<AddActionModal auditData={auditData} setAuditData={setAuditData} pages={pages} onClose={function(){setShowAddAction(false);}}/>}
     </div>
