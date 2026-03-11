@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 
 import{initializeApp}from'firebase/app';
-import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut as fbSignOut,onAuthStateChanged}from'firebase/auth';
+import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut as fbSignOut,onAuthStateChanged,sendPasswordResetEmail}from'firebase/auth';
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
@@ -2034,7 +2034,54 @@ function MobileNav({view,setView}){
 }
 
 
-function LoginScreen({onLogin,onRegister,loginError}){var [_em,_setEm]=useState('');var [_pw,_setPw]=useState('');var [_isReg,_setIsReg]=useState(false);function _submit(e){e.preventDefault();_isReg?onRegister(_em,_pw):onLogin(_em,_pw);}return(<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",background:"#0a0a0a"}}><div style={{textAlign:"center",maxWidth:360,padding:32,boxSizing:"border-box",width:"100%"}}><div style={{fontWeight:800,fontSize:36,color:"#fff",marginBottom:8}}>GWI UX</div><div style={{fontSize:14,color:"#666",marginBottom:40}}>UX Audit Platform</div><form onSubmit={_submit} style={{display:"flex",flexDirection:"column",gap:12}}><input type="email" placeholder="your@gwi.com" value={_em} onChange={function(e){_setEm(e.target.value);}} required style={{padding:"10px 14px",background:"#1a1a1a",border:"1px solid #333",borderRadius:8,color:"#fff",fontSize:14,outline:"none",boxSizing:"border-box",width:"100%"}}/><input type="password" placeholder="Password" value={_pw} onChange={function(e){_setPw(e.target.value);}} required style={{padding:"10px 14px",background:"#1a1a1a",border:"1px solid #333",borderRadius:8,color:"#fff",fontSize:14,outline:"none",boxSizing:"border-box",width:"100%"}}/><button type="submit" style={{background:"#fff",color:"#000",border:"none",borderRadius:8,padding:"11px 0",fontSize:14,fontWeight:600,cursor:"pointer",marginTop:4}}>{_isReg?"Create Account":"Sign In"}</button></form>{loginError&&<div style={{color:"#f87171",fontSize:13,marginTop:12,textAlign:"left"}}>{loginError}</div>}<button type="button" onClick={function(){_setIsReg(!_isReg);}} style={{background:"transparent",border:"none",color:"#666",fontSize:13,cursor:"pointer",marginTop:16,padding:0}}>{_isReg?"Already have an account? Sign in":"No account yet? Create one"}</button><div style={{fontSize:12,color:"#555",marginTop:16}}>Access restricted to @gwi.com accounts</div></div></div>);}
+function LoginScreen({onLogin,onRegister,loginError}){
+  var [_em,_setEm]=useState('');
+  var [_pw,_setPw]=useState('');
+  var [_isReg,_setIsReg]=useState(false);
+  var [_forgotMode,_setForgotMode]=useState(false);
+  var [_resetMsg,_setResetMsg]=useState('');
+  var _inputStyle={padding:"10px 14px",background:"#1a1a1a",border:"1px solid #333",borderRadius:8,color:"#fff",fontSize:14,outline:"none",boxSizing:"border-box" as const,width:"100%"};
+  var _btnStyle={background:"#fff",color:"#000",border:"none",borderRadius:8,padding:"11px 0",fontSize:14,fontWeight:600,cursor:"pointer",marginTop:4};
+  function _submit(e){e.preventDefault();_isReg?onRegister(_em,_pw):onLogin(_em,_pw);}
+  function _handleReset(e){
+    e.preventDefault();
+    if(!_em.endsWith('@gwi.com')){_setResetMsg('Enter your @gwi.com email above.');return;}
+    sendPasswordResetEmail(_auth,_em)
+      .then(function(){_setResetMsg('Check your inbox — a reset link has been sent.');})
+      .catch(function(){_setResetMsg('Could not send reset email. Check the address and try again.');});
+  }
+  if(_forgotMode)return(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",background:"#0a0a0a"}}>
+      <div style={{textAlign:"center",maxWidth:360,padding:32,boxSizing:"border-box" as const,width:"100%"}}>
+        <div style={{fontWeight:800,fontSize:36,color:"#fff",marginBottom:8}}>GWI UX</div>
+        <div style={{fontSize:14,color:"#666",marginBottom:40}}>Reset your password</div>
+        <form onSubmit={_handleReset} style={{display:"flex",flexDirection:"column",gap:12}}>
+          <input type="email" placeholder="your@gwi.com" value={_em} onChange={function(e){_setEm(e.target.value);}} required style={_inputStyle}/>
+          <button type="submit" style={_btnStyle}>Send reset email</button>
+        </form>
+        {_resetMsg&&<div style={{color:_resetMsg.startsWith('Check')?'#4ade80':'#f87171',fontSize:13,marginTop:12,textAlign:"left"}}>{_resetMsg}</div>}
+        <button type="button" onClick={function(){_setForgotMode(false);_setResetMsg('');}} style={{background:"transparent",border:"none",color:"#666",fontSize:13,cursor:"pointer",marginTop:16,padding:0}}>← Back to sign in</button>
+      </div>
+    </div>
+  );
+  return(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",background:"#0a0a0a"}}>
+      <div style={{textAlign:"center",maxWidth:360,padding:32,boxSizing:"border-box" as const,width:"100%"}}>
+        <div style={{fontWeight:800,fontSize:36,color:"#fff",marginBottom:8}}>GWI UX</div>
+        <div style={{fontSize:14,color:"#666",marginBottom:40}}>UX Audit Platform</div>
+        <form onSubmit={_submit} style={{display:"flex",flexDirection:"column",gap:12}}>
+          <input type="email" placeholder="your@gwi.com" value={_em} onChange={function(e){_setEm(e.target.value);}} required style={_inputStyle}/>
+          <input type="password" placeholder="Password" value={_pw} onChange={function(e){_setPw(e.target.value);}} required style={_inputStyle}/>
+          {!_isReg&&<button type="button" onClick={function(){_setForgotMode(true);_setResetMsg('');}} style={{background:"transparent",border:"none",color:"#555",fontSize:12,cursor:"pointer",textAlign:"right",padding:0,marginTop:-4}}>Forgot password?</button>}
+          <button type="submit" style={_btnStyle}>{_isReg?"Create Account":"Sign In"}</button>
+        </form>
+        {loginError&&<div style={{color:"#f87171",fontSize:13,marginTop:12,textAlign:"left"}}>{loginError}</div>}
+        <button type="button" onClick={function(){_setIsReg(!_isReg);}} style={{background:"transparent",border:"none",color:"#666",fontSize:13,cursor:"pointer",marginTop:16,padding:0}}>{_isReg?"Already have an account? Sign in":"No account yet? Create one"}</button>
+        <div style={{fontSize:12,color:"#555",marginTop:16}}>Access restricted to @gwi.com accounts</div>
+      </div>
+    </div>
+  );
+}
 export default function App(){
   var [view,setView]=useState("dashboard");
   var [stages,setStages]=useState(INIT_STAGES);
