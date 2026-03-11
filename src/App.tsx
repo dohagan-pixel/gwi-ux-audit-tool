@@ -1040,6 +1040,7 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction}){
   var [openAction,setOpenAction]=useState(null);
   var [generating,setGenerating]=useState({});
   var [whyPage,setWhyPage]=useState(null);
+  var [wireframePage,setWireframePage]=useState(null);
   var isMobile=useWidth()<768;
   var prevOpen=useRef(null);
   var pageDrag=useDragList(auditData,setAuditData);
@@ -1126,7 +1127,10 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction}){
                         {page.issue&&!generating[page.id]&&<button onClick={function(){regenerate(page);}} style={{background:"transparent",color:C.pink,border:"1px solid "+C.pink,borderRadius:6,padding:"2px 10px",fontSize:10,fontWeight:700,cursor:"pointer"}}>Regenerate</button>}
                       </div>
                       {generating[page.id]?<p style={{fontSize:13,color:C.grey6,lineHeight:1.6,margin:0,fontStyle:"italic"}}>Generating diagnosis...</p>:page.issue?<p style={{fontSize:13,color:C.offBlack,lineHeight:1.6,margin:0}}>{page.issue}</p>:<p style={{fontSize:13,color:C.grey6,lineHeight:1.6,margin:0,fontStyle:"italic"}}>{page.actions.length===0?"Add actions to generate a diagnosis.":"Generating..."}</p>}
-                      {page.personas&&page.personas.length>0&&<PersonaToggle personaIds={page.personas} personas={personas}/>}
+                      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+                        {page.personas&&page.personas.length>0&&<PersonaToggle personaIds={page.personas} personas={personas}/>}
+                        {page.actions.length>0&&<button onClick={function(){setWireframePage(page);}} style={{background:"transparent",color:C.grey7,border:"1px solid "+C.grey5,borderRadius:6,padding:"4px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",gap:5,marginTop:page.personas&&page.personas.length>0?0:0}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Generate Wireframe</button>}
+                      </div>
                     </div>
                     <ActionList pageId={page.id} actions={page.actions} reorderActions={reorderActions} openAction={openAction} setOpenAction={setOpenAction} statusCfg={statusCfg} setActionStatus={setActionStatus} updateAction={updateAction} deleteAction={deleteAction} calcDelta={calcDelta} isMobile={isMobile}/>
                   </div>
@@ -1138,6 +1142,7 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction}){
         {pageDrag.dropIdx===auditData.length&&<DropLine/>}
       </div>
     </PageWrap>
+    {wireframePage&&<WireframeModal page={wireframePage} personas={personas} onClose={function(){setWireframePage(null);}}/>}
   );
 }
 
@@ -1267,6 +1272,75 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
         {status==="done"&&(<><div style={{width:48,height:48,borderRadius:"50%",background:"#E6F9F2",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:24}}>✓</div><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Audit ready</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 24px"}}>Your {pageLabel} audit has been generated.</p><div style={{display:"flex",gap:10,justifyContent:"center"}}><button onClick={function(){onClose(false);}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Close</button><button onClick={function(){onClose(true);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>View audit</button></div></>)}
         {status==="error"&&(<><div style={{width:48,height:48,borderRadius:"50%",background:"#FFF0F0",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:24}}>✗</div><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Something went wrong</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 8px"}}>The audit could not be generated.</p>{errorMsg&&<p style={{fontSize:12,color:"#CC0000",background:"#FFF0F0",border:"1px solid #FFAAAA",borderRadius:8,padding:"8px 12px",margin:"0 0 20px",textAlign:"left",wordBreak:"break-word"}}>{errorMsg}</p>}<button onClick={function(){onClose(false);}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Close</button></>)}
       </div>
+    </div>
+  );
+}
+
+function WireframeModal({page,personas,onClose}){
+  var [status,setStatus]=useState("loading");
+  var [html,setHtml]=useState("");
+  var [errorMsg,setErrorMsg]=useState("");
+  var [progress,setProgress]=useState(0);
+  var intervalRef=useRef(null);
+  var hasFetched=useRef(false);
+  useEffect(function(){
+    intervalRef.current=setInterval(function(){setProgress(function(prev){if(prev>=92){clearInterval(intervalRef.current);return prev;}return Math.min(prev+(prev<30?0.6:prev<60?0.35:prev<80?0.2:0.08),92);});},200);
+    return function(){clearInterval(intervalRef.current);};
+  },[]);
+  useEffect(function(){if(status==="done"||status==="error"){clearInterval(intervalRef.current);setProgress(100);}},[status]);
+  useEffect(function(){
+    if(hasFetched.current)return;
+    hasFetched.current=true;
+    var actionLines=page.actions.map(function(a,i){return(i+1)+". "+a.text+(a.description?" — "+a.description:"");}).join("\n");
+    var personaNames=personas.map(function(p){return p.label+" ("+p.tagline+")";}).join(", ");
+    var prompt="You are a UX wireframe designer. Create a low-fidelity HTML wireframe for the gwi.com "+page.label+" page ("+page.url+").\n\nThis wireframe shows the IMPROVED version of the page incorporating these UX recommendations:\n"+actionLines+"\n\nPersonas this page serves: "+personaNames+".\n\nWireframe rules:\n- Use ONLY grey tones: backgrounds #f5f5f5 and #e8e8e8, borders #d0d0d0, text #666 and #333\n- Use Arial/sans-serif fonts only\n- Replace all images with labelled grey rectangles using inline styles\n- Include realistic section structure but use short [PLACEHOLDER] text\n- Add a small comment label in the top-left of each section (e.g. '// HERO', '// SOCIAL PROOF', '// FEATURES GRID')\n- For each section that addresses one of the recommendations, add a small badge in the top-right corner with the recommendation number and a #FF0077 pink background, white text, 10px font, pill shape\n- Full self-contained HTML page with all CSS inline or in a <style> tag\n- Max content width 1200px, centred\n- Desktop layout\n- No JavaScript\n\nOutput ONLY the raw HTML — no explanation, no markdown fences, nothing else.";
+    fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:8192})})
+      .then(function(r){
+        var ct=r.headers.get("content-type")||"";
+        if(!ct.includes("text/event-stream")){return r.text().then(function(raw){try{var d=JSON.parse(raw);setErrorMsg(d.error||"Unknown error");}catch(e){setErrorMsg("Server error: "+raw.slice(0,300));}setStatus("error");});}
+        var reader=r.body.getReader();var decoder=new TextDecoder();var fullText="";var buf="";var finished=false;
+        function finish(text){if(finished)return;finished=true;if(text){setHtml(text);setStatus("done");}else{setErrorMsg("No content returned.");setStatus("error");}}
+        function pump(){reader.read().then(function(result){if(result.done){finish(fullText);return;}buf+=decoder.decode(result.value,{stream:true});var lines=buf.split("\n");buf=lines.pop()||"";lines.forEach(function(line){if(!line.startsWith("data: "))return;var data=line.slice(6).trim();if(data==="[DONE]"){finish(fullText);return;}try{var parsed=JSON.parse(data);if(parsed.error){setErrorMsg(parsed.error);setStatus("error");finished=true;return;}if(parsed.t)fullText+=parsed.t;}catch(e){}});if(!finished)pump();}).catch(function(err){setErrorMsg(err&&err.message?err.message:"Stream error");setStatus("error");});}
+        pump();
+      })
+      .catch(function(err){setErrorMsg(err&&err.message?err.message:"Network error");setStatus("error");});
+  },[]);
+  function downloadHtml(){var blob=new Blob([html],{type:"text/html"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(page.label||"wireframe").replace(/\s+/g,"-").toLowerCase()+"-wireframe.html";a.click();}
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:2000,display:"flex",flexDirection:"column"}}>
+      <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,padding:"0 20px",height:52,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.grey5} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          <span style={{color:C.white,fontSize:14,fontWeight:700}}>{page.label} — Wireframe</span>
+          {status==="done"&&<span style={{color:C.grey6,fontSize:12}}>· {page.actions.length} recommendations applied</span>}
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          {status==="done"&&<button onClick={downloadHtml} style={{background:"rgba(255,255,255,0.1)",color:C.white,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Download HTML</button>}
+          <button onClick={onClose} style={{background:"rgba(255,255,255,0.1)",color:C.grey4,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Close</button>
+        </div>
+      </div>
+      {status==="loading"&&(
+        <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <div style={{textAlign:"center",maxWidth:400,padding:32}}>
+            <div style={{width:48,height:48,borderRadius:"50%",border:"4px solid "+C.grey4,borderTop:"4px solid "+C.pink,margin:"0 auto 20px",animation:"spin 0.8s linear infinite"}}/>
+            <h3 style={{fontSize:18,fontWeight:800,color:C.white,margin:"0 0 8px"}}>Generating wireframe</h3>
+            <p style={{fontSize:13,color:C.grey6,margin:"0 0 24px"}}>Building a low-fidelity wireframe for the improved {page.label} page…</p>
+            <div style={{background:C.offBlack,borderRadius:99,height:8,overflow:"hidden",marginBottom:8}}><div style={{width:progress+"%",background:C.pink,height:"100%",borderRadius:99,transition:"width 0.4s ease"}}/></div>
+            <div style={{fontSize:12,color:C.grey6,textAlign:"right"}}>{Math.round(progress)}%</div>
+          </div>
+        </div>
+      )}
+      {status==="done"&&<iframe srcDoc={html} title="Wireframe" style={{flex:1,border:"none",background:"#fff"}} sandbox="allow-same-origin"/>}
+      {status==="error"&&(
+        <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <div style={{textAlign:"center",maxWidth:400,padding:32}}>
+            <div style={{width:48,height:48,borderRadius:"50%",background:"#FFF0F0",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:24}}>✗</div>
+            <h3 style={{fontSize:18,fontWeight:800,color:C.white,margin:"0 0 8px"}}>Wireframe failed</h3>
+            {errorMsg&&<p style={{fontSize:12,color:"#FF9999",margin:"0 0 20px",wordBreak:"break-word"}}>{errorMsg}</p>}
+            <button onClick={onClose} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
