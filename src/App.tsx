@@ -1282,6 +1282,22 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
   );
 }
 
+function sanitizeSvg(raw){
+  var clean=raw.trim().replace(/^```[a-z]*\n?/i,"").replace(/\n?```$/i,"").trim();
+  var svgStart=clean.indexOf("<svg");
+  if(svgStart>0)clean=clean.slice(svgStart);
+  try{
+    var parser=new DOMParser();
+    var doc=parser.parseFromString(clean,"image/svg+xml");
+    if(doc.querySelector("parsererror"))return clean;
+    var svg=doc.documentElement;
+    ["foreignObject","style","script","animate","animateTransform","animateMotion","set","filter","feGaussianBlur","feBlend","feMerge","feMergeNode","feColorMatrix","feComposite","feTurbulence","mask","clipPath","linearGradient","radialGradient","pattern","symbol","use"].forEach(function(tag){svg.querySelectorAll(tag).forEach(function(el){el.remove();});});
+    svg.setAttribute("xmlns","http://www.w3.org/2000/svg");
+    svg.removeAttribute("xmlns:xlink");
+    return new XMLSerializer().serializeToString(svg);
+  }catch(e){return clean;}
+}
+
 function WireframeModal({page,personas,onClose,onSave}){
   var [status,setStatus]=useState("loading");
   var [html,setHtml]=useState("");
@@ -1300,13 +1316,13 @@ function WireframeModal({page,personas,onClose,onSave}){
     hasFetched.current=true;
     var actionLines=page.actions.map(function(a,i){return(i+1)+". "+a.text+(a.description?" — "+a.description:"");}).join("\n");
     var personaNames=personas.map(function(p){return p.label+" ("+p.tagline+")";}).join(", ");
-    var prompt="You are a UX wireframe designer creating Figma-ready SVG wireframes.\n\nCreate a low-fidelity SVG wireframe for the gwi.com "+page.label+" page ("+page.url+").\n\nThis wireframe shows the IMPROVED version incorporating these UX recommendations:\n"+actionLines+"\n\nPersonas this page serves: "+personaNames+".\n\nSVG RULES — follow exactly:\n1. Root element: <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1280\" viewBox=\"0 0 1280 [TOTAL_HEIGHT]\" font-family=\"Arial, sans-serif\">\n2. Wrap each section in <g id=\"[section-id]\"> — these become named layers when imported into Figma\n3. Use ONLY these tones: fill=\"#f5f5f5\" (page bg), fill=\"#ffffff\" (white sections), fill=\"#e8e8e8\" (cards/placeholders), fill=\"#d0d0d0\" (borders), fill=\"#999999\" (secondary text), fill=\"#666666\" (body text), fill=\"#333333\" (headings), fill=\"#111111\" (nav/footer bg)\n4. Section label: top-left of each section, <text fill=\"#bbbbbb\" font-size=\"10\" font-weight=\"600\">// SECTION NAME</text>\n5. Image placeholders: <rect fill=\"#e8e8e8\" rx=\"4\"/> with a centered <text fill=\"#999999\" font-size=\"12\">[IMAGE LABEL]</text>\n6. All text copy uses [PLACEHOLDER] format — no real copy\n7. For sections addressing a recommendation, add a pink badge near the section label: <rect fill=\"#FF0077\" rx=\"10\" height=\"20\"/> with <text fill=\"#ffffff\" font-size=\"9\" font-weight=\"700\">Rec #N</text>\n8. Buttons: <rect fill=\"#111111\" rx=\"20\"/> with <text fill=\"#ffffff\" font-size=\"13\">[BUTTON LABEL]</text>\n9. Dividers and borders use stroke=\"#d0d0d0\" stroke-width=\"1\"\n10. Build sections top-to-bottom. Typical heights: Nav 64px, Hero 460px, Metrics strip 100px, Features 420px, Data preview 380px, Social proof 320px, CTA 220px, Footer 180px — adjust as needed\n11. NO <style> blocks, NO CSS classes, NO JavaScript — inline SVG attributes only\n12. Calculate total height from all sections combined and use it in viewBox\n\nOutput ONLY the raw SVG element starting with <svg — no XML declaration, no explanation, no markdown fences.";
+    var prompt="You are a UX wireframe designer creating Figma-ready SVG wireframes.\n\nCreate a low-fidelity SVG wireframe for the gwi.com "+page.label+" page ("+page.url+").\n\nThis wireframe shows the IMPROVED version incorporating these UX recommendations:\n"+actionLines+"\n\nPersonas this page serves: "+personaNames+".\n\nSVG RULES — follow exactly:\n1. Root element: <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1280\" viewBox=\"0 0 1280 [TOTAL_HEIGHT]\" font-family=\"Arial, sans-serif\">\n2. Wrap each section in <g id=\"[section-id]\"> — these become named layers when imported into Figma\n3. Use ONLY these tones: fill=\"#f5f5f5\" (page bg), fill=\"#ffffff\" (white sections), fill=\"#e8e8e8\" (cards/placeholders), fill=\"#d0d0d0\" (borders), fill=\"#999999\" (secondary text), fill=\"#666666\" (body text), fill=\"#333333\" (headings), fill=\"#111111\" (nav/footer bg)\n4. Section label: top-left of each section, <text fill=\"#bbbbbb\" font-size=\"10\" font-weight=\"600\">// SECTION NAME</text>\n5. Image placeholders: <rect fill=\"#e8e8e8\" rx=\"4\"/> with a centered <text fill=\"#999999\" font-size=\"12\">[IMAGE LABEL]</text>\n6. All text copy uses [PLACEHOLDER] format — no real copy\n7. For sections addressing a recommendation, add a pink badge near the section label: <rect fill=\"#FF0077\" rx=\"10\" height=\"20\"/> with <text fill=\"#ffffff\" font-size=\"9\" font-weight=\"700\">Rec #N</text>\n8. Buttons: <rect fill=\"#111111\" rx=\"20\"/> with <text fill=\"#ffffff\" font-size=\"13\">[BUTTON LABEL]</text>\n9. Dividers and borders use stroke=\"#d0d0d0\" stroke-width=\"1\"\n10. Build sections top-to-bottom. Typical heights: Nav 64px, Hero 460px, Metrics strip 100px, Features 420px, Data preview 380px, Social proof 320px, CTA 220px, Footer 180px — adjust as needed\n11. FORBIDDEN — never use any of these elements: <foreignObject>, <style>, <script>, <filter>, <feGaussianBlur>, <feBlend>, <animate>, <animateTransform>, <animateMotion>, <set>, <mask>, <clipPath>, <linearGradient>, <radialGradient>, <pattern>, <symbol>, <use>, <image>\n12. Use SVG presentation attributes only (fill, stroke, font-size, font-weight, etc.) — never CSS properties, never style=\"...\", never class=\"...\"\n13. All colors must be hex values (#xxxxxx) — never named colors like red or gray\n14. Calculate total height from all sections and set it in the viewBox\n15. This SVG must import into Figma without errors — keep it simple and strictly valid\n\nOutput ONLY the raw SVG element starting with <svg — no XML declaration, no explanation, no markdown fences.";
     fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:8192})})
       .then(function(r){
         var ct=r.headers.get("content-type")||"";
         if(!ct.includes("text/event-stream")){return r.text().then(function(raw){try{var d=JSON.parse(raw);setErrorMsg(d.error||"Unknown error");}catch(e){setErrorMsg("Server error: "+raw.slice(0,300));}setStatus("error");});}
         var reader=r.body.getReader();var decoder=new TextDecoder();var fullText="";var buf="";var finished=false;
-        function finish(text){if(finished)return;finished=true;if(text){setHtml(text);setStatus("done");}else{setErrorMsg("No content returned.");setStatus("error");}}
+        function finish(text){if(finished)return;finished=true;if(text){setHtml(sanitizeSvg(text));setStatus("done");}else{setErrorMsg("No content returned.");setStatus("error");}}
         function pump(){reader.read().then(function(result){if(result.done){finish(fullText);return;}buf+=decoder.decode(result.value,{stream:true});var lines=buf.split("\n");buf=lines.pop()||"";lines.forEach(function(line){if(!line.startsWith("data: "))return;var data=line.slice(6).trim();if(data==="[DONE]"){finish(fullText);return;}try{var parsed=JSON.parse(data);if(parsed.error){setErrorMsg(parsed.error);setStatus("error");finished=true;return;}if(parsed.t)fullText+=parsed.t;}catch(e){}});if(!finished)pump();}).catch(function(err){setErrorMsg(err&&err.message?err.message:"Stream error");setStatus("error");});}
         pump();
       })
