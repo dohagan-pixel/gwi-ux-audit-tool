@@ -56,11 +56,7 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
-      // Return full error detail so the UI can show exactly what went wrong
-      const errMsg = data?.error?.message
-        || data?.error?.type
-        || (typeof data?.error === 'string' ? data.error : null)
-        || `HTTP ${response.status}: ${JSON.stringify(data)}`;
+      const errMsg = `HTTP ${response.status} — ${data?.error?.message || data?.error?.type || JSON.stringify(data)}`;
       return res.status(500).json({ error: errMsg });
     }
 
