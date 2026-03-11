@@ -5,7 +5,7 @@ import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
-import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star } from "lucide-react";
+import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone } from "lucide-react";
 
 const C = {
   pink:"#FF0077",white:"#FFFFFF",black:"#101720",offBlack:"#2A3447",
@@ -2295,6 +2295,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   var [editing,setEditing]=useState(false);
   var [editLabel,setEditLabel]=useState("");
   var [activeRec,setActiveRec]=useState(null);
+  var [viewport,setViewport]=useState("desktop");
   var isMobile=useWidth()<768;
   var active=wireframes.find(function(w){return w.id===activeId;});
   var starredWireframes=wireframes.filter(function(w){return w.starred;});
@@ -2305,6 +2306,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   function openEdit(){setEditLabel(active?active.pageLabel:"");setEditing(true);}
   function saveEdit(){if(!active)return;var updated=Object.assign({},active,{pageLabel:editLabel.trim()||active.pageLabel});setWireframes(function(prev){return prev.map(function(w){return w.id===activeId?updated:w;});});if(onUpdateWireframe)onUpdateWireframe(updated);setEditing(false);}
   useEffect(function(){setActiveRec(null);},[activeId]);
+  useEffect(function(){setActiveRec(null);},[viewport]);
   useEffect(function(){function onMsg(e){if(e.data&&e.data.type==="rec-click")setActiveRec(e.data.recNum);}window.addEventListener("message",onMsg);return function(){window.removeEventListener("message",onMsg);};},[]);
   function injectRecScript(html){var script='<script>document.addEventListener("click",function(e){var el=e.target;for(var i=0;i<8;i++){if(!el||el===document.body)break;var r=el.getAttribute("data-rec");if(r){window.parent.postMessage({type:"rec-click",recNum:parseInt(r)},"*");return;}el=el.parentElement;}});<\/script>';var idx=html.lastIndexOf("</body>");if(idx>=0)return html.slice(0,idx)+script+html.slice(idx);return html+script;}
   var _ap=active&&auditData?auditData.find(function(p){return p.url===active.pageUrl;}):null;
@@ -2360,7 +2362,11 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                 )}
               </div>
               {!editing&&(
-                <div style={{display:"flex",gap:8,flexShrink:0,paddingTop:2}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0,paddingTop:2}}>
+                  <div style={{display:"flex",background:"rgba(255,255,255,0.08)",borderRadius:8,padding:2,gap:1}}>
+                    <button onClick={function(){setViewport("desktop");}} title="Desktop view" style={{background:viewport==="desktop"?"rgba(255,255,255,0.18)":"transparent",border:"none",borderRadius:6,width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:viewport==="desktop"?C.white:C.grey5}}><Monitor size={13}/></button>
+                    <button onClick={function(){setViewport("mobile");}} title="Mobile view" style={{background:viewport==="mobile"?"rgba(255,255,255,0.18)":"transparent",border:"none",borderRadius:6,width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:viewport==="mobile"?C.white:C.grey5}}><Smartphone size={13}/></button>
+                  </div>
                   <button onClick={toggleStar} title={active.starred?"Remove from starred":"Add to starred"} style={{background:active.starred?"rgba(255,193,7,0.15)":"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:active.starred?"#FFC107":C.grey4}}><Star size={15} fill={active.starred?"#FFC107":"none"}/></button>
                   <button onClick={openEdit} title="Rename" style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.grey4}}><Pencil size={15}/></button>
                   <button onClick={download} title="Download HTML" style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.grey4}}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
@@ -2370,8 +2376,8 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
             </div>
             </div>
           </div>
-          <div style={{flex:1,padding:isMobile?"16px":"24px 28px 28px",minHeight:0,display:"flex",flexDirection:"column"}}>
-            <iframe srcDoc={injectRecScript(active.html)} title="Wireframe" style={{flex:1,border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}} sandbox="allow-same-origin allow-scripts"/>
+          <div style={{flex:1,padding:isMobile?"16px":"24px 28px 28px",minHeight:0,display:"flex",flexDirection:"column",alignItems:viewport==="mobile"?"center":"stretch"}}>
+            <iframe srcDoc={injectRecScript(active.html)} title="Wireframe" sandbox="allow-same-origin allow-scripts" style={viewport==="mobile"?{flex:1,width:390,maxWidth:"calc(100% - 32px)",border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}:{flex:1,border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}}/>
           </div>
           {activeRecAction&&(
             <div onClick={function(){setActiveRec(null);}} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:20}}>
