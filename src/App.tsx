@@ -995,10 +995,17 @@ function ActionList({pageId,actions,reorderActions,openAction,setOpenAction,stat
                 {isOpenAction&&(
                   <div style={{borderTop:"1px solid "+C.grey4,padding:16,background:"#F8FAFF"}}>
                     {(action.shows||action.why||action.change)?(
-                      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
-                        {action.shows&&<div style={{fontSize:13,color:C.grey8,lineHeight:1.5}}><span style={{fontWeight:700,color:C.grey8}}>Data: </span>{action.shows}</div>}
-                        {action.why&&<div style={{fontSize:13,color:C.grey8,lineHeight:1.5}}><span style={{fontWeight:700,color:C.grey8}}>Why it matters: </span>{action.why}</div>}
-                        {action.change&&<div style={{fontSize:13,color:C.offBlack,lineHeight:1.5}}><span style={{fontWeight:700,color:C.pink}}>Change: </span>{action.change}</div>}
+                      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:12,marginBottom:20}}>
+                        {[
+                          {label:"Change",value:action.change,labelColor:C.pink,textColor:C.offBlack},
+                          {label:"Why it matters",value:action.why,labelColor:C.grey8,textColor:C.grey8},
+                          {label:"Data",value:action.shows,labelColor:C.grey8,textColor:C.grey8},
+                        ].map(function(col){return col.value?(
+                          <div key={col.label} style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:8,padding:"12px 14px"}}>
+                            <div style={{fontSize:10,fontWeight:700,color:col.labelColor,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:6}}>{col.label}</div>
+                            <div style={{fontSize:13,color:col.textColor,lineHeight:1.6}}>{col.value}</div>
+                          </div>
+                        ):null;})}
                       </div>
                     ):action.description?<p style={{fontSize:13,color:C.offBlack,lineHeight:1.7,margin:"0 0 20px"}}>{action.description}</p>:null}
                     <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:10}}>Before / After Tracking</div>
