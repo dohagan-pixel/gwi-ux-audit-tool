@@ -5,7 +5,7 @@ import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
-import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone } from "lucide-react";
+import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone, Lightbulb } from "lucide-react";
 
 const C = {
   pink:"#FF0077",white:"#FFFFFF",black:"#101720",offBlack:"#2A3447",
@@ -2312,7 +2312,13 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   useEffect(function(){setActiveRec(null);setAddedRecs({});},[activeId]);
   useEffect(function(){setActiveRec(null);},[viewport]);
   useEffect(function(){function onMsg(e){if(e.data&&e.data.type==="rec-click")setActiveRec(e.data.recNum);}window.addEventListener("message",onMsg);return function(){window.removeEventListener("message",onMsg);};},[]);
-  function injectRecScript(html){var script='<script>document.addEventListener("click",function(e){var el=e.target;for(var i=0;i<8;i++){if(!el||el===document.body)break;var r=el.getAttribute("data-rec");if(r){window.parent.postMessage({type:"rec-click",recNum:parseInt(r)},"*");return;}el=el.parentElement;}});window.addEventListener("message",function(e){if(e.data&&e.data.type==="set-rec-states"){var g=e.data.greenRecs||[];document.querySelectorAll("[data-rec]").forEach(function(b){var n=parseInt(b.getAttribute("data-rec"));b.style.background=g.indexOf(n)>=0?"#22C55E":"#FF0077";});}});<\/script>';var idx=html.lastIndexOf("</body>");if(idx>=0)return html.slice(0,idx)+script+html.slice(idx);return html+script;}
+  function injectRecScript(html){
+    var clickScript='document.addEventListener("click",function(e){var el=e.target;for(var i=0;i<8;i++){if(!el||el===document.body)break;var r=el.getAttribute("data-rec");if(r){window.parent.postMessage({type:"rec-click",recNum:parseInt(r)},"*");return;}el=el.parentElement;}});';
+    var msgScript='window.addEventListener("message",function(e){if(e.data&&e.data.type==="set-rec-states"){var g=e.data.greenRecs||[];document.querySelectorAll("[data-rec]").forEach(function(b){var n=parseInt(b.getAttribute("data-rec"));b.style.background=g.indexOf(n)>=0?"#22C55E":"#FF0077";});}});';
+    var initScript='function initBadges(){document.querySelectorAll("[data-rec]").forEach(function(b){var n=b.getAttribute("data-rec");var s=document.createElementNS("http://www.w3.org/2000/svg","svg");s.setAttribute("width","11");s.setAttribute("height","11");s.setAttribute("viewBox","0 0 24 24");s.setAttribute("fill","none");s.setAttribute("stroke","white");s.setAttribute("stroke-width","2.5");s.setAttribute("stroke-linecap","round");s.setAttribute("stroke-linejoin","round");var p1=document.createElementNS("http://www.w3.org/2000/svg","path");p1.setAttribute("d","M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5");s.appendChild(p1);var p2=document.createElementNS("http://www.w3.org/2000/svg","path");p2.setAttribute("d","M9 18h6");s.appendChild(p2);var p3=document.createElementNS("http://www.w3.org/2000/svg","path");p3.setAttribute("d","M10 22h4");s.appendChild(p3);b.innerHTML="";b.appendChild(s);b.appendChild(document.createTextNode(n));b.style.display="inline-flex";b.style.alignItems="center";b.style.gap="4px";b.style.padding="4px 9px";b.style.lineHeight="1";b.style.fontSize="11px";})}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",initBadges);}else{initBadges();}';
+    var script='<script>'+clickScript+msgScript+initScript+'<\/script>';
+    var idx=html.lastIndexOf("</body>");if(idx>=0)return html.slice(0,idx)+script+html.slice(idx);return html+script;
+  }
   var _ap=active&&auditData?auditData.find(function(p){return p.url===active.pageUrl;}):null;
   var activeActions=active&&active.actions&&active.actions.length?active.actions:(_ap?_ap.actions:[]);
   var activeRecAction=activeRec!==null?activeActions[activeRec-1]||null:null;
@@ -2399,7 +2405,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                   var actionToAdd=activeRecAction||{id:"",text:"Recommendation #"+activeRec+(active?" — "+active.pageLabel:""),description:"",shows:"",why:"",change:"",metric:"",status:"todo",source:"",before:"",beforeDate:"",after:"",afterDate:""};
                   return(<>
                     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18}}>
-                      <span style={{background:badgeColor,color:C.white,fontSize:11,fontWeight:700,padding:"3px 12px",borderRadius:99,flexShrink:0}}>💡 Recommendation {activeRec}</span>
+                      <span style={{background:badgeColor,color:C.white,fontWeight:700,padding:"4px 9px",borderRadius:99,flexShrink:0,display:"inline-flex",alignItems:"center",gap:5,lineHeight:1}}><Lightbulb size={11} strokeWidth={2.5}/>{activeRec}</span>
                       <button onClick={function(){setActiveRec(null);}} style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",color:C.grey6,fontSize:24,lineHeight:1,padding:"0 0 2px",display:"flex",alignItems:"center"}}>×</button>
                     </div>
                     {activeRecAction&&activeRecAction.text&&(
