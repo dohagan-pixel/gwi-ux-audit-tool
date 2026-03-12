@@ -440,8 +440,8 @@ function WhyModal({url,label,onClose}){
 }
 
 var cardStyle={background:C.white,border:"1.5px solid "+C.grey4,borderRadius:14,padding:20,textAlign:"left",cursor:"pointer",display:"flex",flexDirection:"column",gap:10};
-var cardHoverIn=function(e){e.currentTarget.style.borderColor="#FFE8EE";e.currentTarget.style.boxShadow="0 4px 16px rgba(255,0,119,0.06)";var cta=e.currentTarget.querySelector(".card-cta");if(cta)cta.style.color=C.pink;};
-var cardHoverOut=function(e){e.currentTarget.style.borderColor=C.grey4;e.currentTarget.style.boxShadow="none";var cta=e.currentTarget.querySelector(".card-cta");if(cta)cta.style.color=C.black;};
+var cardHoverIn=function(e){e.currentTarget.style.borderColor="#FFE8EE";e.currentTarget.style.boxShadow="0 4px 16px rgba(255,0,119,0.06)";e.currentTarget.querySelectorAll(".card-cta").forEach(function(cta){(cta as HTMLElement).style.color=C.pink;});};
+var cardHoverOut=function(e){e.currentTarget.style.borderColor=C.grey4;e.currentTarget.style.boxShadow="none";e.currentTarget.querySelectorAll(".card-cta").forEach(function(cta){(cta as HTMLElement).style.color=C.black;});};
 
 function CardLink({label}){
   return(
@@ -540,7 +540,7 @@ function Dashboard({personas,auditData,setView,onFeedback}){
     {icon:<Users size={24}/>,label:"Personas",desc:"Align teams on who we are building for and what each persona needs to convert.",cta:"Meet the personas",action:function(){setView("personas");}},
     {icon:<Map size={24}/>,label:"Journeys",desc:"Shows the real path from first visit to sign-up to activation.",cta:"Explore journeys",action:function(){setView("mapping");}},
     {icon:<BarChart2 size={24}/>,label:"Analytics",desc:"Proof of what is happening on-page — where attention goes and what is killing conversion.",cta:"Open analytics",action:function(){setView("analytics");}},
-    {icon:<Cog size={24}/>,label:"Settings",desc:"Keeps the framework flexible as priorities shift.",cta:"Edit settings",action:function(){setView("settings");},cta2:"View feedback",action2:function(){setView("feedback");}},
+    {icon:<Cog size={24}/>,label:"Settings",desc:"Keeps the framework flexible as priorities shift.",cta:"Edit settings",action:function(){setView("settings");}},
     {icon:<MessageSquare size={24}/>,label:"Feedback",desc:"Share what's working, what's not, and what you'd like to see next — your input shapes the roadmap.",cta:"Leave feedback",action:function(){if(onFeedback)onFeedback();}},
   ];
   return(
@@ -580,7 +580,12 @@ function Dashboard({personas,auditData,setView,onFeedback}){
               <p style={{fontSize:15,color:C.grey7,lineHeight:1.65,margin:0}}>{card.desc}</p>
               <div style={{display:"flex",alignItems:"center",gap:16}}>
                 <CardLink label={card.cta}/>
-                {(card as any).cta2&&<span onClick={function(e){e.stopPropagation();if((card as any).action2)(card as any).action2();}} style={{fontSize:12,fontWeight:600,color:C.grey7,cursor:"pointer",transition:"color 0.15s"}} onMouseEnter={function(e){e.currentTarget.style.color=C.pink;}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey7;}}>{(card as any).cta2}</span>}
+                {(card as any).cta2&&(
+                  <div onClick={function(e){e.stopPropagation();if((card as any).action2)(card as any).action2();}} style={{display:"flex",alignItems:"center",gap:4,marginTop:4,cursor:"pointer"}}>
+                    <span className="card-cta" style={{fontSize:12,fontWeight:600,color:C.black,transition:"color 0.15s"}}>{(card as any).cta2}</span>
+                    <ChevronRight size={14} color={C.pink}/>
+                  </div>
+                )}
               </div>
             </button>
           );})}
