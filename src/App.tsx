@@ -440,12 +440,14 @@ function WhyModal({url,label,onClose}){
 }
 
 var cardStyle={background:C.white,border:"1.5px solid "+C.grey4,borderRadius:14,padding:20,textAlign:"left",cursor:"pointer",display:"flex",flexDirection:"column",gap:10};
-var cardHoverIn=function(e){e.currentTarget.style.borderColor="#FFE8EE";e.currentTarget.style.boxShadow="0 4px 16px rgba(255,0,119,0.06)";e.currentTarget.querySelectorAll(".card-cta").forEach(function(cta){(cta as HTMLElement).style.color=C.pink;});};
-var cardHoverOut=function(e){e.currentTarget.style.borderColor=C.grey4;e.currentTarget.style.boxShadow="none";e.currentTarget.querySelectorAll(".card-cta").forEach(function(cta){(cta as HTMLElement).style.color=C.black;});};
+var cardHoverIn=function(e){e.currentTarget.style.borderColor="#FFE8EE";e.currentTarget.style.boxShadow="0 4px 16px rgba(255,0,119,0.06)";};
+var cardHoverOut=function(e){e.currentTarget.style.borderColor=C.grey4;e.currentTarget.style.boxShadow="none";};
 
 function CardLink({label}){
   return(
-    <div style={{display:"flex",alignItems:"center",gap:4,marginTop:4}}>
+    <div style={{display:"flex",alignItems:"center",gap:4,marginTop:4,cursor:"pointer"}}
+      onMouseEnter={function(e){var s=e.currentTarget.querySelector(".card-cta");if(s)(s as HTMLElement).style.color=C.pink;}}
+      onMouseLeave={function(e){var s=e.currentTarget.querySelector(".card-cta");if(s)(s as HTMLElement).style.color=C.black;}}>
       <span className="card-cta" style={{fontSize:12,fontWeight:600,color:C.black,transition:"color 0.15s"}}>{label}</span>
       <ChevronRight size={14} color={C.pink}/>
     </div>
@@ -581,7 +583,7 @@ function Dashboard({personas,auditData,setView,onFeedback}){
               <div style={{display:"flex",alignItems:"center",gap:16}}>
                 <CardLink label={card.cta}/>
                 {(card as any).cta2&&(
-                  <div onClick={function(e){e.stopPropagation();if((card as any).action2)(card as any).action2();}} style={{display:"flex",alignItems:"center",gap:4,marginTop:4,cursor:"pointer"}}>
+                  <div onClick={function(e){e.stopPropagation();if((card as any).action2)(card as any).action2();}} onMouseEnter={function(e){var s=e.currentTarget.querySelector(".card-cta");if(s)(s as HTMLElement).style.color=C.pink;}} onMouseLeave={function(e){var s=e.currentTarget.querySelector(".card-cta");if(s)(s as HTMLElement).style.color=C.black;}} style={{display:"flex",alignItems:"center",gap:4,marginTop:4,cursor:"pointer"}}>
                     <span className="card-cta" style={{fontSize:12,fontWeight:600,color:C.black,transition:"color 0.15s"}}>{(card as any).cta2}</span>
                     <ChevronRight size={14} color={C.pink}/>
                   </div>
