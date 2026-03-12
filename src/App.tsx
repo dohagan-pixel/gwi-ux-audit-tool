@@ -1314,7 +1314,7 @@ function WireframeModal({page,personas,onClose,onSave}){
     hasFetched.current=true;
     var actionLines=page.actions.map(function(a,i){return(i+1)+". "+a.text+(a.description?" — "+a.description:"");}).join("\n");
     var personaNames=personas.map(function(p){return p.label+" ("+p.tagline+")";}).join(", ");
-    var prompt="You are a UX wireframe designer. Create a low-fidelity HTML wireframe for the gwi.com "+page.label+" page ("+page.url+").\n\nThis wireframe shows the IMPROVED version of the page incorporating these UX recommendations:\n"+actionLines+"\n\nPersonas this page serves: "+personaNames+".\n\nWireframe rules:\n- Use ONLY grey tones: backgrounds #f5f5f5 and #e8e8e8, borders #d0d0d0, text #666 and #333\n- Use Arial/sans-serif fonts only\n- Replace all images with labelled grey rectangles using inline styles\n- Include realistic section structure but use short [PLACEHOLDER] text\n- Add a small comment label in the top-left of each section (e.g. '// HERO', '// SOCIAL PROOF', '// FEATURES GRID')\n- For each section that addresses one of the recommendations, add a clickable badge positioned top-right inside the section: <span data-rec=\"N\" style=\"position:absolute;top:10px;right:10px;background:#FF0077;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;cursor:pointer\">Rec #N</span> — N must match the exact recommendation number from the list above. Every section container that holds a badge must have position:relative so the badge sits correctly\n- Full self-contained HTML page. Use a <style> tag in <head> for shared styles and media queries; use inline styles for one-off values\n- Max content width 1200px, centred\n- The wireframe must be fully responsive at two breakpoints: desktop (default) and mobile (max-width: 767px)\n- NAVIGATION — desktop: show horizontal nav links and any CTA buttons in the nav; mobile (@media max-width:767px): hide ALL nav links, ALL nav CTA buttons, and every other nav element except the logo — the mobile nav bar must show ONLY the logo on the left and a static burger icon on the right, nothing else. The burger icon must be three short horizontal grey lines built with CSS (three <span> elements with display:block, width:22px, height:2px, background:#666, margin:4px 0) — no JavaScript needed, it is a static visual indicator only\n- LAYOUTS — at @media (max-width:767px): every multi-column flex row must switch to flex-direction:column; every CSS grid must switch to grid-template-columns:1fr; section padding must reduce to 16px; buttons and CTAs must be full width (width:100%, box-sizing:border-box). Apply these overrides using CSS classes in the <style> tag, not inline styles, so the media queries can target them\n- No JavaScript\n\nOutput ONLY the raw HTML — no explanation, no markdown fences, nothing else.";
+    var prompt="You are a UX wireframe designer. Create a low-fidelity HTML wireframe for the gwi.com "+page.label+" page ("+page.url+").\n\nThis wireframe shows the IMPROVED version of the page incorporating these UX recommendations:\n"+actionLines+"\n\nPersonas this page serves: "+personaNames+".\n\nWireframe rules:\n- Use ONLY grey tones: backgrounds #f5f5f5 and #e8e8e8, borders #d0d0d0, text #666 and #333\n- Use Arial/sans-serif fonts only\n- Replace all images with labelled grey rectangles using inline styles\n- Include realistic section structure but use short [PLACEHOLDER] text\n- Add a small comment label in the top-left of each section (e.g. '// HERO', '// SOCIAL PROOF', '// FEATURES GRID')\n- For each section that addresses one of the recommendations, add a clickable badge positioned top-right inside the section: <span data-rec=\"N\" style=\"position:absolute;top:10px;right:10px;background:#FF0077;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;cursor:pointer\">Recommendation</span> — N must match the exact recommendation number from the list above. Every section container that holds a badge must have position:relative so the badge sits correctly\n- Full self-contained HTML page. Use a <style> tag in <head> for shared styles and media queries; use inline styles for one-off values\n- Max content width 1200px, centred\n- The wireframe must be fully responsive at two breakpoints: desktop (default) and mobile (max-width: 767px)\n- NAVIGATION — desktop: show horizontal nav links and any CTA buttons in the nav; mobile (@media max-width:767px): hide ALL nav links, ALL nav CTA buttons, and every other nav element except the logo — the mobile nav bar must show ONLY the logo on the left and a static burger icon on the right, nothing else. The burger icon must be three short horizontal grey lines built with CSS (three <span> elements with display:block, width:22px, height:2px, background:#666, margin:4px 0) — no JavaScript needed, it is a static visual indicator only\n- LAYOUTS — at @media (max-width:767px): every multi-column flex row must switch to flex-direction:column; every CSS grid must switch to grid-template-columns:1fr; section padding must reduce to 16px; buttons and CTAs must be full width (width:100%, box-sizing:border-box). Apply these overrides using CSS classes in the <style> tag, not inline styles, so the media queries can target them\n- No JavaScript\n\nOutput ONLY the raw HTML — no explanation, no markdown fences, nothing else.";
     fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:8192})})
       .then(function(r){
         var ct=r.headers.get("content-type")||"";
@@ -2304,11 +2304,12 @@ function ConfirmResetScreen({oobCode}:{oobCode:string}){
     </div>
   );
 }
-function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWireframe,auditData}){
+function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWireframe,auditData,onAddRec}){
   var [activeId,setActiveId]=useState(wireframes.length>0?wireframes[wireframes.length-1].id:null);
   var [editing,setEditing]=useState(false);
   var [editLabel,setEditLabel]=useState("");
   var [activeRec,setActiveRec]=useState(null);
+  var [addedRecs,setAddedRecs]=useState({});
   var [viewport,setViewport]=useState("desktop");
   var isMobile=useWidth()<768;
   var active=wireframes.find(function(w){return w.id===activeId;});
@@ -2319,7 +2320,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   function toggleStar(){if(!active)return;var updated=Object.assign({},active,{starred:!active.starred});setWireframes(function(prev){return prev.map(function(w){return w.id===activeId?updated:w;});});if(onUpdateWireframe)onUpdateWireframe(updated);}
   function openEdit(){setEditLabel(active?active.pageLabel:"");setEditing(true);}
   function saveEdit(){if(!active)return;var updated=Object.assign({},active,{pageLabel:editLabel.trim()||active.pageLabel});setWireframes(function(prev){return prev.map(function(w){return w.id===activeId?updated:w;});});if(onUpdateWireframe)onUpdateWireframe(updated);setEditing(false);}
-  useEffect(function(){setActiveRec(null);},[activeId]);
+  useEffect(function(){setActiveRec(null);setAddedRecs({});},[activeId]);
   useEffect(function(){setActiveRec(null);},[viewport]);
   useEffect(function(){function onMsg(e){if(e.data&&e.data.type==="rec-click")setActiveRec(e.data.recNum);}window.addEventListener("message",onMsg);return function(){window.removeEventListener("message",onMsg);};},[]);
   function injectRecScript(html){var script='<script>document.addEventListener("click",function(e){var el=e.target;for(var i=0;i<8;i++){if(!el||el===document.body)break;var r=el.getAttribute("data-rec");if(r){window.parent.postMessage({type:"rec-click",recNum:parseInt(r)},"*");return;}el=el.parentElement;}});<\/script>';var idx=html.lastIndexOf("</body>");if(idx>=0)return html.slice(0,idx)+script+html.slice(idx);return html+script;}
@@ -2393,15 +2394,40 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
           <div style={{flex:1,padding:isMobile?"16px":"24px 28px 28px",minHeight:0,display:"flex",flexDirection:"column",alignItems:viewport==="mobile"?"center":"stretch"}}>
             <iframe srcDoc={injectRecScript(active.html)} title="Wireframe" sandbox="allow-same-origin allow-scripts" style={viewport==="mobile"?{flex:1,width:390,maxWidth:"calc(100% - 32px)",border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}:{flex:1,border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}}/>
           </div>
-          {activeRecAction&&(
+          {activeRec!==null&&(
             <div onClick={function(){setActiveRec(null);}} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:20}}>
-              <div onClick={function(e){e.stopPropagation();}} style={{background:C.white,borderRadius:16,padding:"28px 32px",maxWidth:480,width:"calc(100% - 64px)",boxShadow:"0 8px 48px rgba(0,0,0,0.3)"}}>
+              <div onClick={function(e){e.stopPropagation();}} style={{background:C.white,borderRadius:16,padding:"28px 32px",maxWidth:520,width:"calc(100% - 48px)",boxShadow:"0 8px 48px rgba(0,0,0,0.3)"}}>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18}}>
-                  <span style={{background:C.pink,color:C.white,fontSize:11,fontWeight:700,padding:"3px 12px",borderRadius:99,flexShrink:0}}>Rec #{activeRec}</span>
+                  <span style={{background:C.pink,color:C.white,fontSize:11,fontWeight:700,padding:"3px 12px",borderRadius:99,flexShrink:0}}>Recommendation</span>
                   <button onClick={function(){setActiveRec(null);}} style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",color:C.grey6,fontSize:24,lineHeight:1,padding:"0 0 2px",display:"flex",alignItems:"center"}}>×</button>
                 </div>
-                <p style={{fontSize:15,fontWeight:800,color:C.black,margin:"0 0 12px",lineHeight:1.45}}>{activeRecAction.text}</p>
-                {activeRecAction.description&&<p style={{fontSize:13,color:C.grey7,margin:0,lineHeight:1.7}}>{activeRecAction.description}</p>}
+                {activeRecAction&&activeRecAction.text&&(
+                  <p style={{fontSize:15,fontWeight:800,color:C.black,margin:"0 0 16px",lineHeight:1.45}}>{activeRecAction.text}</p>
+                )}
+                {activeRecAction&&(activeRecAction.change||activeRecAction.why||activeRecAction.shows)&&(
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
+                    {[
+                      {label:"Change",value:activeRecAction.change,labelColor:C.pink,textColor:C.offBlack},
+                      {label:"Why it matters",value:activeRecAction.why,labelColor:C.grey8,textColor:C.grey8},
+                      {label:"Data",value:activeRecAction.shows,labelColor:C.grey8,textColor:C.grey8},
+                    ].map(function(col){return col.value?(
+                      <div key={col.label} style={{background:C.grey2,borderRadius:8,padding:"10px 12px"}}>
+                        <div style={{fontSize:10,fontWeight:700,color:col.labelColor,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:5}}>{col.label}</div>
+                        <div style={{fontSize:12,color:col.textColor,lineHeight:1.6}}>{col.value}</div>
+                      </div>
+                    ):null;})}
+                  </div>
+                )}
+                {(function(){
+                  var recKey=(active?active.id:"")+"-"+activeRec;
+                  var isAdded=!!addedRecs[recKey];
+                  var actionToAdd=activeRecAction||{id:"a-"+Date.now(),text:"Recommendation #"+activeRec+(active?" — "+active.pageLabel:""),description:"",shows:"",why:"",change:"",metric:"",status:"todo",source:"",before:"",beforeDate:"",after:"",afterDate:""};
+                  return(
+                    <button onClick={function(){if(!isAdded&&onAddRec){onAddRec(actionToAdd,active?active.pageUrl:"/");setAddedRecs(function(prev){var n=Object.assign({},prev);n[recKey]=true;return n;});}}} style={{width:"100%",background:isAdded?"#E6F9F2":C.pink,color:isAdded?"#005C3B":C.white,border:"none",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:isAdded?"default":"pointer"}}>
+                      {isAdded?"Added to Recommendations ✓":"Add to Recommendations"}
+                    </button>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -2477,7 +2503,7 @@ export default function App(){
         {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit).catch(function(){});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
         {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id)).catch(function(){});}} onUpdateAudit={function(updated){if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",updated.id),updated).catch(function(){});}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
         {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards}/>}
-        {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData}/>}
+        {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData} onAddRec={function(action,pageUrl){var pageObj=pages.find(function(p){return p.url===pageUrl;});var newAction=Object.assign({},action,{id:"a-"+Date.now()+Math.random(),status:"todo"});var existing=auditData.find(function(p){return p.url===pageUrl;});if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);})}}}/>}
       </div>
       {showAddAction&&<AddActionModal auditData={auditData} setAuditData={setAuditData} pages={pages} onClose={function(){setShowAddAction(false);}}/>}
     </div>
