@@ -1371,7 +1371,8 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
   function addToAudit(rec,scope,idx){
     var pageUrl=scope==="all"?"/":scope;
     var pageObj=pages.find(function(p){return p.url===pageUrl;});
-    var newAction={id:"a-"+Date.now()+Math.random(),text:rec.change||rec.title,description:rec.why||rec.body,status:"todo",metric:rec.metric||"",source:"",before:"",beforeDate:"",after:"",afterDate:""};
+    var cleanTitle=rec.title?rec.title.split(" — ")[0]:rec.change||rec.title;
+    var newAction={id:"a-"+Date.now()+Math.random(),text:cleanTitle,description:rec.change||rec.why||rec.body,status:"todo",metric:rec.metric||"",source:"",before:"",beforeDate:"",after:"",afterDate:""};
     var existing=auditData.find(function(p){return p.url===pageUrl;});
     if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}
     else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}
