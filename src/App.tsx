@@ -534,13 +534,13 @@ function Dashboard({personas,auditData,setView,onFeedback}){
   var doneActions=auditData.reduce(function(s,p){return s+p.actions.filter(function(a){return a.status==="done";}).length;},0);
   var pct=totalActions?Math.round(doneActions/totalActions*100):0;
   var cards=[
-    {icon:<Sparkles size={24}/>,label:"UX Audit",desc:"Fast, consistent evaluation of UX, messaging, and conversion best practices without waiting on a full research cycle.",cta:"Run an audit",action:function(){setView("summary");}},
+    {icon:<Sparkles size={24}/>,label:"UX Audit",desc:"Fast, consistent evaluation of UX, messaging, and conversion best practices without waiting on a full research cycle.",cta:"Run an audit",action:function(){setView("summary");},cta2:"View audits",action2:function(){setView("generated-audits");}},
     {icon:<ClipboardList size={24}/>,label:"Recommendations",desc:"Turns insights into execution so everyone sees what to do next and what impact it has.",cta:"Track recommendations",action:function(){setView("audit");}},
     {icon:<Monitor size={24}/>,label:"Wireframes",desc:"Converts recommendations into AI-generated low-fidelity wireframes — see exactly what an improved page could look like before a single pixel is designed.",cta:"Build a wireframe",action:function(){setView("wireframes");}},
     {icon:<Users size={24}/>,label:"Personas",desc:"Align teams on who we are building for and what each persona needs to convert.",cta:"Meet the personas",action:function(){setView("personas");}},
     {icon:<Map size={24}/>,label:"Journeys",desc:"Shows the real path from first visit to sign-up to activation.",cta:"Explore journeys",action:function(){setView("mapping");}},
     {icon:<BarChart2 size={24}/>,label:"Analytics",desc:"Proof of what is happening on-page — where attention goes and what is killing conversion.",cta:"Open analytics",action:function(){setView("analytics");}},
-    {icon:<Cog size={24}/>,label:"Settings",desc:"Keeps the framework flexible as priorities shift.",cta:"Edit settings",action:function(){setView("settings");}},
+    {icon:<Cog size={24}/>,label:"Settings",desc:"Keeps the framework flexible as priorities shift.",cta:"Edit settings",action:function(){setView("settings");},cta2:"View feedback",action2:function(){setView("feedback");}},
     {icon:<MessageSquare size={24}/>,label:"Feedback",desc:"Share what's working, what's not, and what you'd like to see next — your input shapes the roadmap.",cta:"Leave feedback",action:function(){if(onFeedback)onFeedback();}},
   ];
   return(
@@ -578,7 +578,10 @@ function Dashboard({personas,auditData,setView,onFeedback}){
                 <div style={{fontSize:17,fontWeight:800,color:C.offBlack}}>{card.label}</div>
               </div>
               <p style={{fontSize:15,color:C.grey7,lineHeight:1.65,margin:0}}>{card.desc}</p>
-              <CardLink label={card.cta}/>
+              <div style={{display:"flex",alignItems:"center",gap:16}}>
+                <CardLink label={card.cta}/>
+                {(card as any).cta2&&<span onClick={function(e){e.stopPropagation();if((card as any).action2)(card as any).action2();}} style={{fontSize:12,fontWeight:600,color:C.grey7,cursor:"pointer",transition:"color 0.15s"}} onMouseEnter={function(e){e.currentTarget.style.color=C.pink;}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey7;}}>{(card as any).cta2}</span>}
+              </div>
             </button>
           );})}
         </div>
@@ -1367,11 +1370,22 @@ function FeedbackModal({onClose,onSubmit}){
   var [text,setText]=useState("");
   var [done,setDone]=useState(false);
   var inputStyle={width:"100%",border:"1.5px solid "+C.grey4,borderRadius:8,padding:"10px 12px",fontSize:13,color:C.offBlack,background:C.white,outline:"none",boxSizing:"border-box" as const,fontFamily:"inherit"};
+  var canSubmit=!!(rating&&name.trim()&&text.trim());
   function handleSubmit(){
-    if(!rating||!name.trim()||!text.trim())return;
+    if(!canSubmit)return;
     onSubmit({id:"fb-"+Date.now(),name:name.trim(),rating:rating,feedback:text.trim(),date:new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})});
     setDone(true);
   }
+  useEffect(function(){
+    function onKey(e:KeyboardEvent){
+      if(e.key==="Enter"&&!e.shiftKey&&!done&&canSubmit){
+        var tag=(document.activeElement as HTMLElement)?.tagName;
+        if(tag!=="TEXTAREA"){e.preventDefault();handleSubmit();}
+      }
+    }
+    document.addEventListener("keydown",onKey);
+    return function(){document.removeEventListener("keydown",onKey);};
+  },[done,canSubmit]);
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={onClose}>
       <div style={{background:C.white,borderRadius:16,padding:32,width:460,maxWidth:"100%"}} onClick={function(e){e.stopPropagation();}}>
@@ -1419,7 +1433,7 @@ function FeedbackModal({onClose,onSubmit}){
   );
 }
 
-function FeedbackPage({feedback}){
+function FeedbackPage({feedback,onDeleteFeedback}){
   var isMobile=useWidth()<768;
   var sorted=(feedback as any[]).slice().reverse();
   if(sorted.length===0){
@@ -1449,8 +1463,11 @@ function FeedbackPage({feedback}){
                   <div style={{fontSize:11,color:C.grey6,marginTop:2}}>{fb.date}{fb.user?" · "+fb.user:""}</div>
                 </div>
               </div>
-              <div style={{display:"flex",gap:3,flexShrink:0}}>
-                {[1,2,3,4,5].map(function(n){return <Star key={n} size={14} fill={n<=fb.rating?C.pink:"none"} stroke={n<=fb.rating?C.pink:C.grey5} strokeWidth={1.5}/>;})}</div>
+              <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+                <div style={{display:"flex",gap:3}}>
+                  {[1,2,3,4,5].map(function(n){return <Star key={n} size={14} fill={n<=fb.rating?C.pink:"none"} stroke={n<=fb.rating?C.pink:C.grey5} strokeWidth={1.5}/>;})}</div>
+                <button onClick={function(){if(onDeleteFeedback)onDeleteFeedback(fb.id);}} title="Delete" style={{background:"none",border:"none",cursor:"pointer",padding:4,color:C.grey5,display:"flex",alignItems:"center",borderRadius:6,transition:"color 0.15s"}} onMouseEnter={function(e){e.currentTarget.style.color="#CC0000";}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey5;}}><Trash2 size={13}/></button>
+              </div>
             </div>
             <p style={{fontSize:14,color:C.offBlack,lineHeight:1.7,margin:0}}>{fb.feedback}</p>
           </div>
@@ -2569,6 +2586,8 @@ export default function App(){
   var [savedWireframes,setSavedWireframes]=useState(function(){try{var s=localStorage.getItem("gwi_saved_wireframes");return s?JSON.parse(s):[];}catch(e){return [];}});
   var [feedback,setFeedback]=useState(function(){try{var s=localStorage.getItem("gwi_feedback");return s?JSON.parse(s):[];}catch(e){return [];}});
   var [showFeedbackModal,setShowFeedbackModal]=useState(false);
+  var [feedbackToast,setFeedbackToast]=useState(false);
+  var feedbackSubmittedRef=useRef(false);
   var isMobile=useWidth()<768;
   var [_user,_setUser]=useState(null);
   var [_authLoading,_setAuthLoading]=useState(true);
@@ -2591,6 +2610,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
 
   return(
     <div style={{display:"flex",flexDirection:"column",height:"100vh",overflow:"hidden",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+      <style>{`@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`}</style>
       {isMobile?(
         <MobileNav view={view} setView={setView}/>
       ):(
@@ -2623,9 +2643,25 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards}/>}
         {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData} onAddRec={function(action,pageUrl){var pageObj=pages.find(function(p){return p.url===pageUrl;});var newAction=Object.assign({},action,{status:"todo"});var existing=auditData.find(function(p){return p.url===pageUrl;});if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}}} onRemoveRec={function(actionId,pageUrl){setAuditData(function(prev){return prev.map(function(p){return p.url!==pageUrl?p:Object.assign({},p,{actions:(p.actions||[]).filter(function(a:any){return a.id!==actionId;})});});});}}/>}
       </div>
-      {view==="feedback"&&<FeedbackPage feedback={feedback}/>}
+      {view==="feedback"&&<FeedbackPage feedback={feedback} onDeleteFeedback={function(id){setFeedback(function(prev){return(prev as any[]).filter(function(f){return f.id!==id;});});if(_user)deleteDoc(doc(_db,"users",_user.uid,"feedback",id)).catch(function(){});}}/>}
       {showAddAction&&<AddActionModal auditData={auditData} setAuditData={setAuditData} pages={pages} onClose={function(){setShowAddAction(false);}}/>}
-      {showFeedbackModal&&<FeedbackModal onClose={function(){setShowFeedbackModal(false);}} onSubmit={function(entry){var full=Object.assign({},entry,{user:_user?_user.email:""});setFeedback(function(prev){return prev.concat([full]);});if(_user)setDoc(doc(_db,"users",_user.uid,"feedback",full.id),full).catch(function(){});setShowFeedbackModal(false);}}/>}
+      {feedbackToast&&<div style={{position:"fixed",bottom:28,left:"50%",transform:"translateX(-50%)",background:C.black,color:C.white,borderRadius:12,padding:"13px 24px",fontSize:13,fontWeight:600,zIndex:3000,boxShadow:"0 8px 32px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:10,whiteSpace:"nowrap",animation:"slideUp 0.25s ease"}}><span style={{color:"#22C55E",fontSize:16,lineHeight:1}}>✓</span>Thank you for your feedback!</div>}
+      {showFeedbackModal&&<FeedbackModal
+        onClose={function(){
+          if(feedbackSubmittedRef.current){
+            setFeedbackToast(true);
+            setTimeout(function(){setFeedbackToast(false);},3500);
+            feedbackSubmittedRef.current=false;
+          }
+          setShowFeedbackModal(false);
+        }}
+        onSubmit={function(entry){
+          var full=Object.assign({},entry,{user:_user?_user.email:""});
+          setFeedback(function(prev){return prev.concat([full]);});
+          if(_user)setDoc(doc(_db,"users",_user.uid,"feedback",full.id),full).catch(function(){});
+          feedbackSubmittedRef.current=true;
+        }}
+      />}
     </div>
   );
 }
