@@ -46,7 +46,7 @@ const signupRoleConfig = {
 };
 
 const MAPPING_ITEMS = [
-  {id:"mapping",label:"Mapping Overview"},
+  {id:"mapping",label:"Journeys Overview"},
   {id:"journey",label:"Journey Mapper"},
   {id:"lifecycle",label:"Customer Mapping"},
   {id:"affinity",label:"Affinity Map"},
@@ -334,7 +334,7 @@ function MappingSidebar({activeId,setView,isMobile,personas,activePersona,setAct
   }
   return(
     <div style={{width:192,background:C.white,borderRight:"1px solid "+C.grey4,flexShrink:0,display:"flex",flexDirection:"column"}}>
-      <button onClick={function(){setView("mapping");}} style={{textAlign:"left",padding:"12px 16px",fontSize:12,fontWeight:600,color:C.pink,background:"transparent",border:"none",borderBottom:"1px solid "+C.grey4,cursor:"pointer"}}>Back to Mapping</button>
+      <button onClick={function(){setView("mapping");}} style={{textAlign:"left",padding:"12px 16px",fontSize:12,fontWeight:600,color:C.pink,background:"transparent",border:"none",borderBottom:"1px solid "+C.grey4,cursor:"pointer"}}>Back to Journeys</button>
       {MAPPING_ITEMS.filter(function(i){return i.id!=="mapping";}).map(function(item){
         var isActive=activeId===item.id;
         return(
@@ -532,9 +532,9 @@ function Dashboard({personas,auditData,setView}){
   var pct=totalActions?Math.round(doneActions/totalActions*100):0;
   var cards=[
     {icon:<Sparkles size={24}/>,label:"UX Audit",desc:"Fast, consistent evaluation of UX, messaging, and conversion best practices without waiting on a full research cycle.",cta:"Run an audit",action:function(){setView("summary");}},
-    {icon:<ClipboardList size={24}/>,label:"Actions",desc:"Turns insights into execution so everyone sees what to do next and what impact it has.",cta:"Track actions",action:function(){setView("audit");}},
+    {icon:<ClipboardList size={24}/>,label:"Recommendations",desc:"Turns insights into execution so everyone sees what to do next and what impact it has.",cta:"Track recommendations",action:function(){setView("audit");}},
     {icon:<Users size={24}/>,label:"Personas",desc:"Align teams on who we are building for and what each persona needs to convert.",cta:"Meet the personas",action:function(){setView("personas");}},
-    {icon:<Map size={24}/>,label:"Mapping",desc:"Shows the real path from first visit to sign-up to activation.",cta:"Explore journeys",action:function(){setView("mapping");}},
+    {icon:<Map size={24}/>,label:"Journeys",desc:"Shows the real path from first visit to sign-up to activation.",cta:"Explore journeys",action:function(){setView("mapping");}},
     {icon:<BarChart2 size={24}/>,label:"Analytics",desc:"Proof of what is happening on-page — where attention goes and what is killing conversion.",cta:"Open analytics",action:function(){setView("analytics");}},
     {icon:<Cog size={24}/>,label:"Settings",desc:"Keeps the framework flexible as priorities shift.",cta:"Edit settings",action:function(){setView("settings");}},
   ];
@@ -552,14 +552,14 @@ function Dashboard({personas,auditData,setView}){
             </div>
             <div style={{background:"rgba(255,255,255,0.1)",borderRadius:99,height:8,overflow:"hidden",marginBottom:16}}><div style={{width:pct+"%",background:C.pink,height:"100%",borderRadius:99,transition:"width 0.4s"}}/></div>
             <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(4,1fr)",gap:8,marginBottom:16}}>
-              {[["5","Personas"],["9","Lifecycle stages"],[String(totalActions),"Audit actions"],[String(doneActions)+"/"+String(totalActions),"Actions done"]].map(function(item){return(
+              {[["5","Personas"],["9","Lifecycle stages"],[String(totalActions),"Recommendations"],[String(doneActions)+"/"+String(totalActions),"Done"]].map(function(item){return(
                 <div key={item[1]} style={{textAlign:"center",background:"rgba(255,255,255,0.04)",borderRadius:8,padding:"10px 8px"}}>
                   <div style={{fontSize:isMobile?18:22,fontWeight:800,color:C.white,lineHeight:1}}>{item[0]}</div>
                   <div style={{fontSize:11,color:C.grey6,marginTop:4}}>{item[1]}</div>
                 </div>
               );})}
             </div>
-            <button onClick={function(){setView("audit");}} style={{width:"100%",background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"12px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>View Actions</button>
+            <button onClick={function(){setView("audit");}} style={{width:"100%",background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"12px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>View Recommendations</button>
           </div>
         </div>
         <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:12}}>What each module gives you</div>
@@ -592,7 +592,7 @@ function MappingDash({setView}){
   ];
   return(
     <PageWrap isMobile={isMobile}>
-      <BlackHero eyebrow="How users move through gwi.com" title="Mapping" desc="Personas do not arrive on the homepage and immediately sign up. They move through distinct lifecycle stages visiting different pages with different questions at each step." why="Mapping exists because UX problems are rarely about a single page in isolation."/>
+      <BlackHero eyebrow="How users move through gwi.com" title="Journeys" desc="Personas do not arrive on the homepage and immediately sign up. They move through distinct lifecycle stages visiting different pages with different questions at each step." why="Mapping exists because UX problems are rarely about a single page in isolation."/>
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12}}>
         {cards.map(function(card){return(
           <button key={card.id} onClick={function(){setView(card.id);}} style={Object.assign({},cardStyle)} onMouseEnter={cardHoverIn} onMouseLeave={cardHoverOut}>
@@ -971,7 +971,7 @@ function ActionList({pageId,actions,reorderActions,openAction,setOpenAction,stat
   function Inp({val,onChange,placeholder}){return <input value={val||""} onChange={function(e){onChange(e.target.value);}} placeholder={placeholder||""} style={{width:"100%",padding:"6px 8px",border:"1px solid "+C.grey4,borderRadius:6,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>;}
   return(
     <div style={{padding:"16px 20px"}}>
-      <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:12}}>Actions</div>
+      <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:12}}>Recommendations</div>
       <div>
         {actions.map(function(action,actionIdx){
           var isOpenAction=openAction===(pageId+"-"+action.id);
@@ -1080,7 +1080,7 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
   return(<>
     <PageWrap isMobile={isMobile}>
       {whyPage&&<WhyModal url={whyPage.url} label={whyPage.label} onClose={function(){setWhyPage(null);}}/>}
-      <BlackHero eyebrow="GWI Website - UX" title="Audit Actions" desc="All the actions you have decided to work on, in one place." why="This is where audit findings become real work.">
+      <BlackHero eyebrow="GWI Website - UX" title="Recommendations" desc="All the actions you have decided to work on, in one place." why="This is where audit findings become real work.">
         <button onClick={onAddAction} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add UX Action</button>
       </BlackHero>
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12,marginBottom:28}}>
@@ -1463,7 +1463,7 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
                       )}
                       <div style={{fontSize:14,fontWeight:700,color:C.black,paddingTop:(priority||personas)?0:7}}>{recTitle}</div>
                     </div>
-                    <button onClick={function(){if(!isAdded)addToAudit(rec,audit.scope,i);}} style={{flexShrink:0,background:isAdded?"#E6F9F2":C.pink,color:isAdded?"#005C3B":C.white,border:"none",borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:isAdded?"default":"pointer",whiteSpace:"nowrap"}}>{isAdded?"Added":"Add to Actions"}</button>
+                    <button onClick={function(){if(!isAdded)addToAudit(rec,audit.scope,i);}} style={{flexShrink:0,background:isAdded?"#E6F9F2":C.pink,color:isAdded?"#005C3B":C.white,border:"none",borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:isAdded?"default":"pointer",whiteSpace:"nowrap"}}>{isAdded?"Added":"Add to Recommendations"}</button>
                   </div>
                   {hasBody&&<div style={{borderTop:"1px solid "+C.grey4,margin:"16px 0"}}/>}
                   {hasBody&&(
@@ -2149,7 +2149,7 @@ function UserFlowsPage({setView}){
 
 function MobileNav({view,setView}){
   var [menuOpen,setMenuOpen]=useState(false);
-  var MAPPING=[{id:"mapping",label:"Mapping Overview"},{id:"journey",label:"Journey Mapper"},{id:"lifecycle",label:"Customer Mapping"},{id:"affinity",label:"Affinity Map"},{id:"flows",label:"User Flows"}];
+  var MAPPING=[{id:"mapping",label:"Journeys Overview"},{id:"journey",label:"Journey Mapper"},{id:"lifecycle",label:"Customer Mapping"},{id:"affinity",label:"Affinity Map"},{id:"flows",label:"User Flows"}];
   function Btn({id,label}){var active=view===id;return <button onClick={function(){setView(id);setMenuOpen(false);}} style={{padding:"12px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:active?C.pink:"transparent",color:active?C.white:C.grey7,textAlign:"left",width:"100%",display:"block"}}>{label}</button>;}
   return(
     <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,flexShrink:0,position:"relative",zIndex:50}}>
@@ -2160,10 +2160,10 @@ function MobileNav({view,setView}){
       {menuOpen&&(
         <div style={{background:C.black,borderTop:"1px solid "+C.offBlack,padding:"8px 8px 12px"}}>
           <Btn id="summary" label="UX Audit"/>
-          <Btn id="audit" label="Actions"/>
+          <Btn id="audit" label="Recommendations"/>
           <Btn id="wireframes" label="Wireframes"/>
           <Btn id="personas" label="Personas"/>
-          <div style={{padding:"8px 16px 4px",fontSize:11,fontWeight:700,color:C.grey8,textTransform:"uppercase",letterSpacing:"0.05em"}}>Mapping</div>
+          <div style={{padding:"8px 16px 4px",fontSize:11,fontWeight:700,color:C.grey8,textTransform:"uppercase",letterSpacing:"0.05em"}}>Journeys</div>
           {MAPPING.map(function(m){return <Btn key={m.id} id={m.id} label={m.label}/>;})}
           <div style={{height:1,background:C.offBlack,margin:"8px 16px"}}/>
           <Btn id="analytics" label="Analytics"/>
@@ -2440,10 +2440,10 @@ export default function App(){
           <div style={{fontWeight:800,fontSize:15,color:C.white,marginRight:4,letterSpacing:"-0.02em",cursor:"pointer",flexShrink:0}} onClick={function(){setView("dashboard");}}>GWI UX</div>
           <button onClick={function(){setView("dashboard");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="dashboard"?C.pink:"transparent",color:view==="dashboard"?C.white:C.grey7,flexShrink:0}}>Dashboard</button>
           <button onClick={function(){setView("summary");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:(view==="summary"||view==="generated-audits")?C.pink:"transparent",color:(view==="summary"||view==="generated-audits")?C.white:C.grey7,flexShrink:0}}>UX Audit</button>
-          <button onClick={function(){setView("audit");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="audit"?C.pink:"transparent",color:view==="audit"?C.white:C.grey7,flexShrink:0}}>Actions</button>
+          <button onClick={function(){setView("audit");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="audit"?C.pink:"transparent",color:view==="audit"?C.white:C.grey7,flexShrink:0}}>Recommendations</button>
           <button onClick={function(){setView("wireframes");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="wireframes"?C.pink:"transparent",color:view==="wireframes"?C.white:C.grey7,flexShrink:0}}>Wireframes</button>
           <button onClick={function(){setView("personas");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:(view==="personas"||view==="persona-detail")?C.pink:"transparent",color:(view==="personas"||view==="persona-detail")?C.white:C.grey7,flexShrink:0}}>Personas</button>
-          <Dropdown label="Mapping" items={MAPPING_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("mapping");}} forceActive={view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"}/>
+          <Dropdown label="Journeys" items={MAPPING_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("mapping");}} forceActive={view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"}/>
           <button onClick={function(){setView("analytics");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="analytics"?C.pink:"transparent",color:view==="analytics"?C.white:C.grey7,flexShrink:0}}>Analytics</button>
           <div style={{flex:1}}/>
           <UserMenu user={_user} onSignOut={function(){fbSignOut(_auth);}} onSettings={function(){setView("settings");}} activeView={view}/>
