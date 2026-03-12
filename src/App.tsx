@@ -551,8 +551,8 @@ function Dashboard({personas,auditData,setView,onFeedback}){
   var doneActions=auditData.reduce(function(s,p){return s+p.actions.filter(function(a){return a.status==="done";}).length;},0);
   var pct=totalActions?Math.round(doneActions/totalActions*100):0;
   var cards=[
-    {icon:<Sparkles size={24}/>,label:"UX Audit",desc:"Fast, consistent evaluation of UX, messaging, and conversion best practices without waiting on a full research cycle.",cta:"Run an audit",action:function(){setView("summary");},cta2:"View audits",action2:function(){setView("generated-audits");}},
     {icon:<ClipboardList size={24}/>,label:"Recommendations",desc:"Turns insights into execution so everyone sees what to do next and what impact it has.",cta:"Track recommendations",action:function(){setView("audit");}},
+    {icon:<Sparkles size={24}/>,label:"UX Audit",desc:"Fast, consistent evaluation of UX, messaging, and conversion best practices without waiting on a full research cycle.",cta:"Run an audit",action:function(){setView("summary");},cta2:"View audits",action2:function(){setView("generated-audits");}},
     {icon:<Monitor size={24}/>,label:"Wireframes",desc:"Converts recommendations into AI-generated low-fidelity wireframes — see exactly what an improved page could look like before a single pixel is designed.",cta:"Build a wireframe",action:function(){setView("wireframes");}},
     {icon:<Users size={24}/>,label:"Personas",desc:"Align teams on who we are building for and what each persona needs to convert.",cta:"Meet the personas",action:function(){setView("personas");}},
     {icon:<Map size={24}/>,label:"Journeys",desc:"Shows the real path from first visit to sign-up to activation.",cta:"Explore journeys",action:function(){setView("mapping");}},
@@ -2300,8 +2300,8 @@ function MobileNav({view,setView}){
       </div>
       {menuOpen&&(
         <div style={{background:C.black,borderTop:"1px solid "+C.offBlack,padding:"8px 8px 12px"}}>
-          <Btn id="summary" label="UX Audit"/>
           <Btn id="audit" label="Recommendations"/>
+          <Btn id="summary" label="UX Audit"/>
           <Btn id="wireframes" label="Wireframes"/>
           <Btn id="personas" label="Personas"/>
           <div style={{padding:"8px 16px 4px",fontSize:11,fontWeight:700,color:C.grey8,textTransform:"uppercase",letterSpacing:"0.05em"}}>Journeys</div>
@@ -2634,8 +2634,8 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,padding:"0 20px",height:52,display:"flex",alignItems:"center",gap:4,position:"fixed",top:0,left:0,right:0,zIndex:100,boxSizing:"border-box"}}>
           <div style={{fontWeight:800,fontSize:15,color:C.white,marginRight:4,letterSpacing:"-0.02em",cursor:"pointer",flexShrink:0}} onClick={function(){setView("dashboard");}}>GWI UX</div>
           <button onClick={function(){setView("dashboard");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="dashboard"?C.pink:"transparent",color:view==="dashboard"?C.white:C.grey7,flexShrink:0}}>Dashboard</button>
-          <button onClick={function(){setView("summary");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:(view==="summary"||view==="generated-audits")?C.pink:"transparent",color:(view==="summary"||view==="generated-audits")?C.white:C.grey7,flexShrink:0}}>UX Audit</button>
           <button onClick={function(){setView("audit");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="audit"?C.pink:"transparent",color:view==="audit"?C.white:C.grey7,flexShrink:0}}>Recommendations</button>
+          <button onClick={function(){setView("summary");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:(view==="summary"||view==="generated-audits")?C.pink:"transparent",color:(view==="summary"||view==="generated-audits")?C.white:C.grey7,flexShrink:0}}>UX Audit</button>
           <button onClick={function(){setView("wireframes");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="wireframes"?C.pink:"transparent",color:view==="wireframes"?C.white:C.grey7,flexShrink:0}}>Wireframes</button>
           <button onClick={function(){setView("personas");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:(view==="personas"||view==="persona-detail")?C.pink:"transparent",color:(view==="personas"||view==="persona-detail")?C.white:C.grey7,flexShrink:0}}>Personas</button>
           <Dropdown label="Journeys" items={MAPPING_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("mapping");}} forceActive={view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"}/>
