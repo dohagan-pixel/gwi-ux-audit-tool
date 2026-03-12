@@ -533,6 +533,7 @@ function Dashboard({personas,auditData,setView}){
   var cards=[
     {icon:<Sparkles size={24}/>,label:"UX Audit",desc:"Fast, consistent evaluation of UX, messaging, and conversion best practices without waiting on a full research cycle.",cta:"Run an audit",action:function(){setView("summary");}},
     {icon:<ClipboardList size={24}/>,label:"Recommendations",desc:"Turns insights into execution so everyone sees what to do next and what impact it has.",cta:"Track recommendations",action:function(){setView("audit");}},
+    {icon:<Monitor size={24}/>,label:"Wireframes",desc:"Converts recommendations into AI-generated low-fidelity wireframes — see exactly what an improved page could look like before a single pixel is designed.",cta:"Build a wireframe",action:function(){setView("wireframes");}},
     {icon:<Users size={24}/>,label:"Personas",desc:"Align teams on who we are building for and what each persona needs to convert.",cta:"Meet the personas",action:function(){setView("personas");}},
     {icon:<Map size={24}/>,label:"Journeys",desc:"Shows the real path from first visit to sign-up to activation.",cta:"Explore journeys",action:function(){setView("mapping");}},
     {icon:<BarChart2 size={24}/>,label:"Analytics",desc:"Proof of what is happening on-page — where attention goes and what is killing conversion.",cta:"Open analytics",action:function(){setView("analytics");}},
