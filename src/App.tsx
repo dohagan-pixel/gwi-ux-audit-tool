@@ -1327,42 +1327,30 @@ function WireframeModal({page,personas,onClose,onSave}){
       .catch(function(err){setErrorMsg(err&&err.message?err.message:"Network error");setStatus("error");});
   },[]);
   function downloadHtml(){var blob=new Blob([html],{type:"text/html"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(page.label||"wireframe").replace(/\s+/g,"-").toLowerCase()+"-wireframe.html";a.click();}
+  if(status==="loading"||status==="error"){return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <div style={{background:C.white,borderRadius:16,padding:32,width:440,maxWidth:"90vw",textAlign:"center"}}>
+        {status==="loading"&&(<><div style={{width:48,height:48,borderRadius:"50%",border:"4px solid "+C.grey4,borderTop:"4px solid "+C.pink,margin:"0 auto 20px",animation:"spin 0.8s linear infinite"}}/><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Generating wireframe</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 6px"}}>Building a low-fidelity wireframe for the improved {page.label} page…</p><p style={{fontSize:12,color:C.grey6,margin:"0 0 24px"}}>This usually takes around a minute — the more context, the sharper the output.</p><div style={{background:C.grey3,borderRadius:99,height:8,overflow:"hidden",marginBottom:8}}><div style={{width:progress+"%",background:C.pink,height:"100%",borderRadius:99,transition:"width 0.4s ease"}}/></div><div style={{fontSize:12,color:C.grey6,textAlign:"right"}}>{Math.round(progress)}%</div></>)}
+        {status==="error"&&(<><div style={{width:48,height:48,borderRadius:"50%",background:"#FFF0F0",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:24}}>✗</div><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Something went wrong</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 8px"}}>The wireframe could not be generated.</p>{errorMsg&&<p style={{fontSize:12,color:"#CC0000",background:"#FFF0F0",border:"1px solid #FFAAAA",borderRadius:8,padding:"8px 12px",margin:"0 0 20px",textAlign:"left",wordBreak:"break-word"}}>{errorMsg}</p>}<button onClick={onClose} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Close</button></>)}
+      </div>
+    </div>
+  );}
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:2000,display:"flex",flexDirection:"column"}}>
       <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,padding:"0 20px",height:52,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.grey5} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
           <span style={{color:C.white,fontSize:14,fontWeight:700}}>{page.label} — Wireframe</span>
-          {status==="done"&&<span style={{color:C.grey6,fontSize:12}}>· {page.actions.length} recommendations applied</span>}
+          <span style={{color:C.grey6,fontSize:12}}>· {page.actions.length} recommendations applied</span>
         </div>
         <div style={{display:"flex",gap:8}}>
-          {status==="done"&&<button onClick={downloadHtml} style={{background:"rgba(255,255,255,0.1)",color:C.white,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Download HTML</button>}
-          {status==="done"&&<button onClick={function(){if(!saved&&onSave){onSave({id:"wf-"+Date.now(),pageLabel:page.label,pageUrl:page.url,date:new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}),html:html,actions:page.actions||[]});setSaved(true);}}} style={{background:saved?"rgba(34,197,94,0.2)":C.pink,color:saved?"#22C55E":C.white,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:saved?"default":"pointer"}}>{saved?"Saved ✓":"Save Wireframe"}</button>}
+          <button onClick={downloadHtml} style={{background:"rgba(255,255,255,0.1)",color:C.white,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Download HTML</button>
+          <button onClick={function(){if(!saved&&onSave){onSave({id:"wf-"+Date.now(),pageLabel:page.label,pageUrl:page.url,date:new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}),html:html,actions:page.actions||[]});setSaved(true);}}} style={{background:saved?"rgba(34,197,94,0.2)":C.pink,color:saved?"#22C55E":C.white,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:saved?"default":"pointer"}}>{saved?"Saved ✓":"Save Wireframe"}</button>
           <button onClick={onClose} style={{background:"rgba(255,255,255,0.1)",color:C.grey4,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Close</button>
         </div>
       </div>
-      {status==="loading"&&(
-        <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <div style={{textAlign:"center",maxWidth:400,padding:32}}>
-            <div style={{width:48,height:48,borderRadius:"50%",border:"4px solid "+C.grey4,borderTop:"4px solid "+C.pink,margin:"0 auto 20px",animation:"spin 0.8s linear infinite"}}/>
-            <h3 style={{fontSize:18,fontWeight:800,color:C.white,margin:"0 0 8px"}}>Generating wireframe</h3>
-            <p style={{fontSize:13,color:C.grey6,margin:"0 0 24px"}}>Building a low-fidelity wireframe for the improved {page.label} page…</p>
-            <div style={{background:C.offBlack,borderRadius:99,height:8,overflow:"hidden",marginBottom:8}}><div style={{width:progress+"%",background:C.pink,height:"100%",borderRadius:99,transition:"width 0.4s ease"}}/></div>
-            <div style={{fontSize:12,color:C.grey6,textAlign:"right"}}>{Math.round(progress)}%</div>
-          </div>
-        </div>
-      )}
-      {status==="done"&&<iframe srcDoc={html} title="Wireframe" style={{flex:1,border:"none",background:"#fff"}} sandbox="allow-same-origin"/>}
-      {status==="error"&&(
-        <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <div style={{textAlign:"center",maxWidth:400,padding:32}}>
-            <div style={{width:48,height:48,borderRadius:"50%",background:"#FFF0F0",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:24}}>✗</div>
-            <h3 style={{fontSize:18,fontWeight:800,color:C.white,margin:"0 0 8px"}}>Wireframe failed</h3>
-            {errorMsg&&<p style={{fontSize:12,color:"#FF9999",margin:"0 0 20px",wordBreak:"break-word"}}>{errorMsg}</p>}
-            <button onClick={onClose} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Close</button>
-          </div>
-        </div>
-      )}
+      <iframe srcDoc={html} title="Wireframe" style={{flex:1,border:"none",background:"#fff"}} sandbox="allow-same-origin"/>
     </div>
   );
 }
