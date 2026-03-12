@@ -994,7 +994,13 @@ function ActionList({pageId,actions,reorderActions,openAction,setOpenAction,stat
                 </div>
                 {isOpenAction&&(
                   <div style={{borderTop:"1px solid "+C.grey4,padding:16,background:"#F8FAFF"}}>
-                    {action.description&&<p style={{fontSize:13,color:C.offBlack,lineHeight:1.7,margin:"0 0 20px"}}>{action.description}</p>}
+                    {(action.shows||action.why||action.change)?(
+                      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+                        {action.shows&&<div style={{fontSize:13,color:C.grey8,lineHeight:1.5}}><span style={{fontWeight:700,color:C.grey8}}>Data: </span>{action.shows}</div>}
+                        {action.why&&<div style={{fontSize:13,color:C.grey8,lineHeight:1.5}}><span style={{fontWeight:700,color:C.grey8}}>Why it matters: </span>{action.why}</div>}
+                        {action.change&&<div style={{fontSize:13,color:C.offBlack,lineHeight:1.5}}><span style={{fontWeight:700,color:C.pink}}>Change: </span>{action.change}</div>}
+                      </div>
+                    ):action.description?<p style={{fontSize:13,color:C.offBlack,lineHeight:1.7,margin:"0 0 20px"}}>{action.description}</p>:null}
                     <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:10}}>Before / After Tracking</div>
                     <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"2fr 1fr",gap:10,marginBottom:10}}>
                       <div><div style={{fontSize:11,fontWeight:600,color:C.grey7,marginBottom:4}}>Metric being tracked</div><Inp val={action.metric} onChange={function(v){updateAction(pageId,action.id,"metric",v);}} placeholder="e.g. Sign-up CTR on homepage"/></div>
@@ -1372,7 +1378,7 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
     var pageUrl=scope==="all"?"/":scope;
     var pageObj=pages.find(function(p){return p.url===pageUrl;});
     var cleanTitle=rec.title?rec.title.split(" — ")[0]:rec.change||rec.title;
-    var newAction={id:"a-"+Date.now()+Math.random(),text:cleanTitle,description:rec.change||rec.why||rec.body,status:"todo",metric:rec.metric||"",source:"",before:"",beforeDate:"",after:"",afterDate:""};
+    var newAction={id:"a-"+Date.now()+Math.random(),text:cleanTitle,description:rec.change||rec.why||rec.body,shows:rec.shows||"",why:rec.why||"",change:rec.change||"",status:"todo",metric:rec.metric||"",source:"",before:"",beforeDate:"",after:"",afterDate:""};
     var existing=auditData.find(function(p){return p.url===pageUrl;});
     if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}
     else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}
