@@ -444,11 +444,26 @@ var cardHoverIn=function(e){e.currentTarget.style.borderColor="#FFE8EE";e.curren
 var cardHoverOut=function(e){e.currentTarget.style.borderColor=C.grey4;e.currentTarget.style.boxShadow="none";};
 
 function CardLink({label}){
+  var [hov,setHov]=useState(false);
   return(
     <div style={{display:"flex",alignItems:"center",gap:4,marginTop:4,cursor:"pointer"}}
-      onMouseEnter={function(e){var s=e.currentTarget.querySelector(".card-cta");if(s)(s as HTMLElement).style.color=C.pink;}}
-      onMouseLeave={function(e){var s=e.currentTarget.querySelector(".card-cta");if(s)(s as HTMLElement).style.color=C.black;}}>
-      <span className="card-cta" style={{fontSize:12,fontWeight:600,color:C.black,transition:"color 0.15s"}}>{label}</span>
+      onMouseEnter={function(){setHov(true);}}
+      onMouseLeave={function(){setHov(false);}}>
+      <span style={{fontSize:12,fontWeight:600,color:hov?C.pink:C.black,transition:"color 0.15s"}}>{label}</span>
+      <ChevronRight size={14} color={C.pink}/>
+    </div>
+  );
+}
+
+function SecondaryCardLink({label,onClick}){
+  var [hov,setHov]=useState(false);
+  return(
+    <div
+      onClick={function(e){e.stopPropagation();if(onClick)onClick();}}
+      onMouseEnter={function(){setHov(true);}}
+      onMouseLeave={function(){setHov(false);}}
+      style={{display:"flex",alignItems:"center",gap:4,marginTop:4,cursor:"pointer"}}>
+      <span style={{fontSize:12,fontWeight:600,color:hov?C.pink:C.black,transition:"color 0.15s"}}>{label}</span>
       <ChevronRight size={14} color={C.pink}/>
     </div>
   );
@@ -582,12 +597,7 @@ function Dashboard({personas,auditData,setView,onFeedback}){
               <p style={{fontSize:15,color:C.grey7,lineHeight:1.65,margin:0}}>{card.desc}</p>
               <div style={{display:"flex",alignItems:"center",gap:16}}>
                 <CardLink label={card.cta}/>
-                {(card as any).cta2&&(
-                  <div onClick={function(e){e.stopPropagation();if((card as any).action2)(card as any).action2();}} onMouseEnter={function(e){var s=e.currentTarget.querySelector(".card-cta");if(s)(s as HTMLElement).style.color=C.pink;}} onMouseLeave={function(e){var s=e.currentTarget.querySelector(".card-cta");if(s)(s as HTMLElement).style.color=C.black;}} style={{display:"flex",alignItems:"center",gap:4,marginTop:4,cursor:"pointer"}}>
-                    <span className="card-cta" style={{fontSize:12,fontWeight:600,color:C.black,transition:"color 0.15s"}}>{(card as any).cta2}</span>
-                    <ChevronRight size={14} color={C.pink}/>
-                  </div>
-                )}
+                {(card as any).cta2&&<SecondaryCardLink label={(card as any).cta2} onClick={(card as any).action2}/>}
               </div>
             </button>
           );})}
