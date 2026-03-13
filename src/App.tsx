@@ -1186,7 +1186,7 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
         {pageDrag.dropIdx===auditData.length&&<DropLine/>}
       </div>
     </PageWrap>
-    {wireframePage&&<WireframeModal page={wireframePage} personas={personas} onClose={function(){setWireframePage(null);}} onSave={onSaveWireframe}/>}
+    {wireframePage&&<WireframeModal page={wireframePage} personas={personas} onClose={function(navigate){setWireframePage(null);if(navigate)setView("wireframes");}} onSave={onSaveWireframe}/>}
   </>);
 }
 
@@ -1325,10 +1325,10 @@ function WireframeModal({page,personas,onClose,onSave}){
   var [status,setStatus]=useState("loading");
   var [html,setHtml]=useState("");
   var [errorMsg,setErrorMsg]=useState("");
-  var [saved,setSaved]=useState(false);
   var [progress,setProgress]=useState(0);
   var intervalRef=useRef(null);
   var hasFetched=useRef(false);
+  var hasSaved=useRef(false);
   useEffect(function(){
     intervalRef.current=setInterval(function(){setProgress(function(prev){if(prev>=92){clearInterval(intervalRef.current);return prev;}return Math.min(prev+(prev<30?0.6:prev<60?0.35:prev<80?0.2:0.08),92);});},200);
     return function(){clearInterval(intervalRef.current);};
@@ -1345,37 +1345,20 @@ function WireframeModal({page,personas,onClose,onSave}){
         var ct=r.headers.get("content-type")||"";
         if(!ct.includes("text/event-stream")){return r.text().then(function(raw){try{var d=JSON.parse(raw);setErrorMsg(d.error||"Unknown error");}catch(e){setErrorMsg("Server error: "+raw.slice(0,300));}setStatus("error");});}
         var reader=r.body.getReader();var decoder=new TextDecoder();var fullText="";var buf="";var finished=false;
-        function finish(text){if(finished)return;finished=true;if(text){setHtml(text);setStatus("done");}else{setErrorMsg("No content returned.");setStatus("error");}}
+        function finish(text){if(finished)return;finished=true;if(text){if(onSave&&!hasSaved.current){hasSaved.current=true;onSave({id:"wf-"+Date.now(),pageLabel:page.label,pageUrl:page.url,date:new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}),html:text,actions:page.actions||[]});}setHtml(text);setStatus("done");}else{setErrorMsg("No content returned.");setStatus("error");}}
         function pump(){reader.read().then(function(result){if(result.done){finish(fullText);return;}buf+=decoder.decode(result.value,{stream:true});var lines=buf.split("\n");buf=lines.pop()||"";lines.forEach(function(line){if(!line.startsWith("data: "))return;var data=line.slice(6).trim();if(data==="[DONE]"){finish(fullText);return;}try{var parsed=JSON.parse(data);if(parsed.error){setErrorMsg(parsed.error);setStatus("error");finished=true;return;}if(parsed.t)fullText+=parsed.t;}catch(e){}});if(!finished)pump();}).catch(function(err){setErrorMsg(err&&err.message?err.message:"Stream error");setStatus("error");});}
         pump();
       })
       .catch(function(err){setErrorMsg(err&&err.message?err.message:"Network error");setStatus("error");});
   },[]);
-  function downloadHtml(){var blob=new Blob([html],{type:"text/html"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(page.label||"wireframe").replace(/\s+/g,"-").toLowerCase()+"-wireframe.html";a.click();}
-  if(status==="loading"||status==="error"){return(
+  return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center"}}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       <div style={{background:C.white,borderRadius:16,padding:32,width:440,maxWidth:"90vw",textAlign:"center"}}>
-        {status==="loading"&&(<><div style={{width:48,height:48,borderRadius:"50%",border:"4px solid "+C.grey4,borderTop:"4px solid "+C.pink,margin:"0 auto 20px",animation:"spin 0.8s linear infinite"}}/><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Generating wireframe</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 6px"}}>Building a low-fidelity wireframe for the improved {page.label} page…</p><p style={{fontSize:12,color:C.grey6,margin:"0 0 24px"}}>This usually takes around a minute — the more context, the sharper the output.</p><div style={{background:C.grey3,borderRadius:99,height:8,overflow:"hidden",marginBottom:8}}><div style={{width:progress+"%",background:C.pink,height:"100%",borderRadius:99,transition:"width 0.4s ease"}}/></div><div style={{fontSize:12,color:C.grey6,textAlign:"right",marginBottom:16}}>{Math.round(progress)}%</div><button onClick={onClose} style={{background:"none",border:"1px solid rgb(16,23,32)",color:"rgb(16,23,32)",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:600,cursor:"pointer",width:"100%"}}>Cancel</button></>)}
-        {status==="error"&&(<><div style={{width:48,height:48,borderRadius:"50%",background:"#FFF0F0",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:24}}>✗</div><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Something went wrong</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 8px"}}>The wireframe could not be generated.</p>{errorMsg&&<p style={{fontSize:12,color:"#CC0000",background:"#FFF0F0",border:"1px solid #FFAAAA",borderRadius:8,padding:"8px 12px",margin:"0 0 20px",textAlign:"left",wordBreak:"break-word"}}>{errorMsg}</p>}<button onClick={onClose} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Close</button></>)}
+        {status==="loading"&&(<><div style={{width:48,height:48,borderRadius:"50%",border:"4px solid "+C.grey4,borderTop:"4px solid "+C.pink,margin:"0 auto 20px",animation:"spin 0.8s linear infinite"}}/><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Generating wireframe</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 6px"}}>Building a low-fidelity wireframe for the improved {page.label} page…</p><p style={{fontSize:12,color:C.grey6,margin:"0 0 24px"}}>This usually takes around a minute — the more context, the sharper the output.</p><div style={{background:C.grey3,borderRadius:99,height:8,overflow:"hidden",marginBottom:8}}><div style={{width:progress+"%",background:C.pink,height:"100%",borderRadius:99,transition:"width 0.4s ease"}}/></div><div style={{fontSize:12,color:C.grey6,textAlign:"right",marginBottom:16}}>{Math.round(progress)}%</div><button onClick={function(){onClose(false);}} style={{background:"none",border:"1px solid rgb(16,23,32)",color:"rgb(16,23,32)",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:600,cursor:"pointer",width:"100%"}}>Cancel</button></>)}
+        {status==="error"&&(<><div style={{width:48,height:48,borderRadius:"50%",background:"#FFF0F0",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:24}}>✗</div><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Something went wrong</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 8px"}}>The wireframe could not be generated.</p>{errorMsg&&<p style={{fontSize:12,color:"#CC0000",background:"#FFF0F0",border:"1px solid #FFAAAA",borderRadius:8,padding:"8px 12px",margin:"0 0 20px",textAlign:"left",wordBreak:"break-word"}}>{errorMsg}</p>}<button onClick={function(){onClose(false);}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Close</button></>)}
+        {status==="done"&&(<><div style={{width:48,height:48,borderRadius:"50%",background:"#E6F9F2",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:24}}>✓</div><h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Wireframe ready</h3><p style={{fontSize:13,color:C.grey7,margin:"0 0 24px"}}>Your {page.label} wireframe has been generated.</p><div style={{display:"flex",gap:10,justifyContent:"center"}}><button onClick={function(){onClose(false);}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Close</button><button onClick={function(){onClose(true);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>View Wireframe</button></div></>)}
       </div>
-    </div>
-  );}
-  return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:2000,display:"flex",flexDirection:"column"}}>
-      <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,padding:"0 20px",height:52,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.grey5} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-          <span style={{color:C.white,fontSize:14,fontWeight:700}}>{page.label} — Wireframe</span>
-          <span style={{color:C.grey6,fontSize:12}}>· {page.actions.length} recommendations applied</span>
-        </div>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={downloadHtml} style={{background:"rgba(255,255,255,0.1)",color:C.white,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Download HTML</button>
-          <button onClick={function(){if(!saved&&onSave){onSave({id:"wf-"+Date.now(),pageLabel:page.label,pageUrl:page.url,date:new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}),html:html,actions:page.actions||[]});setSaved(true);}}} style={{background:saved?"rgba(34,197,94,0.2)":C.pink,color:saved?"#22C55E":C.white,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:saved?"default":"pointer"}}>{saved?"Saved ✓":"Save Wireframe"}</button>
-          <button onClick={onClose} style={{background:"rgba(255,255,255,0.1)",color:C.grey4,border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Close</button>
-        </div>
-      </div>
-      <iframe srcDoc={html} title="Wireframe" style={{flex:1,border:"none",background:"#fff"}} sandbox="allow-same-origin"/>
     </div>
   );
 }
