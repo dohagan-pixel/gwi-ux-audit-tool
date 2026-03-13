@@ -1188,23 +1188,10 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
             <span style={{fontSize:15,fontWeight:800,color:C.pink}}>{totalActions?Math.round(doneActions/totalActions*100):0}%</span>
           </div>
         </div>
-        <div style={{background:C.grey3,borderRadius:99,height:8,overflow:"hidden",display:"flex",marginBottom:14}}>
+        <div style={{background:C.grey3,borderRadius:99,height:8,overflow:"hidden",display:"flex"}}>
           <div style={{width:(totalActions?todoActions/totalActions*100:0)+"%",background:C.grey5,height:"100%",flexShrink:0,transition:"width 0.4s"}}/>
           <div style={{width:(totalActions?inProgActions/totalActions*100:0)+"%",background:C.blueMed,height:"100%",flexShrink:0,transition:"width 0.4s"}}/>
           <div style={{width:(totalActions?doneActions/totalActions*100:0)+"%",background:"#00A86B",height:"100%",flexShrink:0,borderRadius:"0 99px 99px 0",transition:"width 0.4s"}}/>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:8}}>
-          {["Critical","High","Medium","Low"].map(function(pri){var pc=pCfg[pri]||pCfg.Medium;var priPages=auditData.filter(function(p){return p.priority===pri;});var priTotal=priPages.reduce(function(s,p){return s+p.actions.length;},0);var priDone=priPages.reduce(function(s,p){return s+p.actions.filter(function(a){return a.status==="done";}).length;},0);var priPct=priTotal?Math.round(priDone/priTotal*100):0;return(
-            <div key={pri} style={{background:pc.bg,border:"1px solid "+pc.border,borderRadius:8,padding:"8px 10px"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
-                <span style={{fontSize:11,fontWeight:700,color:pc.text}}>{pri}</span>
-                <span style={{fontSize:11,fontWeight:700,color:pc.text}}>{priDone}/{priTotal}</span>
-              </div>
-              <div style={{background:"rgba(0,0,0,0.1)",borderRadius:99,height:4,overflow:"hidden"}}>
-                <div style={{width:priPct+"%",background:pc.text,height:"100%",borderRadius:99,transition:"width 0.4s"}}/>
-              </div>
-            </div>
-          );})}
         </div>
       </div>
       <div style={{display:"flex",gap:8,marginBottom:16}}>
