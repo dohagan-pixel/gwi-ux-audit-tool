@@ -1514,7 +1514,7 @@ function WireframeModal({page,personas,onClose,onSave}){
     hasFetched.current=true;
     var actionLines=page.actions.map(function(a,i){return(i+1)+". "+a.text+(a.description?" — "+a.description:"");}).join("\n");
     var personaNames=personas.map(function(p){return p.label+" ("+p.tagline+")";}).join(", ");
-    var prompt="You are a UX wireframe designer. Create a low-fidelity HTML wireframe for the gwi.com "+page.label+" page ("+page.url+").\n\nThis wireframe shows the IMPROVED version of the page incorporating these UX recommendations:\n"+actionLines+"\n\nPersonas this page serves: "+personaNames+".\n\nWireframe rules:\n- Use ONLY grey tones: backgrounds #f5f5f5 and #e8e8e8, borders #d0d0d0, text #666 and #333\n- Use Arial/sans-serif fonts only\n- Replace all images with labelled grey rectangles using inline styles\n- Include realistic section structure but use short [PLACEHOLDER] text\n- Add a small comment label in the top-left of each section (e.g. '// HERO', '// SOCIAL PROOF', '// FEATURES GRID')\n- For each section that addresses one of the recommendations, add a clickable badge positioned top-right inside the section: <span data-rec=\"N\" style=\"position:absolute;top:10px;right:10px;background:#FF0077;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;cursor:pointer\">💡</span> — N must match the exact recommendation number from the list above. Every section container that holds a badge must have position:relative so the badge sits correctly\n- Full self-contained HTML page. Use a <style> tag in <head> for shared styles and media queries; use inline styles for one-off values\n- Max content width 1200px, centred\n- The wireframe must be fully responsive at two breakpoints: desktop (default) and mobile (max-width: 767px)\n- NAVIGATION — desktop: show horizontal nav links and any CTA buttons in the nav; mobile (@media max-width:767px): hide ALL nav links, ALL nav CTA buttons, and every other nav element except the logo — the mobile nav bar must show ONLY the logo on the left and a static burger icon on the right, nothing else. The burger icon must be three short horizontal grey lines built with CSS (three <span> elements with display:block, width:22px, height:2px, background:#666, margin:4px 0) — no JavaScript needed, it is a static visual indicator only\n- LAYOUTS — at @media (max-width:767px): every multi-column flex row must switch to flex-direction:column; every CSS grid must switch to grid-template-columns:1fr; section padding must reduce to 16px; buttons and CTAs must be full width (width:100%, box-sizing:border-box). Apply these overrides using CSS classes in the <style> tag, not inline styles, so the media queries can target them\n- No JavaScript\n\nOutput ONLY the raw HTML — no explanation, no markdown fences, nothing else.";
+    var prompt="You are a UX wireframe designer. Create a low-fidelity HTML wireframe for the gwi.com "+page.label+" page ("+page.url+").\n\nThis wireframe shows the IMPROVED version of the page incorporating these UX recommendations:\n"+actionLines+"\n\nPersonas this page serves: "+personaNames+".\n\nWireframe rules:\n- Use ONLY grey tones: backgrounds #f5f5f5 and #e8e8e8, borders #d0d0d0, text #666 and #333\n- Use Arial/sans-serif fonts only\n- Replace all images with labelled grey rectangles using inline styles\n- Include realistic section structure but use short [PLACEHOLDER] text\n- Add a small comment label in the top-left of each section (e.g. '// HERO', '// SOCIAL PROOF', '// FEATURES GRID')\n- For each section that addresses one of the recommendations, the section's outermost wrapper div MUST have BOTH position:relative AND the attribute data-section-rec=\"N\" (where N is the recommendation number). Inside it, add a clickable badge: <span data-rec=\"N\" style=\"position:absolute;top:10px;right:10px;background:#FF0077;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;cursor:pointer\">💡</span> — Example: <div data-section-rec=\"1\" style=\"position:relative;padding:60px 40px\"><span data-rec=\"1\" style=\"position:absolute;top:10px;right:10px;...\">💡</span> ... section content ... </div>. N must match the exact recommendation number. data-section-rec goes on the CONTAINER, data-rec goes on the BADGE SPAN only.\n- Full self-contained HTML page. Use a <style> tag in <head> for shared styles and media queries; use inline styles for one-off values\n- Max content width 1200px, centred\n- The wireframe must be fully responsive at two breakpoints: desktop (default) and mobile (max-width: 767px)\n- NAVIGATION — desktop: show horizontal nav links and any CTA buttons in the nav; mobile (@media max-width:767px): hide ALL nav links, ALL nav CTA buttons, and every other nav element except the logo — the mobile nav bar must show ONLY the logo on the left and a static burger icon on the right, nothing else. The burger icon must be three short horizontal grey lines built with CSS (three <span> elements with display:block, width:22px, height:2px, background:#666, margin:4px 0) — no JavaScript needed, it is a static visual indicator only\n- LAYOUTS — at @media (max-width:767px): every multi-column flex row must switch to flex-direction:column; every CSS grid must switch to grid-template-columns:1fr; section padding must reduce to 16px; buttons and CTAs must be full width (width:100%, box-sizing:border-box). Apply these overrides using CSS classes in the <style> tag, not inline styles, so the media queries can target them\n- No JavaScript\n\nOutput ONLY the raw HTML — no explanation, no markdown fences, nothing else.";
     fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:8192})})
       .then(function(r){
         var ct=r.headers.get("content-type")||"";
@@ -2659,9 +2659,10 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   var [lovedView,setLovedView]=useState(null as {pageUrl:string,label:string}|null);
   var [lcHeights,setLcHeights]=useState({} as {[id:string]:number});
   var iframeRef=useRef<HTMLIFrameElement>(null);
-  // extractSection is kept only as a guard (checks badge exists) and to save a sectionHtml fallback.
-  // Display now uses the full wireframe + scroll-clipping in the iframe onLoad handler.
-  function extractSection(html:string,recNum:number){try{var parser=new DOMParser();var d=parser.parseFromString(html,"text/html");var badge=d.querySelector('[data-rec="'+recNum+'"]');if(!badge)return null;return badge.parentElement?(badge.parentElement as HTMLElement).outerHTML:"<!-- section "+recNum+" -->";}catch(e){return null;}}
+  // extractSection: for new wireframes uses data-section-rec (precise container extraction).
+  // For old wireframes (no data-section-rec), returns badge parent as fallback sectionHtml.
+  // Also used as a guard to check whether a badge exists before enabling "Save to Loved components".
+  function extractSection(html:string,recNum:number){try{var parser=new DOMParser();var d=parser.parseFromString(html,"text/html");var secEl=d.querySelector('[data-section-rec="'+recNum+'"]');if(secEl)return(secEl as HTMLElement).outerHTML;var badge=d.querySelector('[data-rec="'+recNum+'"]');if(!badge)return null;return badge.parentElement?(badge.parentElement as HTMLElement).outerHTML:"<!-- section "+recNum+" -->";}catch(e){return null;}}
   function extractSharedCss(html:string){var matches=html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi)||[];return matches.map(function(m){return m.replace(/<\/?style[^>]*>/gi,"");}).join("\n");}
   function wrapSection(sectionHtml:string,sharedCss:string){return'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{box-sizing:border-box}html,body{margin:0;padding:0;overflow:hidden;}body{background:#f5f5f5;font-family:Arial,sans-serif;}'+sharedCss+'</style></head><body>'+sectionHtml+'</body></html>';}
   var isMobile=useWidth()<768;
@@ -2775,10 +2776,36 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                   )}
                   {(function(){
                     var wire=wireframes.find(function(w:any){return w.id===lc.wireframeId;});
-                    // Use the full wireframe HTML so we can scroll to the exact section.
-                    // Fall back to the saved sectionHtml (wrapped) for older loved components.
-                    var srcDocHtml=wire?wire.html:wrapSection(lc.sectionHtml||"<p style='padding:16px;color:#999'>No preview available</p>",lc.sharedCss||"");
                     var recNum=lc.recNum as number;
+                    // For new wireframes: extract the data-section-rec container directly → wrap and render at natural height.
+                    // For old wireframes (no data-section-rec): load full HTML and scroll-clip to the badge position.
+                    var newStyleSection=wire?(function(){var parser=new DOMParser();var d=parser.parseFromString(wire.html,"text/html");return d.querySelector('[data-section-rec="'+recNum+'"]') as HTMLElement|null;})():null;
+                    var css=wire?extractSharedCss(wire.html):(lc.sharedCss||"");
+                    if(newStyleSection){
+                      // NEW wireframe: extracted section, show at natural height
+                      var srcDoc=wrapSection(newStyleSection.outerHTML,css);
+                      return(
+                        <iframe
+                          srcDoc={srcDoc}
+                          title={lc.title}
+                          sandbox="allow-same-origin allow-scripts"
+                          style={{width:"100%",border:"none",height:(lcHeights[lc.id]||400)+"px",display:"block"}}
+                          onLoad={function(e){
+                            var f=e.currentTarget as HTMLIFrameElement;
+                            var id=lc.id;
+                            try{
+                              var doc=f.contentDocument;
+                              if(!doc)return;
+                              var sh=doc.documentElement.scrollHeight||doc.body.scrollHeight||400;
+                              setLcHeights(function(prev){var n=Object.assign({},prev);n[id]=Math.max(200,sh);return n;});
+                            }catch(ex){}
+                          }}
+                        />
+                      );
+                    }
+                    // OLD wireframe (or fallback): scroll-clip approach.
+                    // Use full wireframe HTML so we can find badge positions and scroll to the section.
+                    var srcDocHtml=wire?wire.html:wrapSection(lc.sectionHtml||"<p style='padding:16px;color:#999'>No preview available</p>",lc.sharedCss||"");
                     return(
                       <iframe
                         srcDoc={srcDocHtml}
@@ -2791,15 +2818,15 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                           try{
                             var doc=f.contentDocument;
                             if(!doc)return;
-                            // Hide scrollbars so clipped content looks clean
-                            doc.documentElement.style.overflow="hidden";
-                            doc.body.style.overflow="hidden";
+                            // Hide scrollbars via CSS (NOT overflow:hidden — that blocks scrollTop)
+                            var st=doc.createElement("style");
+                            st.textContent="html,body{scrollbar-width:none!important;-ms-overflow-style:none!important}html::-webkit-scrollbar,body::-webkit-scrollbar{display:none!important}";
+                            (doc.head||doc.documentElement).appendChild(st);
                             // Ensure we start from the top before measuring
                             doc.documentElement.scrollTop=0;
                             doc.body.scrollTop=0;
                             var badge=doc.querySelector('[data-rec="'+recNum+'"]') as HTMLElement|null;
                             if(!badge){
-                              // No badge: show the full content height
                               var sh=doc.documentElement.scrollHeight||doc.body.scrollHeight||400;
                               setLcHeights(function(prev){var n=Object.assign({},prev);n[id]=Math.max(200,sh);return n;});
                               return;
@@ -2807,27 +2834,23 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                             // getBoundingClientRect with scrollTop=0 gives document-relative position
                             var badgeTop=badge.getBoundingClientRect().top;
                             var sectionTop=Math.max(0,badgeTop-24);
-                            // Find the bottom of this section: start of the next badge, or the badge's position:relative container
+                            // Find section bottom: next badge start, or position:relative container bottom
                             var nextBadge=doc.querySelector('[data-rec="'+(recNum+1)+'"]') as HTMLElement|null;
                             var sectionBottom:number;
                             if(nextBadge){
                               sectionBottom=nextBadge.getBoundingClientRect().top-8;
                             }else{
-                              // Walk up from badge to find the nearest position:relative container
                               var par:HTMLElement|null=badge.parentElement as HTMLElement|null;
-                              while(par&&par!==doc.body){
-                                if(par.style&&par.style.position==="relative"){break;}
-                                par=par.parentElement as HTMLElement|null;
-                              }
+                              while(par&&par!==doc.body){if(par.style&&par.style.position==="relative")break;par=par.parentElement as HTMLElement|null;}
                               sectionBottom=(par&&par!==doc.body)?par.getBoundingClientRect().bottom:doc.documentElement.scrollHeight;
                             }
                             var sectionH=Math.max(200,sectionBottom-sectionTop+24);
-                            // Scroll the iframe viewport to the start of this section
+                            // Scroll to section — works because overflow is NOT set to hidden
                             doc.documentElement.scrollTop=sectionTop;
                             doc.body.scrollTop=sectionTop;
                             setLcHeights(function(prev){var n=Object.assign({},prev);n[id]=sectionH;return n;});
                           }catch(ex){
-                            try{var doc2=f.contentDocument;if(doc2){var sh2=doc2.documentElement.scrollHeight||doc2.body.scrollHeight||400;setLcHeights(function(prev){var n=Object.assign({},prev);n[id]=Math.max(200,sh2);return n;});}}catch(ex2){}
+                            try{var d2=f.contentDocument;if(d2){var sh2=d2.documentElement.scrollHeight||d2.body.scrollHeight||400;setLcHeights(function(prev){var n=Object.assign({},prev);n[id]=Math.max(200,sh2);return n;});}}catch(x){}
                           }
                         }}
                       />
