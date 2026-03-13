@@ -172,29 +172,29 @@ const INIT_JOURNEYS = {
 
 const INIT_AUDIT = [
   {id:"aa-1",url:"/",label:"Homepage",priority:"Critical",personas:["insight-guru","inspiration-hunter","commercial-closer","strategic-leader"],stage:"Evaluation",issue:"",actions:[
-    {id:"a1",text:"Add self-selection entry point (3 persona paths)",description:"The homepage currently treats all visitors the same.",status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:""},
-    {id:"a2",text:"Flip primary CTA to Sign up for free",description:"The current dominant CTA is Book a demo, which creates friction for self-serve personas.",status:"todo",metric:"Homepage sign-up CTA click rate",source:"GA4",before:"",beforeDate:"",after:"",afterDate:""},
-    {id:"a3",text:"Add proof point above fold about time to value",description:"Anxiety around time investment is one of the biggest blockers at the Awareness and Consideration stages.",status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:""},
+    {id:"a1",text:"Add self-selection entry point (3 persona paths)",description:"The homepage currently treats all visitors the same.",status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:"",effort:""},
+    {id:"a2",text:"Flip primary CTA to Sign up for free",description:"The current dominant CTA is Book a demo, which creates friction for self-serve personas.",status:"todo",metric:"Homepage sign-up CTA click rate",source:"GA4",before:"",beforeDate:"",after:"",afterDate:"",effort:""},
+    {id:"a3",text:"Add proof point above fold about time to value",description:"Anxiety around time investment is one of the biggest blockers at the Awareness and Consideration stages.",status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:"",effort:""},
   ]},
   {id:"aa-2",url:"/platform",label:"Platform",priority:"Critical",personas:["insight-guru","inspiration-hunter","commercial-closer","data-integrator"],stage:"First User Adoption",issue:"",actions:[
-    {id:"b1",text:"Add Start here section per persona type",description:"Without a clear starting point, new users face blank-canvas anxiety.",status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:""},
-    {id:"b2",text:"Include first-session use case walkthroughs",description:"First-session drop-off is highest when users do not know what to do next.",status:"todo",metric:"Scroll depth on /platform",source:"Hotjar",before:"",beforeDate:"",after:"",afterDate:""},
-    {id:"b3",text:"Link directly to free sign-up with persona-specific copy",description:"The free sign-up CTA on /platform is currently generic.",status:"todo",metric:"Free sign-up CTR from /platform",source:"GA4",before:"",beforeDate:"",after:"",afterDate:""},
+    {id:"b1",text:"Add Start here section per persona type",description:"Without a clear starting point, new users face blank-canvas anxiety.",status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:"",effort:""},
+    {id:"b2",text:"Include first-session use case walkthroughs",description:"First-session drop-off is highest when users do not know what to do next.",status:"todo",metric:"Scroll depth on /platform",source:"Hotjar",before:"",beforeDate:"",after:"",afterDate:"",effort:""},
+    {id:"b3",text:"Link directly to free sign-up with persona-specific copy",description:"The free sign-up CTA on /platform is currently generic.",status:"todo",metric:"Free sign-up CTR from /platform",source:"GA4",before:"",beforeDate:"",after:"",afterDate:"",effort:""},
   ]},
   {id:"aa-3",url:"/platform/spark",label:"Agent Spark",priority:"High",personas:["inspiration-hunter","commercial-closer","data-integrator"],stage:"Evaluation",issue:"",actions:[
-    {id:"c1",text:"Add example prompts per persona",description:"Spark value proposition is entirely dependent on users knowing what to ask.",status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:""},
-    {id:"c2",text:"Show sample output for each prompt",description:"Example prompts alone are not enough.",status:"todo",metric:"Time on page /platform/spark",source:"GA4",before:"",beforeDate:"",after:"",afterDate:""},
-    {id:"c3",text:"Reduce friction to Try it free CTA",description:"The path from landing on /platform/spark to actually trying Spark should be as short as possible.",status:"todo",metric:"Sign-up CTR from /platform/spark",source:"GA4",before:"",beforeDate:"",after:"",afterDate:""},
+    {id:"c1",text:"Add example prompts per persona",description:"Spark value proposition is entirely dependent on users knowing what to ask.",status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:"",effort:""},
+    {id:"c2",text:"Show sample output for each prompt",description:"Example prompts alone are not enough.",status:"todo",metric:"Time on page /platform/spark",source:"GA4",before:"",beforeDate:"",after:"",afterDate:"",effort:""},
+    {id:"c3",text:"Reduce friction to Try it free CTA",description:"The path from landing on /platform/spark to actually trying Spark should be as short as possible.",status:"todo",metric:"Sign-up CTR from /platform/spark",source:"GA4",before:"",beforeDate:"",after:"",afterDate:"",effort:""},
   ]},
   {id:"aa-4",url:"/pricing",label:"Pricing",priority:"High",personas:["insight-guru","inspiration-hunter","commercial-closer","strategic-leader"],stage:"Consideration",issue:"",actions:[
-    {id:"d1",text:"Add value framing per persona type",description:"Pricing pages that only show numbers create anxiety.",status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:""},
-    {id:"d2",text:"Include what you get in your first month section",description:"First-month expectations are a major source of anxiety at the Consideration stage.",status:"todo",metric:"Scroll depth on /pricing",source:"Hotjar",before:"",beforeDate:"",after:"",afterDate:""},
-    {id:"d3",text:"Make free trial CTA more prominent than demo CTA",description:"On the current pricing page, the demo CTA dominates.",status:"todo",metric:"Free trial vs demo CTA ratio clicks",source:"GA4",before:"",beforeDate:"",after:"",afterDate:""},
+    {id:"d1",text:"Add value framing per persona type",description:"Pricing pages that only show numbers create anxiety.",status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:"",effort:""},
+    {id:"d2",text:"Include what you get in your first month section",description:"First-month expectations are a major source of anxiety at the Consideration stage.",status:"todo",metric:"Scroll depth on /pricing",source:"Hotjar",before:"",beforeDate:"",after:"",afterDate:"",effort:""},
+    {id:"d3",text:"Make free trial CTA more prominent than demo CTA",description:"On the current pricing page, the demo CTA dominates.",status:"todo",metric:"Free trial vs demo CTA ratio clicks",source:"GA4",before:"",beforeDate:"",after:"",afterDate:"",effort:""},
   ]},
   {id:"aa-5",url:"/data",label:"Learn About Our Data",priority:"High",personas:["insight-guru","data-integrator"],stage:"Evaluation",issue:"",actions:[
-    {id:"e1",text:"Add sample size and wave frequency detail",description:"Insight Gurus need to validate GWI data before they will consider it credible.",status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:""},
-    {id:"e2",text:"Include data schema documentation for Data Integrators",description:"Data Integrators treat /data as a technical reference page.",status:"todo",metric:"Bounce rate on /data",source:"GA4",before:"",beforeDate:"",after:"",afterDate:""},
-    {id:"e3",text:"Add independent validation and benchmarking references",description:"Both Insight Gurus and Data Integrators are sceptical by nature.",status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:""},
+    {id:"e1",text:"Add sample size and wave frequency detail",description:"Insight Gurus need to validate GWI data before they will consider it credible.",status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:"",effort:""},
+    {id:"e2",text:"Include data schema documentation for Data Integrators",description:"Data Integrators treat /data as a technical reference page.",status:"todo",metric:"Bounce rate on /data",source:"GA4",before:"",beforeDate:"",after:"",afterDate:"",effort:""},
+    {id:"e3",text:"Add independent validation and benchmarking references",description:"Both Insight Gurus and Data Integrators are sceptical by nature.",status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:"",effort:""},
   ]},
 ];
 
@@ -1036,6 +1036,7 @@ function ActionList({pageId,actions,reorderActions,openAction,setOpenAction,stat
                   <div style={{cursor:"pointer",flexShrink:0}} onClick={function(e){e.stopPropagation();var order=["todo","inprogress","done"];var next=order[(order.indexOf(action.status)+1)%order.length];setActionStatus(pageId,action.id,next);}}>
                     <span style={{background:statusCfg[action.status].bg,color:statusCfg[action.status].text,border:"1px solid "+statusCfg[action.status].border,fontSize:10,fontWeight:600,padding:"2px 10px",borderRadius:99}}>{statusCfg[action.status].label}</span>
                   </div>
+                  {action.effort&&<span style={{background:action.effort==="Low"?"#E6F9F2":action.effort==="High"?"#FFF0F0":C.grey3,color:action.effort==="Low"?"#005C3B":action.effort==="High"?"#CC0000":C.grey8,border:"1px solid "+(action.effort==="Low"?"#80D4B0":action.effort==="High"?"#FFAAAA":C.grey5),fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,flexShrink:0}}>{action.effort} effort</span>}
                   <span style={{fontSize:13,fontWeight:700,color:action.status==="done"?C.grey7:C.offBlack,flex:1,textDecoration:action.status==="done"?"line-through":"none"}}>{action.text}</span>
                   {delta&&<span style={{background:delta.positive?"#E6F9F2":"#FFF0F0",color:delta.positive?"#005C3B":"#CC0000",border:"1px solid "+(delta.positive?"#80D4B0":"#FFAAAA"),fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:99,flexShrink:0}}>{delta.positive?"+":""}{delta.pct}%</span>}
                   {needsBaseline&&<span style={{background:"#FFF8E6",color:"#7A4F00",border:"1px solid #F5C842",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,flexShrink:0}}>Record baseline</span>}
@@ -1057,6 +1058,14 @@ function ActionList({pageId,actions,reorderActions,openAction,setOpenAction,stat
                         ):null;})}
                       </div>
                     ):action.description?<p style={{fontSize:13,color:C.offBlack,lineHeight:1.7,margin:"0 0 20px"}}>{action.description}</p>:null}
+                    <div style={{marginBottom:14}}>
+                      <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:6}}>Effort to implement</div>
+                      <div style={{display:"flex",gap:6}}>
+                        {[["Low","#E6F9F2","#005C3B","#80D4B0"],["Medium",C.grey3,C.grey8,C.grey5],["High","#FFF0F0","#CC0000","#FFAAAA"]].map(function(ef){var isActive=action.effort===ef[0];return(
+                          <button key={ef[0]} onClick={function(e){e.stopPropagation();updateAction(pageId,action.id,"effort",isActive?"":ef[0]);}} style={{background:isActive?ef[1]:C.white,color:isActive?ef[2]:C.grey7,border:"1px solid "+(isActive?ef[3]:C.grey4),borderRadius:99,padding:"4px 16px",fontSize:11,fontWeight:700,cursor:"pointer",transition:"all 0.15s"}}>{ef[0]}</button>
+                        );})}
+                      </div>
+                    </div>
                     <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:10}}>Before / After Tracking</div>
                     <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"2fr 1fr",gap:10,marginBottom:10}}>
                       <div><div style={{fontSize:11,fontWeight:600,color:C.grey7,marginBottom:4}}>Metric being tracked</div><Inp val={action.metric} onChange={function(v){updateAction(pageId,action.id,"metric",v);}} placeholder="e.g. Sign-up CTR on homepage"/></div>
@@ -1138,6 +1147,8 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
   var totalActions=auditData.reduce(function(s,p){return s+p.actions.length;},0);
   var doneActions=auditData.reduce(function(s,p){return s+p.actions.filter(function(a){return a.status==="done";}).length;},0);
   var inProgActions=auditData.reduce(function(s,p){return s+p.actions.filter(function(a){return a.status==="inprogress";}).length;},0);
+  var todoActions=totalActions-doneActions-inProgActions;
+  var [auditView,setAuditView]=useState("list");
 
   return(<>
     <PageWrap isMobile={isMobile}>
@@ -1153,12 +1164,40 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
           </div>
         );})}
       </div>
-      <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"14px 20px",marginBottom:24,display:"flex",alignItems:"center",gap:16}}>
-        <div style={{fontSize:13,fontWeight:600,color:C.offBlack,flexShrink:0}}>Overall progress</div>
-        <div style={{flex:1,background:C.grey3,borderRadius:99,height:8,overflow:"hidden"}}><div style={{width:(totalActions?Math.round(doneActions/totalActions*100):0)+"%",background:C.pink,height:"100%",borderRadius:99,transition:"width 0.4s"}}/></div>
-        <div style={{fontSize:13,fontWeight:700,color:C.pink,flexShrink:0}}>{totalActions?Math.round(doneActions/totalActions*100):0}%</div>
+      <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"16px 20px",marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.offBlack}}>Overall progress</div>
+          <div style={{display:"flex",gap:12,alignItems:"center"}}>
+            <span style={{fontSize:11,fontWeight:600,color:C.grey6}}>{todoActions} to do</span>
+            <span style={{fontSize:11,fontWeight:600,color:C.blueDark}}>{inProgActions} in progress</span>
+            <span style={{fontSize:11,fontWeight:600,color:"#005C3B"}}>{doneActions} done</span>
+            <span style={{fontSize:15,fontWeight:800,color:C.pink}}>{totalActions?Math.round(doneActions/totalActions*100):0}%</span>
+          </div>
+        </div>
+        <div style={{background:C.grey3,borderRadius:99,height:8,overflow:"hidden",display:"flex",marginBottom:14}}>
+          <div style={{width:(totalActions?todoActions/totalActions*100:0)+"%",background:C.grey5,height:"100%",flexShrink:0,transition:"width 0.4s"}}/>
+          <div style={{width:(totalActions?inProgActions/totalActions*100:0)+"%",background:C.blueMed,height:"100%",flexShrink:0,transition:"width 0.4s"}}/>
+          <div style={{width:(totalActions?doneActions/totalActions*100:0)+"%",background:"#00A86B",height:"100%",flexShrink:0,borderRadius:"0 99px 99px 0",transition:"width 0.4s"}}/>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:8}}>
+          {["Critical","High","Medium","Low"].map(function(pri){var pc=pCfg[pri]||pCfg.Medium;var priPages=auditData.filter(function(p){return p.priority===pri;});var priTotal=priPages.reduce(function(s,p){return s+p.actions.length;},0);var priDone=priPages.reduce(function(s,p){return s+p.actions.filter(function(a){return a.status==="done";}).length;},0);var priPct=priTotal?Math.round(priDone/priTotal*100):0;return(
+            <div key={pri} style={{background:pc.bg,border:"1px solid "+pc.border,borderRadius:8,padding:"8px 10px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
+                <span style={{fontSize:11,fontWeight:700,color:pc.text}}>{pri}</span>
+                <span style={{fontSize:11,fontWeight:700,color:pc.text}}>{priDone}/{priTotal}</span>
+              </div>
+              <div style={{background:"rgba(0,0,0,0.1)",borderRadius:99,height:4,overflow:"hidden"}}>
+                <div style={{width:priPct+"%",background:pc.text,height:"100%",borderRadius:99,transition:"width 0.4s"}}/>
+              </div>
+            </div>
+          );})}
+        </div>
       </div>
-      <div>
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
+        <button onClick={function(){setAuditView("list");}} style={{padding:"8px 18px",borderRadius:8,fontSize:12,fontWeight:700,border:"1px solid "+(auditView==="list"?C.pink:C.grey4),background:auditView==="list"?C.pink:"transparent",color:auditView==="list"?C.white:C.grey7,cursor:"pointer"}}>List</button>
+        <button onClick={function(){setAuditView("matrix");}} style={{padding:"8px 18px",borderRadius:8,fontSize:12,fontWeight:700,border:"1px solid "+(auditView==="matrix"?C.pink:C.grey4),background:auditView==="matrix"?C.pink:"transparent",color:auditView==="matrix"?C.white:C.grey7,cursor:"pointer"}}>Priority Matrix</button>
+      </div>
+      {auditView==="list"&&<div>
         {auditData.map(function(page,pageIdx){
           var pcfg=pCfg[page.priority]||pCfg.Medium;
           var isOpen=openPage===page.id;
@@ -1208,7 +1247,74 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
           );
         })}
         {pageDrag.dropIdx===auditData.length&&<DropLine/>}
-      </div>
+      </div>}
+      {auditView==="matrix"&&(function(){
+        var effortMap={"Low":"Low","Medium":"High","High":"High"} as any;
+        var allA=auditData.reduce(function(acc,pg){return acc.concat(pg.actions.map(function(a){return Object.assign({},a,{pageLabel:pg.label,pageId:pg.id,impact:(pg.priority==="Critical"||pg.priority==="High")?"High":"Low"});}));}, [] as any[]);
+        var unassigned=allA.filter(function(a){return !a.effort;});
+        var quadrants=[
+          {key:"qw",label:"Quick Wins",icon:"⭐",impact:"High",effort:"Low",bg:"#E6F9F2",border:"#80D4B0",textC:"#005C3B",desc:"High impact · Low effort — do these first"},
+          {key:"bb",label:"Big Bets",icon:"🚀",impact:"High",effort:"High",bg:C.blueBg,border:C.blueLight,textC:C.blueDark,desc:"High impact · High effort — plan carefully"},
+          {key:"fi",label:"Fill-ins",icon:"📋",impact:"Low",effort:"Low",bg:C.grey3,border:C.grey5,textC:C.grey8,desc:"Low impact · Low effort — do when capacity allows"},
+          {key:"tt",label:"Deprioritise",icon:"⚠️",impact:"Low",effort:"High",bg:"#FFF0F0",border:"#FFAAAA",textC:"#CC0000",desc:"Low impact · High effort — consider removing"},
+        ];
+        return(
+          <div>
+            <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:16}}>
+              {quadrants.map(function(q){
+                var qActions=allA.filter(function(a){return a.effort&&a.impact===q.impact&&effortMap[a.effort]===q.effort;});
+                return(
+                  <div key={q.key} style={{background:q.bg,border:"1.5px solid "+q.border,borderRadius:12,padding:16}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                      <span style={{fontSize:22,lineHeight:1}}>{q.icon}</span>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:14,fontWeight:800,color:q.textC}}>{q.label}</div>
+                        <div style={{fontSize:11,color:q.textC,opacity:0.75}}>{q.desc}</div>
+                      </div>
+                      <div style={{background:"rgba(0,0,0,0.1)",borderRadius:99,padding:"2px 10px",fontSize:13,fontWeight:800,color:q.textC,flexShrink:0}}>{qActions.length}</div>
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                      {qActions.length===0?(<div style={{fontSize:12,color:q.textC,opacity:0.45,fontStyle:"italic",textAlign:"center",padding:"12px 0"}}>None yet</div>):qActions.map(function(a){var done=a.status==="done";return(
+                        <div key={a.id} style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(0,0,0,0.07)",borderRadius:8,padding:"8px 10px",display:"flex",alignItems:"flex-start",gap:8}}>
+                          <div onClick={function(){var order=["todo","inprogress","done"];var next=order[(order.indexOf(a.status)+1)%order.length];setActionStatus(a.pageId,a.id,next);}} style={{cursor:"pointer",flexShrink:0,paddingTop:1}}>
+                            <span style={{background:statusCfg[a.status].bg,color:statusCfg[a.status].text,border:"1px solid "+statusCfg[a.status].border,fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99,cursor:"pointer"}}>{statusCfg[a.status].label}</span>
+                          </div>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:12,fontWeight:700,color:done?C.grey6:C.offBlack,textDecoration:done?"line-through":"none",lineHeight:1.4}}>{a.text}</div>
+                            <div style={{fontSize:10,color:q.textC,opacity:0.7,marginTop:2}}>{a.pageLabel}</div>
+                          </div>
+                        </div>
+                      );})}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {unassigned.length>0&&(
+              <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:16}}>
+                <div style={{marginBottom:10}}>
+                  <div style={{fontSize:13,fontWeight:800,color:C.offBlack}}>Effort not yet set <span style={{fontWeight:600,color:C.grey6}}>({unassigned.length})</span></div>
+                  <div style={{fontSize:12,color:C.grey6,marginTop:2}}>Open each action in List view and set the effort level to place it in the matrix.</div>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                  {unassigned.map(function(a){return(
+                    <div key={a.id} style={{background:C.grey3,borderRadius:8,padding:"8px 12px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                      <span style={{background:statusCfg[a.status].bg,color:statusCfg[a.status].text,border:"1px solid "+statusCfg[a.status].border,fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,flexShrink:0}}>{statusCfg[a.status].label}</span>
+                      <span style={{fontSize:12,fontWeight:600,color:C.offBlack,flex:1,minWidth:100}}>{a.text}</span>
+                      <span style={{fontSize:11,color:C.grey6,marginRight:4}}>{a.pageLabel}</span>
+                      <div style={{display:"flex",gap:4,flexShrink:0}}>
+                        {["Low","Medium","High"].map(function(ef){return(
+                          <button key={ef} onClick={function(){updateAction(a.pageId,a.id,"effort",ef);}} style={{background:ef==="Low"?"#E6F9F2":ef==="High"?"#FFF0F0":C.white,color:ef==="Low"?"#005C3B":ef==="High"?"#CC0000":C.grey7,border:"1px solid "+(ef==="Low"?"#80D4B0":ef==="High"?"#FFAAAA":C.grey4),borderRadius:99,padding:"2px 10px",fontSize:10,fontWeight:700,cursor:"pointer"}}>{ef}</button>
+                        );})}
+                      </div>
+                    </div>
+                  );})}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </PageWrap>
     {wireframePage&&<WireframeModal page={wireframePage} personas={personas} onClose={function(navigate){setWireframePage(null);if(navigate)setView("wireframes");}} onSave={onSaveWireframe}/>}
   </>);
@@ -1508,7 +1614,7 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
     var pageUrl=scope==="all"?"/":scope;
     var pageObj=pages.find(function(p){return p.url===pageUrl;});
     var cleanTitle=rec.title?rec.title.split(" — ")[0]:rec.change||rec.title;
-    var newAction={id:"a-"+Date.now()+Math.random(),text:cleanTitle,description:rec.change||rec.why||rec.body,shows:rec.shows||"",why:rec.why||"",change:rec.change||"",status:"todo",metric:rec.metric||"",source:"",before:"",beforeDate:"",after:"",afterDate:""};
+    var newAction={id:"a-"+Date.now()+Math.random(),text:cleanTitle,description:rec.change||rec.why||rec.body,shows:rec.shows||"",why:rec.why||"",change:rec.change||"",status:"todo",metric:rec.metric||"",source:"",before:"",beforeDate:"",after:"",afterDate:"",effort:""};
     var existing=auditData.find(function(p){return p.url===pageUrl;});
     if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}
     else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}
@@ -2167,7 +2273,7 @@ function AddActionModal({auditData,setAuditData,pages,onClose}){
   var [actionDesc,setActionDesc]=useState("");
   function save(){
     if(!actionText)return;
-    var newAction={id:"a-"+Date.now(),text:actionText,description:actionDesc,status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:""};
+    var newAction={id:"a-"+Date.now(),text:actionText,description:actionDesc,status:"todo",metric:"",source:"",before:"",beforeDate:"",after:"",afterDate:"",effort:""};
     if(selPage==="new"){if(!newPageUrl||!newPageLabel)return;setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:newPageUrl,label:newPageLabel,priority:priority,personas:[],stage:"",issue:"",actions:[newAction]}]);});}
     else{setAuditData(function(prev){return prev.map(function(p){return p.id===selPage?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}
     onClose();
@@ -2597,7 +2703,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                   var isGreen=greenRecs.indexOf(activeRec as number)>=0;
                   var badgeColor=isGreen?"#22C55E":C.pink;
                   var actionIdForRemove=sessionActionId||(activeRecAction&&activeRecAction.id&&_auditActionIds.indexOf(activeRecAction.id)>=0?activeRecAction.id:null);
-                  var actionToAdd=activeRecAction||{id:"",text:"Recommendation #"+activeRec+(active?" — "+active.pageLabel:""),description:"",shows:"",why:"",change:"",metric:"",status:"todo",source:"",before:"",beforeDate:"",after:"",afterDate:""};
+                  var actionToAdd=activeRecAction||{id:"",text:"Recommendation #"+activeRec+(active?" — "+active.pageLabel:""),description:"",shows:"",why:"",change:"",metric:"",status:"todo",source:"",before:"",beforeDate:"",after:"",afterDate:"",effort:""};
                   return(<>
                     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18}}>
                       <span style={{background:badgeColor,color:C.white,width:30,height:30,borderRadius:8,flexShrink:0,display:"inline-flex",alignItems:"center",justifyContent:"center"}}><Lightbulb size={14} strokeWidth={2.5}/></span>
