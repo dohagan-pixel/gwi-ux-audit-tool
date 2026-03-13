@@ -1193,12 +1193,7 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
       <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"16px 20px",marginBottom:20}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
           <div style={{fontSize:13,fontWeight:700,color:C.offBlack}}>Overall progress</div>
-          <div style={{display:"flex",gap:12,alignItems:"center"}}>
-            <span style={{fontSize:11,fontWeight:600,color:C.grey6}}>{todoActions} to do</span>
-            <span style={{fontSize:11,fontWeight:600,color:C.blueDark}}>{inProgActions} in progress</span>
-            <span style={{fontSize:11,fontWeight:600,color:"#005C3B"}}>{doneActions} done</span>
-            <span style={{fontSize:15,fontWeight:800,color:C.pink}}>{totalActions?Math.round(doneActions/totalActions*100):0}%</span>
-          </div>
+          <span style={{fontSize:15,fontWeight:800,color:C.offBlack}}>{totalActions?Math.round(doneActions/totalActions*100):0}%</span>
         </div>
         <div style={{background:C.grey3,borderRadius:99,height:8,overflow:"hidden",display:"flex"}}>
           <div style={{width:(totalActions?todoActions/totalActions*100:0)+"%",background:C.grey5,height:"100%",flexShrink:0,transition:"width 0.4s"}}/>
@@ -1224,7 +1219,6 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
                 <div style={{display:"flex",alignItems:"center",gap:8,padding:"16px 20px"}}>
                   <div style={{cursor:"grab",color:C.grey5,fontSize:16,flexShrink:0,userSelect:"none"}}>⠿</div>
                   <button onClick={function(){setOpenPage(isOpen?null:page.id);}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left",padding:0,minWidth:0}}>
-                    <span onClick={function(e){e.stopPropagation();var order=["Critical","High","Medium","Low"];var next=order[(order.indexOf(page.priority)+1)%order.length];setAuditData(function(prev){return prev.map(function(p){return p.id===page.id?Object.assign({},p,{priority:next}):p;});});}} style={{background:pcfg.bg,color:pcfg.text,border:"1px solid "+pcfg.border,fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:99,flexShrink:0,cursor:"pointer"}} title="Click to change priority">{page.priority}</span>
                     <span style={{fontWeight:700,color:C.black,fontSize:15,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{page.label}</span>
                     {!isMobile&&<span style={{fontFamily:"monospace",color:C.pink,fontSize:12,flexShrink:0}}>{page.url}</span>}
                     <div style={{width:80,background:C.grey3,borderRadius:99,height:6,flexShrink:0}}><div style={{width:(page.actions.length?Math.round(pageDone/page.actions.length*100):0)+"%",background:"#00A86B",height:"100%",borderRadius:99}}/></div>
