@@ -551,9 +551,9 @@ function Dashboard({personas,auditData,setView,onFeedback}){
   var doneActions=auditData.reduce(function(s,p){return s+p.actions.filter(function(a){return a.status==="done";}).length;},0);
   var pct=totalActions?Math.round(doneActions/totalActions*100):0;
   var cards=[
-    {icon:<ClipboardList size={24}/>,label:"Recommendations",desc:"Turns insights into execution so everyone sees what to do next and what impact it has.",cta:"Track recommendations",action:function(){setView("audit");}},
     {icon:<Sparkles size={24}/>,label:"UX Audit",desc:"Fast, consistent evaluation of UX, messaging, and conversion best practices without waiting on a full research cycle.",cta:"Run an audit",action:function(){setView("summary");},cta2:"View audits",action2:function(){setView("generated-audits");}},
     {icon:<Monitor size={24}/>,label:"Wireframes",desc:"Converts recommendations into AI-generated low-fidelity wireframes — see exactly what an improved page could look like before a single pixel is designed.",cta:"Build a wireframe",action:function(){setView("wireframes");}},
+    {icon:<ClipboardList size={24}/>,label:"Recommendations",desc:"Turns insights into execution so everyone sees what to do next and what impact it has.",cta:"Track recommendations",action:function(){setView("audit");}},
     {icon:<Users size={24}/>,label:"Personas",desc:"Align teams on who we are building for and what each persona needs to convert.",cta:"Meet the personas",action:function(){setView("personas");}},
     {icon:<Map size={24}/>,label:"Journeys",desc:"Shows the real path from first visit to sign-up to activation.",cta:"Explore journeys",action:function(){setView("mapping");}},
     {icon:<BarChart2 size={24}/>,label:"Analytics",desc:"Proof of what is happening on-page — where attention goes and what is killing conversion.",cta:"Open analytics",action:function(){setView("analytics");}},
@@ -574,11 +574,11 @@ function Dashboard({personas,auditData,setView,onFeedback}){
             </div>
             <div style={{background:"rgba(255,255,255,0.1)",borderRadius:99,height:8,overflow:"hidden",marginBottom:16}}><div style={{width:pct+"%",background:C.pink,height:"100%",borderRadius:99,transition:"width 0.4s"}}/></div>
             <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(4,1fr)",gap:8,marginBottom:16}}>
-              {[["5","Personas"],["9","Lifecycle stages"],[String(totalActions),"Recommendations"],[String(doneActions)+"/"+String(totalActions),"Done"]].map(function(item){return(
-                <div key={item[1]} style={{textAlign:"center",background:"rgba(255,255,255,0.04)",borderRadius:8,padding:"10px 8px"}}>
+              {([["5","Personas","personas"],["9","Lifecycle stages","lifecycle"],[String(totalActions),"Recommendations","audit"],[String(doneActions)+"/"+String(totalActions),"Done","audit"]] as [string,string,string][]).map(function(item){return(
+                <button key={item[1]} onClick={function(){setView(item[2]);}} style={{textAlign:"center",background:"rgba(255,255,255,0.04)",borderRadius:8,padding:"10px 8px",border:"none",cursor:"pointer",transition:"background 0.15s"}} onMouseEnter={function(e){e.currentTarget.style.background="rgba(255,255,255,0.10)";}} onMouseLeave={function(e){e.currentTarget.style.background="rgba(255,255,255,0.04)";}}>
                   <div style={{fontSize:isMobile?18:22,fontWeight:800,color:C.white,lineHeight:1}}>{item[0]}</div>
                   <div style={{fontSize:11,color:C.grey6,marginTop:4}}>{item[1]}</div>
-                </div>
+                </button>
               );})}
             </div>
             <button onClick={function(){setView("audit");}} style={{width:"100%",background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"12px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>View Recommendations</button>
@@ -601,6 +601,45 @@ function Dashboard({personas,auditData,setView,onFeedback}){
               </div>
             </button>
           );})}
+        </div>
+        {/* Footer */}
+        <div style={{marginTop:40,paddingTop:24,borderTop:"1px solid "+C.grey4}}>
+          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:20,marginBottom:20}}>
+            <div>
+              <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>Changelog</div>
+              {[
+                {v:"v0.6",date:"Mar 2025",note:"Priority matrix, clickable stat cards, persistent feedback button"},
+                {v:"v0.5",date:"Feb 2025",note:"Wireframes sidebar with Starred/Drafts/Loved sections"},
+                {v:"v0.4",date:"Jan 2025",note:"GA4 analytics cards, Hotjar heatmap links"},
+                {v:"v0.3",date:"Dec 2024",note:"UX Audit generation with Claude AI"},
+                {v:"v0.2",date:"Nov 2024",note:"Persona profiles, journey maps, lifecycle stages"},
+                {v:"v0.1",date:"Oct 2024",note:"Initial audit tracker, recommendations, Firebase sync"},
+              ].map(function(item){return(
+                <div key={item.v} style={{display:"flex",gap:10,marginBottom:6,alignItems:"flex-start"}}>
+                  <span style={{fontFamily:"monospace",fontSize:11,fontWeight:700,color:C.pink,minWidth:32,paddingTop:1}}>{item.v}</span>
+                  <span style={{fontSize:11,color:C.grey6,minWidth:60,paddingTop:1}}>{item.date}</span>
+                  <span style={{fontSize:12,color:C.grey7,lineHeight:1.5}}>{item.note}</span>
+                </div>
+              );})}
+            </div>
+            <div>
+              <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>Built with</div>
+              {[
+                {label:"React + TypeScript",desc:"Frontend framework"},
+                {label:"Firebase (Auth + Firestore)",desc:"Auth and live sync"},
+                {label:"Claude API (claude-opus-4-5)",desc:"AI audit generation"},
+                {label:"Claude Code",desc:"Autonomous development"},
+                {label:"Vite",desc:"Build tool"},
+                {label:"Lucide React",desc:"Icons"},
+              ].map(function(item){return(
+                <div key={item.label} style={{display:"flex",gap:10,marginBottom:6,alignItems:"baseline"}}>
+                  <span style={{fontSize:12,fontWeight:700,color:C.offBlack,minWidth:isMobile?120:180}}>{item.label}</span>
+                  <span style={{fontSize:12,color:C.grey7}}>{item.desc}</span>
+                </div>
+              );})}
+            </div>
+          </div>
+          <div style={{fontSize:11,color:C.grey6,textAlign:"center",paddingBottom:8}}>GWI UX Audit Tool · Internal use only · Built by the UX team</div>
         </div>
       </div>
     </div>
@@ -1198,6 +1237,7 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
       </div>
       {auditView==="list"&&<div>
         {auditData.map(function(page,pageIdx){
+          if(page.actions.length===0)return null;
           var pcfg=pCfg[page.priority]||pCfg.Medium;
           var isOpen=openPage===page.id;
           var pageDone=page.actions.filter(function(a){return a.status==="done";}).length;
@@ -1321,19 +1361,25 @@ function AnalyticsPage({gaCards}){
           );})}
         </div>
         {tab==="ga"&&(
-          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill,minmax(260px,1fr))",gap:16}}>
-            {(gaCards||[]).map(function(card){return(
-              <a key={card.id||card.title} href={card.url} target="_blank" rel="noreferrer"
-                style={{display:"flex",flexDirection:"column",gap:8,background:C.white,border:"1.5px solid "+C.grey4,borderRadius:14,padding:20,textDecoration:"none",color:"inherit"}}
-                onMouseEnter={function(e){e.currentTarget.style.borderColor="#FFE8EE";e.currentTarget.style.boxShadow="0 4px 16px rgba(255,0,119,0.06)";}}
-                onMouseLeave={function(e){e.currentTarget.style.borderColor=C.grey4;e.currentTarget.style.boxShadow="none";}}>
-                <div style={{color:C.pink}}>{CARD_ICONS_MAP[card.iconKey]||<BarChart2 size={22}/>}</div>
-                <div style={{fontSize:17,fontWeight:800,color:C.offBlack}}>{card.title}</div>
-                <p style={{fontSize:15,color:C.grey7,lineHeight:1.65,margin:0,flex:1}}>{card.desc}</p>
-                <CardLink label="Open in GA4"/>
-              </a>
-            );})}
-          </div>
+          <>
+            <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill,minmax(260px,1fr))",gap:16}}>
+              {(gaCards||[]).map(function(card){return(
+                <a key={card.id||card.title} href={card.url} target="_blank" rel="noreferrer"
+                  style={{display:"flex",flexDirection:"column",gap:8,background:C.white,border:"1.5px solid "+C.grey4,borderRadius:14,padding:20,textDecoration:"none",color:"inherit"}}
+                  onMouseEnter={function(e){e.currentTarget.style.borderColor="#FFE8EE";e.currentTarget.style.boxShadow="0 4px 16px rgba(255,0,119,0.06)";}}
+                  onMouseLeave={function(e){e.currentTarget.style.borderColor=C.grey4;e.currentTarget.style.boxShadow="none";}}>
+                  <div style={{color:C.pink}}>{CARD_ICONS_MAP[card.iconKey]||<BarChart2 size={22}/>}</div>
+                  <div style={{fontSize:17,fontWeight:800,color:C.offBlack}}>{card.title}</div>
+                  <p style={{fontSize:15,color:C.grey7,lineHeight:1.65,margin:0,flex:1}}>{card.desc}</p>
+                  <CardLink label="Open in GA4"/>
+                </a>
+              );})}
+            </div>
+            <div style={{marginTop:16,background:C.grey3,border:"1px solid "+C.grey5,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"flex-start",gap:8}}>
+              <AlertTriangle size={14} color={C.grey7} style={{flexShrink:0,marginTop:1}}/>
+              <span style={{fontSize:12,color:C.grey7,lineHeight:1.6}}><strong style={{color:C.grey8}}>Heads up:</strong> All GA4 links above are filtered to approximately the last 28 days. If you are exporting a CSV, update the date range in GA4 before downloading to make sure you get the full period you need.</span>
+            </div>
+          </>
         )}
         {tab==="hotjar"&&(
           <div>
@@ -1459,7 +1505,7 @@ function WireframeModal({page,personas,onClose,onSave}){
   );
 }
 
-function FeedbackModal({onClose,onSubmit}){
+function FeedbackModal({onClose,onSubmit,onViewAll}){
   var [rating,setRating]=useState(0);
   var [hovered,setHovered]=useState(0);
   var [name,setName]=useState("");
@@ -1522,6 +1568,7 @@ function FeedbackModal({onClose,onSubmit}){
               <button onClick={onClose} style={{flex:1,background:"none",border:"1px solid rgb(16,23,32)",color:"rgb(16,23,32)",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
               <button onClick={handleSubmit} disabled={!rating||!name.trim()||!text.trim()} style={{flex:1,background:!rating||!name.trim()||!text.trim()?C.grey4:C.pink,color:!rating||!name.trim()||!text.trim()?C.grey7:C.white,border:"none",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:!rating||!name.trim()||!text.trim()?"default":"pointer",transition:"background 0.15s"}}>Submit</button>
             </div>
+            {onViewAll&&<div style={{textAlign:"center",marginTop:14}}><button onClick={function(){if(onViewAll)onViewAll();onClose();}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey7,fontSize:12,textDecoration:"underline",padding:0}}>View all feedback →</button></div>}
           </>
         )}
       </div>
@@ -1529,45 +1576,95 @@ function FeedbackModal({onClose,onSubmit}){
   );
 }
 
-function FeedbackPage({feedback,onDeleteFeedback}){
+function FeedbackPage({feedback,onDeleteFeedback,onSubmit,onEditFeedback}){
   var isMobile=useWidth()<768;
   var sorted=(feedback as any[]).slice().reverse();
-  if(sorted.length===0){
-    return(
-      <div style={{background:C.grey2,height:"100%",display:"flex",alignItems:"center",justifyContent:"center"}}>
-        <div style={{textAlign:"center",padding:32}}>
-          <div style={{marginBottom:16,color:C.grey6,display:"flex",justifyContent:"center"}}><MessageSquare size={32}/></div>
-          <h2 style={{fontSize:20,fontWeight:800,color:C.black,marginBottom:8}}>No feedback yet</h2>
-          <p style={{fontSize:14,color:C.grey7}}>Be the first to leave feedback from the dashboard.</p>
-        </div>
-      </div>
-    );
+  var [showForm,setShowForm]=useState(false);
+  var [formName,setFormName]=useState("");
+  var [formText,setFormText]=useState("");
+  var [formRating,setFormRating]=useState(0);
+  var [formHovered,setFormHovered]=useState(0);
+  var [editId,setEditId]=useState<string|null>(null);
+  var [editText,setEditText]=useState("");
+  var canSubmit=!!(formRating&&formName.trim()&&formText.trim());
+  function submitNew(){
+    if(!canSubmit)return;
+    if(onSubmit)onSubmit({id:"fb-"+Date.now(),name:formName.trim(),rating:formRating,feedback:formText.trim(),date:new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})});
+    setFormName("");setFormText("");setFormRating(0);setShowForm(false);
   }
+  var inputStyle={width:"100%",border:"1.5px solid "+C.grey4,borderRadius:8,padding:"9px 12px",fontSize:13,color:C.offBlack,background:C.white,outline:"none",boxSizing:"border-box" as const,fontFamily:"inherit"};
   return(
     <PageWrap isMobile={isMobile}>
       <BlackHero eyebrow="Team input" title="Feedback" desc="Ratings and notes from the team — everything submitted through the feedback form lives here."/>
-      <div style={{display:"flex",flexDirection:"column",gap:12}}>
-        {sorted.map(function(fb:any){return(
-          <div key={fb.id} style={{background:C.white,border:"1.5px solid "+C.grey4,borderRadius:12,padding:"20px 24px"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <div style={{width:32,height:32,borderRadius:"50%",background:"#FFEEF6",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                  <span style={{fontSize:12,fontWeight:800,color:C.pink}}>{fb.name.slice(0,1).toUpperCase()}</span>
-                </div>
-                <div>
-                  <div style={{fontSize:14,fontWeight:700,color:C.offBlack,lineHeight:1.2}}>{fb.name}</div>
-                  <div style={{fontSize:11,color:C.grey6,marginTop:2}}>{fb.date}{fb.user?" · "+fb.user:""}</div>
-                </div>
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-                <div style={{display:"flex",gap:3}}>
-                  {[1,2,3,4,5].map(function(n){return <Star key={n} size={14} fill={n<=fb.rating?C.pink:"none"} stroke={n<=fb.rating?C.pink:C.grey5} strokeWidth={1.5}/>;})}</div>
-                <button onClick={function(){if(onDeleteFeedback)onDeleteFeedback(fb.id);}} title="Delete" style={{background:"none",border:"none",cursor:"pointer",padding:4,color:C.grey5,display:"flex",alignItems:"center",borderRadius:6,transition:"color 0.15s"}} onMouseEnter={function(e){e.currentTarget.style.color="#CC0000";}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey5;}}><Trash2 size={13}/></button>
+      <div style={{marginBottom:20}}>
+        {!showForm?(
+          <button onClick={function(){setShowForm(true);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><Plus size={15}/>Add feedback</button>
+        ):(
+          <div style={{background:C.white,border:"1.5px solid "+C.grey4,borderRadius:12,padding:"20px 24px"}}>
+            <div style={{fontSize:13,fontWeight:700,color:C.offBlack,marginBottom:16}}>New feedback</div>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Rating</div>
+              <div style={{display:"flex",gap:4}}>
+                {[1,2,3,4,5].map(function(n){var active=n<=(formHovered||formRating);return(<button key={n} onMouseEnter={function(){setFormHovered(n);}} onMouseLeave={function(){setFormHovered(0);}} onClick={function(){setFormRating(n);}} style={{background:"none",border:"none",cursor:"pointer",padding:2,lineHeight:1}}><Star size={24} fill={active?C.pink:"none"} stroke={active?C.pink:C.grey5} strokeWidth={1.5}/></button>);})}
               </div>
             </div>
-            <p style={{fontSize:14,color:C.offBlack,lineHeight:1.7,margin:0}}>{fb.feedback}</p>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Name</div>
+              <input value={formName} onChange={function(e){setFormName(e.target.value);}} placeholder="Your name" style={inputStyle}/>
+            </div>
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Feedback</div>
+              <textarea value={formText} onChange={function(e){setFormText(e.target.value);}} placeholder="What's working well, what could be better…" rows={3} style={Object.assign({},inputStyle,{resize:"vertical" as const,lineHeight:1.6})}/>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={function(){setShowForm(false);setFormName("");setFormText("");setFormRating(0);}} style={{flex:1,background:"none",border:"1px solid "+C.grey5,color:C.grey8,borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+              <button onClick={submitNew} disabled={!canSubmit} style={{flex:1,background:canSubmit?C.pink:C.grey4,color:canSubmit?C.white:C.grey7,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:canSubmit?"pointer":"default"}}>Submit</button>
+            </div>
           </div>
-        );})}
+        )}
+      </div>
+      {sorted.length===0&&!showForm&&(
+        <div style={{textAlign:"center",padding:"40px 0",color:C.grey6}}>
+          <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><MessageSquare size={28}/></div>
+          <p style={{fontSize:14,margin:0}}>No feedback yet. Be the first!</p>
+        </div>
+      )}
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        {sorted.map(function(fb:any){
+          var isEditing=editId===fb.id;
+          return(
+            <div key={fb.id} style={{background:C.white,border:"1.5px solid "+C.grey4,borderRadius:12,padding:"20px 24px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{width:32,height:32,borderRadius:"50%",background:"#FFEEF6",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <span style={{fontSize:12,fontWeight:800,color:C.pink}}>{fb.name.slice(0,1).toUpperCase()}</span>
+                  </div>
+                  <div>
+                    <div style={{fontSize:14,fontWeight:700,color:C.offBlack,lineHeight:1.2}}>{fb.name}</div>
+                    <div style={{fontSize:11,color:C.grey6,marginTop:2}}>{fb.date}{fb.user?" · "+fb.user:""}</div>
+                  </div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+                  <div style={{display:"flex",gap:3}}>
+                    {[1,2,3,4,5].map(function(n){return <Star key={n} size={14} fill={n<=fb.rating?C.pink:"none"} stroke={n<=fb.rating?C.pink:C.grey5} strokeWidth={1.5}/>;})}</div>
+                  <button onClick={function(){if(isEditing){setEditId(null);}else{setEditId(fb.id);setEditText(fb.feedback);}}} title="Edit" style={{background:"none",border:"none",cursor:"pointer",padding:4,color:C.grey5,display:"flex",alignItems:"center",borderRadius:6}} onMouseEnter={function(e){e.currentTarget.style.color=C.pink;}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey5;}}><Pencil size={13}/></button>
+                  <button onClick={function(){if(onDeleteFeedback)onDeleteFeedback(fb.id);}} title="Delete" style={{background:"none",border:"none",cursor:"pointer",padding:4,color:C.grey5,display:"flex",alignItems:"center",borderRadius:6}} onMouseEnter={function(e){e.currentTarget.style.color="#CC0000";}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey5;}}><Trash2 size={13}/></button>
+                </div>
+              </div>
+              {isEditing?(
+                <div>
+                  <textarea value={editText} onChange={function(e){setEditText(e.target.value);}} rows={3} style={{width:"100%",border:"1.5px solid "+C.pink,borderRadius:8,padding:"9px 12px",fontSize:14,color:C.offBlack,lineHeight:1.7,resize:"vertical",fontFamily:"inherit",boxSizing:"border-box"}}/>
+                  <div style={{display:"flex",gap:8,marginTop:8}}>
+                    <button onClick={function(){setEditId(null);}} style={{background:"none",border:"1px solid "+C.grey5,color:C.grey8,borderRadius:6,padding:"7px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+                    <button onClick={function(){if(onEditFeedback)onEditFeedback(fb.id,editText.trim());setEditId(null);}} disabled={!editText.trim()} style={{background:editText.trim()?C.pink:C.grey4,color:editText.trim()?C.white:C.grey7,border:"none",borderRadius:6,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:editText.trim()?"pointer":"default"}}>Save</button>
+                  </div>
+                </div>
+              ):(
+                <p style={{fontSize:14,color:C.offBlack,lineHeight:1.7,margin:0}}>{fb.feedback}</p>
+              )}
+            </div>
+          );
+        })}
       </div>
     </PageWrap>
   );
@@ -2056,7 +2153,7 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
     <PageWrap isMobile={isMobile}>
       <BlackHero eyebrow="GWI Website - UX" title="Settings" desc="The quality of every audit depends on the data behind it."/>
       <div style={{display:"flex",gap:4,marginBottom:28,background:C.grey4,borderRadius:10,padding:4,width:isMobile?"100%":"fit-content",overflowX:"auto"}}>
-        {[["pages","Pages"],["personas","Personas"],["stages","Lifecycle Stages"],["journeys","Journey Steps"],["ga","Google Analytics"]].map(function(x){return(
+        {[["pages","Pages"],["personas","Personas"],["stages","Lifecycle Stages"],["journeys","Journey Steps"],["ga","Google Analytics"],["guide","How to use"]].map(function(x){return(
           <button key={x[0]} onClick={function(){setTab(x[0]);}} style={{padding:"8px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:tab===x[0]?C.pink:"transparent",color:tab===x[0]?C.white:C.grey7,flexShrink:0,whiteSpace:"nowrap"}}>{x[1]}</button>
         );})}
       </div>
@@ -2237,6 +2334,30 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
           </div>
         </div>
       )}
+      {tab==="guide"&&(
+        <div>
+          {[
+            {step:"1",title:"Set up your pages",desc:"Go to the Pages tab and make sure all the pages you want to audit are listed. You can add, hide, or delete pages. These pages drive the audit, recommendations, and analytics — so keep them up to date."},
+            {step:"2",title:"Run a UX audit",desc:"Go to UX Audit and select a page to audit. Choose the relevant personas and lifecycle stage, then click Generate. Claude will scan the page against UX best practices and output a structured set of findings."},
+            {step:"3",title:"Add recommendations",desc:"From the UX Audit results, click 'Add to Recommendations' next to any finding. This adds it to the Recommendations tracker where you can manage status, assign effort, and track progress."},
+            {step:"4",title:"Generate a wireframe",desc:"On any page in the Recommendations view, click 'Generate Wireframe'. Claude will produce a low-fidelity wireframe showing exactly how the improved page could look. Wireframes are saved and viewable in the Wireframes section."},
+            {step:"5",title:"Track progress",desc:"Use the Recommendations page to manage actions. Toggle between List and Matrix views. Click the priority cards (Critical / High / Medium / Low) to jump into the matrix. Mark actions as To Do, In Progress, or Done."},
+            {step:"6",title:"Explore journeys and personas",desc:"The Personas and Journeys sections give you context for every recommendation. Use them to understand who you're designing for and where they are in the lifecycle when they encounter each page."},
+            {step:"7",title:"Use Analytics as evidence",desc:"The Analytics section links to GA4 and Hotjar for each page. Open these before writing audit findings to ground your recommendations in real behaviour data."},
+            {step:"8",title:"Leave feedback",desc:"Click the pink bubble (bottom-left) or press ⌘⇧F at any time to leave feedback. Your input directly shapes what gets built next."},
+          ].map(function(item){return(
+            <div key={item.step} style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"20px 24px",marginBottom:12,display:"flex",gap:16,alignItems:"flex-start"}}>
+              <div style={{width:32,height:32,borderRadius:"50%",background:"#FFEEF6",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <span style={{fontSize:14,fontWeight:800,color:C.pink}}>{item.step}</span>
+              </div>
+              <div>
+                <div style={{fontSize:15,fontWeight:700,color:C.black,marginBottom:6}}>{item.title}</div>
+                <div style={{fontSize:14,color:C.grey7,lineHeight:1.7}}>{item.desc}</div>
+              </div>
+            </div>
+          );})}
+        </div>
+      )}
     </PageWrap>
   );
 }
@@ -2255,6 +2376,16 @@ function AddActionModal({auditData,setAuditData,pages,onClose}){
     else{setAuditData(function(prev){return prev.map(function(p){return p.id===selPage?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}
     onClose();
   }
+  useEffect(function(){
+    function onKey(e:KeyboardEvent){
+      if(e.key==="Enter"&&!e.shiftKey){
+        var tag=(document.activeElement as HTMLElement)?.tagName;
+        if(tag!=="TEXTAREA"&&tag!=="SELECT"){e.preventDefault();save();}
+      }
+    }
+    document.addEventListener("keydown",onKey);
+    return function(){document.removeEventListener("keydown",onKey);};
+  },[actionText,actionDesc,selPage,newPageUrl,newPageLabel,priority]);
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center"}}>
       <div style={{background:C.white,borderRadius:16,padding:28,width:520,maxWidth:"90vw",maxHeight:"80vh",overflow:"auto"}}>
@@ -2669,21 +2800,19 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                   <span style={{fontSize:12,fontWeight:700,color:C.offBlack,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{folder.label}</span>
                   <span style={{fontSize:10,fontWeight:600,color:C.grey6,background:C.grey3,borderRadius:99,padding:"1px 6px",flexShrink:0}}>{folder.wires.length}</span>
                 </button>
-                {isOpen&&ordered.map(function(w){
-                  var isActive=w.id===activeId;
-                  return(
-                    <div key={w.id} style={{background:isActive?"#FFF0F7":"transparent"}}>
-                      <button onClick={function(){setActiveId(w.id);setLovedView(null);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 14px 8px 34px",border:"none",borderLeft:"3px solid "+(isActive?C.pink:"transparent"),background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
-                        {w.starred&&<Star size={10} fill="#FFC107" color="#FFC107" style={{flexShrink:0}}/>}
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:12,fontWeight:700,color:isActive?C.black:C.grey8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w.pageLabel}</div>
-                          <div style={{fontSize:10,color:C.grey6,marginTop:1}}>{w.date}</div>
-                        </div>
-                      </button>
-                    </div>
-                  );
-                })}
-                {isOpen&&(function(){var pl=(lovedComponents||[]).filter(function(lc:any){return lc.pageUrl===folder.url;});if(pl.length===0)return null;var isLV=lovedView&&lovedView.pageUrl===folder.url;return(<div style={{background:isLV?"#FFF0F7":"transparent"}}><button onClick={function(){setLovedView({pageUrl:folder.url,label:folder.label});setActiveId(null as any);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 14px 8px 34px",border:"none",borderLeft:"3px solid "+(isLV?C.pink:"transparent"),background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><Heart size={10} fill={C.pink} color={C.pink} style={{flexShrink:0}}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:700,color:isLV?C.black:C.grey8}}>Loved components</div><div style={{fontSize:10,color:C.grey6,marginTop:1}}>{pl.length} saved</div></div></button></div>);})()}
+                {isOpen&&(function(){
+                  var hasStarred=starred.length>0;
+                  var hasDrafts=unstarred.length>0;
+                  var pl=(lovedComponents||[]).filter(function(lc:any){return lc.pageUrl===folder.url;});
+                  return(<>
+                    {hasStarred&&<div style={{padding:"4px 14px 2px",fontSize:9,fontWeight:700,color:C.grey6,textTransform:"uppercase",letterSpacing:"0.07em",background:C.grey3,borderTop:"1px solid "+C.grey4}}>Starred</div>}
+                    {starred.map(function(w){var isActive=w.id===activeId;return(<div key={w.id} style={{background:isActive?"#FFF0F7":"transparent"}}><button onClick={function(){setActiveId(w.id);setLovedView(null);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 14px 8px 34px",border:"none",borderLeft:"3px solid "+(isActive?C.pink:"transparent"),background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><Star size={10} fill="#FFC107" color="#FFC107" style={{flexShrink:0}}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:700,color:isActive?C.black:C.grey8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w.pageLabel}</div><div style={{fontSize:10,color:C.grey6,marginTop:1}}>{w.date}</div></div></button></div>);})}
+                    {hasDrafts&&<div style={{padding:"4px 14px 2px",fontSize:9,fontWeight:700,color:C.grey6,textTransform:"uppercase",letterSpacing:"0.07em",background:C.grey3,borderTop:"1px solid "+C.grey4}}>Drafts</div>}
+                    {unstarred.map(function(w){var isActive=w.id===activeId;return(<div key={w.id} style={{background:isActive?"#FFF0F7":"transparent"}}><button onClick={function(){setActiveId(w.id);setLovedView(null);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 14px 8px 34px",border:"none",borderLeft:"3px solid "+(isActive?C.pink:"transparent"),background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:700,color:isActive?C.black:C.grey8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w.pageLabel}</div><div style={{fontSize:10,color:C.grey6,marginTop:1}}>{w.date}</div></div></button></div>);})}
+                    {pl.length>0&&<div style={{padding:"4px 14px 2px",fontSize:9,fontWeight:700,color:C.grey6,textTransform:"uppercase",letterSpacing:"0.07em",background:C.grey3,borderTop:"1px solid "+C.grey4}}>Loved</div>}
+                    {pl.length>0&&(function(){var isLV=lovedView&&lovedView.pageUrl===folder.url;return(<div style={{background:isLV?"#FFF0F7":"transparent"}}><button onClick={function(){setLovedView({pageUrl:folder.url,label:folder.label});setActiveId(null as any);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 14px 8px 34px",border:"none",borderLeft:"3px solid "+(isLV?C.pink:"transparent"),background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><Heart size={10} fill={C.pink} color={C.pink} style={{flexShrink:0}}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:700,color:isLV?C.black:C.grey8}}>Loved components</div><div style={{fontSize:10,color:C.grey6,marginTop:1}}>{pl.length} saved</div></div></button></div>);}())}
+                  </>);
+                })()}
               </div>
             );
           });
@@ -2886,6 +3015,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
   useEffect(function(){try{localStorage.setItem("gwi_loved_components",JSON.stringify(lovedComponents));}catch(e){};},[lovedComponents]);
   useEffect(function(){try{localStorage.setItem("gwi_feedback",JSON.stringify(feedback));}catch(e){};},[feedback]);
   useEffect(function(){function onHash(){var h=window.location.hash;var v=hashToView(h);var sub=hashToSubId(h);setViewRaw(v);if(v==="persona-detail"&&sub)setActivePersonaId(sub);if(v==="journey"&&sub)setActivePersonaForJourney(sub);}window.addEventListener("hashchange",onHash);return function(){window.removeEventListener("hashchange",onHash);};},[]);
+  useEffect(function(){function onKey(e:KeyboardEvent){if((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.key==="F"){e.preventDefault();setShowFeedbackModal(function(prev){return !prev;});}}document.addEventListener("keydown",onKey);return function(){document.removeEventListener("keydown",onKey);};},[]);
   function _handleLogin(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}signInWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/user-not-found'?'Invalid email or password.':'Sign-in failed. Try again.');});}
   function _handleRegister(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}if(password.length<6){_setLoginError('Password must be at least 6 characters.');return;}createUserWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/email-already-in-use'?'Account already exists. Try signing in.':err.code==='auth/weak-password'?'Password must be at least 6 characters.':'Registration failed. Try again.');});}
   function _handleGoogleLogin(){_setLoginError(null);var p=new GoogleAuthProvider();p.setCustomParameters({hd:"gwi.com"});signInWithPopup(_auth,p).catch(function(err:any){_setLoginError(err.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':err.code==='auth/unauthorized-domain'?'This domain is not authorised in Firebase — contact your admin.':'Google sign-in failed. Try again. ('+( err.code||'')+')');});}
@@ -2904,9 +3034,9 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,padding:"0 20px",height:52,display:"flex",alignItems:"center",gap:4,position:"fixed",top:0,left:0,right:0,zIndex:100,boxSizing:"border-box"}}>
           <div style={{fontWeight:800,fontSize:15,color:C.white,marginRight:4,letterSpacing:"-0.02em",cursor:"pointer",flexShrink:0}} onClick={function(){setView("dashboard");}}>GWI UX</div>
           <button onClick={function(){setView("dashboard");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="dashboard"?C.pink:"transparent",color:view==="dashboard"?C.white:C.grey7,flexShrink:0}}>Dashboard</button>
-          <button onClick={function(){setView("audit");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="audit"?C.pink:"transparent",color:view==="audit"?C.white:C.grey7,flexShrink:0}}>Recommendations</button>
           <button onClick={function(){setView("summary");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:(view==="summary"||view==="generated-audits")?C.pink:"transparent",color:(view==="summary"||view==="generated-audits")?C.white:C.grey7,flexShrink:0}}>UX Audit</button>
           <button onClick={function(){setView("wireframes");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="wireframes"?C.pink:"transparent",color:view==="wireframes"?C.white:C.grey7,flexShrink:0}}>Wireframes</button>
+          <button onClick={function(){setView("audit");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="audit"?C.pink:"transparent",color:view==="audit"?C.white:C.grey7,flexShrink:0}}>Recommendations</button>
           <button onClick={function(){setView("personas");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:(view==="personas"||view==="persona-detail")?C.pink:"transparent",color:(view==="personas"||view==="persona-detail")?C.white:C.grey7,flexShrink:0}}>Personas</button>
           <Dropdown label="Journeys" items={MAPPING_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("mapping");}} forceActive={view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"}/>
           <button onClick={function(){setView("analytics");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="analytics"?C.pink:"transparent",color:view==="analytics"?C.white:C.grey7,flexShrink:0}}>Analytics</button>
@@ -2930,8 +3060,11 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards}/>}
         {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData} onAddRec={function(action,pageUrl){var pageObj=pages.find(function(p){return p.url===pageUrl;});var newAction=Object.assign({},action,{status:"todo"});var existing=auditData.find(function(p){return p.url===pageUrl;});if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}}} onRemoveRec={function(actionId,pageUrl){setAuditData(function(prev){return prev.map(function(p){return p.url!==pageUrl?p:Object.assign({},p,{actions:(p.actions||[]).filter(function(a:any){return a.id!==actionId;})});});});}} lovedComponents={lovedComponents} onLoveComponent={function(lc){setLovedComponents(function(prev){return (prev as any[]).concat([lc]);});}} onUnloveComponent={function(id){setLovedComponents(function(prev){return (prev as any[]).filter(function(lc:any){return lc.id!==id;});});}}/>}
       </div>
-      {view==="feedback"&&<FeedbackPage feedback={feedback} onDeleteFeedback={function(id){setFeedback(function(prev){return(prev as any[]).filter(function(f){return f.id!==id;});});if(_user)deleteDoc(doc(_db,"users",_user.uid,"feedback",id)).catch(function(){});}}/>}
+      {view==="feedback"&&<FeedbackPage feedback={feedback} onDeleteFeedback={function(id){setFeedback(function(prev){return(prev as any[]).filter(function(f){return f.id!==id;});});if(_user)deleteDoc(doc(_db,"users",_user.uid,"feedback",id)).catch(function(){});}} onSubmit={function(entry){var full=Object.assign({},entry,{user:_user?_user.email:""});setFeedback(function(prev){return prev.concat([full]);});if(_user)setDoc(doc(_db,"users",_user.uid,"feedback",full.id),full).catch(function(){});}} onEditFeedback={function(id,newText){setFeedback(function(prev){return(prev as any[]).map(function(f){return f.id===id?Object.assign({},f,{feedback:newText}):f;});});if(_user){var entry=(feedback as any[]).find(function(f){return f.id===id;});if(entry)setDoc(doc(_db,"users",_user.uid,"feedback",id),Object.assign({},entry,{feedback:newText})).catch(function(){});}}}/>}
       {showAddAction&&<AddActionModal auditData={auditData} setAuditData={setAuditData} pages={pages} onClose={function(){setShowAddAction(false);}}/>}
+      <button onClick={function(){setShowFeedbackModal(true);}} title="Leave feedback (⌘⇧F)" style={{position:"fixed",bottom:24,left:24,zIndex:1400,background:C.pink,color:C.white,border:"none",borderRadius:"50%",width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:"0 4px 16px rgba(255,0,119,0.35)",transition:"transform 0.15s,box-shadow 0.15s"}} onMouseEnter={function(e){e.currentTarget.style.transform="scale(1.1)";e.currentTarget.style.boxShadow="0 6px 20px rgba(255,0,119,0.45)";}} onMouseLeave={function(e){e.currentTarget.style.transform="scale(1)";e.currentTarget.style.boxShadow="0 4px 16px rgba(255,0,119,0.35)";}}>
+        <MessageSquare size={18}/>
+      </button>
       {feedbackToast&&<div style={{position:"fixed",bottom:28,left:"50%",transform:"translateX(-50%)",background:C.black,color:C.white,borderRadius:12,padding:"13px 24px",fontSize:13,fontWeight:600,zIndex:3000,boxShadow:"0 8px 32px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:10,whiteSpace:"nowrap",animation:"slideUp 0.25s ease"}}><span style={{color:"#22C55E",fontSize:16,lineHeight:1}}>✓</span>Thank you for your feedback!</div>}
       {showFeedbackModal&&<FeedbackModal
         onClose={function(){
@@ -2948,6 +3081,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
           if(_user)setDoc(doc(_db,"users",_user.uid,"feedback",full.id),full).catch(function(){});
           feedbackSubmittedRef.current=true;
         }}
+        onViewAll={function(){setShowFeedbackModal(false);setView("feedback");}}
       />}
     </div>
   );
