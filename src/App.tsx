@@ -276,7 +276,7 @@ function Dropdown({label,items,activeView,setView,onLabelClick,forceActive}){
   );
 }
 
-function UserMenu({user,onSignOut,onSettings,onFeedbackPage,activeView}){
+function UserMenu({user,onSignOut,onSettings,onFeedbackPage,onGuide,activeView}){
   var [open,setOpen]=useState(false);
   var ref=useRef(null);
   useEffect(function(){function h(e){if(ref.current&&!(ref.current as any).contains(e.target))setOpen(false);}document.addEventListener("mousedown",h);return function(){document.removeEventListener("mousedown",h);};},[]);
@@ -294,6 +294,9 @@ function UserMenu({user,onSignOut,onSettings,onFeedbackPage,activeView}){
       {open&&(
         <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:C.white,border:"1px solid "+C.grey4,borderRadius:10,boxShadow:"0 8px 24px rgba(0,0,0,0.1)",zIndex:200,minWidth:200,overflow:"hidden",whiteSpace:"nowrap"}}>
           <div style={{padding:"10px 16px 8px",fontSize:12,color:C.grey6,borderBottom:"1px solid "+C.grey3}}>{user.email}</div>
+          <button style={_item} onClick={function(){if(onGuide)onGuide();setOpen(false);}}
+            onMouseEnter={function(e){e.currentTarget.style.background=C.grey3;}}
+            onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>How to use</button>
           <button style={_item} onClick={function(){onSettings();setOpen(false);}}
             onMouseEnter={function(e){e.currentTarget.style.background=C.grey3;}}
             onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>Settings</button>
@@ -433,7 +436,7 @@ function WhyModal({url,label,onClose}){
         <div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Why is this in the audit?</div>
         <h2 style={{fontSize:20,fontWeight:800,color:C.black,margin:"0 0 16px"}}>{label}</h2>
         <p style={{fontSize:14,color:C.grey7,lineHeight:1.75,margin:"0 0 24px"}}>{why}</p>
-        <button onClick={onClose} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Got it</button>
+        <button autoFocus onClick={onClose} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Got it</button>
       </div>
     </div>
   );
@@ -1350,7 +1353,7 @@ function AnalyticsPage({gaCards}){
           <h2 style={{fontSize:20,fontWeight:800,color:C.black,margin:"0 0 12px"}}>Analytics is getting an upgrade</h2>
           <p style={{fontSize:14,color:C.grey7,lineHeight:1.7,margin:"0 0 8px"}}>This section currently links out to GA4 and Hotjar directly.</p>
           <p style={{fontSize:14,color:C.grey7,lineHeight:1.7,margin:"0 0 28px"}}>Once we have a <strong style={{color:C.black}}>Claude Code licence</strong>, this will be rebuilt to pull live analytics data directly into the tool.</p>
-          <button onClick={function(){setShowNotice(false);try{localStorage.setItem("analytics_notice_dismissed","1");}catch(e){}}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"12px 28px",fontSize:14,fontWeight:700,cursor:"pointer"}}>Got it, take me in</button>
+          <button autoFocus onClick={function(){setShowNotice(false);try{localStorage.setItem("analytics_notice_dismissed","1");}catch(e){}}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"12px 28px",fontSize:14,fontWeight:700,cursor:"pointer"}}>Got it, take me in</button>
         </Modal>
       )}
       <PageWrap isMobile={isMobile}>
@@ -1537,7 +1540,7 @@ function FeedbackModal({onClose,onSubmit,onViewAll}){
               <div style={{width:48,height:48,borderRadius:"50%",background:"#E6F9F2",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",fontSize:24}}>✓</div>
               <h3 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 8px"}}>Thanks for the feedback!</h3>
               <p style={{fontSize:13,color:C.grey7,margin:"0 0 24px",lineHeight:1.6}}>Your input helps us improve the tool for the whole team.</p>
-              <button onClick={onClose} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"11px 28px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Close</button>
+              <button autoFocus onClick={onClose} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"11px 28px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Close</button>
             </div>
           </>
         ):(
@@ -2153,7 +2156,7 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
     <PageWrap isMobile={isMobile}>
       <BlackHero eyebrow="GWI Website - UX" title="Settings" desc="The quality of every audit depends on the data behind it."/>
       <div style={{display:"flex",gap:4,marginBottom:28,background:C.grey4,borderRadius:10,padding:4,width:isMobile?"100%":"fit-content",overflowX:"auto"}}>
-        {[["pages","Pages"],["personas","Personas"],["stages","Lifecycle Stages"],["journeys","Journey Steps"],["ga","Google Analytics"],["guide","How to use"]].map(function(x){return(
+        {[["pages","Pages"],["personas","Personas"],["stages","Lifecycle Stages"],["journeys","Journey Steps"],["ga","Google Analytics"]].map(function(x){return(
           <button key={x[0]} onClick={function(){setTab(x[0]);}} style={{padding:"8px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:tab===x[0]?C.pink:"transparent",color:tab===x[0]?C.white:C.grey7,flexShrink:0,whiteSpace:"nowrap"}}>{x[1]}</button>
         );})}
       </div>
@@ -2334,30 +2337,35 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
           </div>
         </div>
       )}
-      {tab==="guide"&&(
-        <div>
-          {[
-            {step:"1",title:"Set up your pages",desc:"Go to the Pages tab and make sure all the pages you want to audit are listed. You can add, hide, or delete pages. These pages drive the audit, recommendations, and analytics — so keep them up to date."},
-            {step:"2",title:"Run a UX audit",desc:"Go to UX Audit and select a page to audit. Choose the relevant personas and lifecycle stage, then click Generate. Claude will scan the page against UX best practices and output a structured set of findings."},
-            {step:"3",title:"Add recommendations",desc:"From the UX Audit results, click 'Add to Recommendations' next to any finding. This adds it to the Recommendations tracker where you can manage status, assign effort, and track progress."},
-            {step:"4",title:"Generate a wireframe",desc:"On any page in the Recommendations view, click 'Generate Wireframe'. Claude will produce a low-fidelity wireframe showing exactly how the improved page could look. Wireframes are saved and viewable in the Wireframes section."},
-            {step:"5",title:"Track progress",desc:"Use the Recommendations page to manage actions. Toggle between List and Matrix views. Click the priority cards (Critical / High / Medium / Low) to jump into the matrix. Mark actions as To Do, In Progress, or Done."},
-            {step:"6",title:"Explore journeys and personas",desc:"The Personas and Journeys sections give you context for every recommendation. Use them to understand who you're designing for and where they are in the lifecycle when they encounter each page."},
-            {step:"7",title:"Use Analytics as evidence",desc:"The Analytics section links to GA4 and Hotjar for each page. Open these before writing audit findings to ground your recommendations in real behaviour data."},
-            {step:"8",title:"Leave feedback",desc:"Click the pink bubble (bottom-left) or press ⌘⇧F at any time to leave feedback. Your input directly shapes what gets built next."},
-          ].map(function(item){return(
-            <div key={item.step} style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"20px 24px",marginBottom:12,display:"flex",gap:16,alignItems:"flex-start"}}>
-              <div style={{width:32,height:32,borderRadius:"50%",background:"#FFEEF6",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                <span style={{fontSize:14,fontWeight:800,color:C.pink}}>{item.step}</span>
-              </div>
-              <div>
-                <div style={{fontSize:15,fontWeight:700,color:C.black,marginBottom:6}}>{item.title}</div>
-                <div style={{fontSize:14,color:C.grey7,lineHeight:1.7}}>{item.desc}</div>
-              </div>
-            </div>
-          );})}
+    </PageWrap>
+  );
+}
+
+function GuidePage(){
+  var isMobile=useWidth()<768;
+  return(
+    <PageWrap isMobile={isMobile}>
+      <BlackHero eyebrow="GWI Website - UX" title="How to use" desc="A quick walkthrough of every section in the tool."/>
+      {[
+        {step:"1",title:"Set up your pages",desc:"Go to Settings → Pages and make sure all the pages you want to audit are listed. You can add, hide, or delete pages. These pages drive the audit, recommendations, and analytics — so keep them up to date."},
+        {step:"2",title:"Run a UX audit",desc:"Go to UX Audit and select a page to audit. Choose the relevant personas and lifecycle stage, then click Generate. Claude will scan the page against UX best practices and output a structured set of findings."},
+        {step:"3",title:"Add recommendations",desc:"From the UX Audit results, click 'Add to Recommendations' next to any finding. This adds it to the Recommendations tracker where you can manage status, assign effort, and track progress."},
+        {step:"4",title:"Generate a wireframe",desc:"On any page in the Recommendations view, click 'Generate Wireframe'. Claude will produce a low-fidelity wireframe showing exactly how the improved page could look. Wireframes are saved and viewable in the Wireframes section."},
+        {step:"5",title:"Track progress",desc:"Use the Recommendations page to manage actions. Toggle between List and Matrix views. Click the priority cards (Critical / High / Medium / Low) to jump into the matrix. Mark actions as To Do, In Progress, or Done."},
+        {step:"6",title:"Explore journeys and personas",desc:"The Personas and Journeys sections give you context for every recommendation. Use them to understand who you're designing for and where they are in the lifecycle when they encounter each page."},
+        {step:"7",title:"Use Analytics as evidence",desc:"The Analytics section links to GA4 and Hotjar for each page. Open these before writing audit findings to ground your recommendations in real behaviour data."},
+        {step:"8",title:"Leave feedback",desc:"Click the pink bubble (bottom-left) or press ⌘⇧F at any time to leave feedback. Your input directly shapes what gets built next."},
+      ].map(function(item){return(
+        <div key={item.step} style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"20px 24px",marginBottom:12,display:"flex",gap:16,alignItems:"flex-start"}}>
+          <div style={{width:32,height:32,borderRadius:"50%",background:"#FFEEF6",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <span style={{fontSize:14,fontWeight:800,color:C.pink}}>{item.step}</span>
+          </div>
+          <div>
+            <div style={{fontSize:15,fontWeight:700,color:C.black,marginBottom:6}}>{item.title}</div>
+            <div style={{fontSize:14,color:C.grey7,lineHeight:1.7}}>{item.desc}</div>
+          </div>
         </div>
-      )}
+      );})}
     </PageWrap>
   );
 }
@@ -3016,6 +3024,23 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
   useEffect(function(){try{localStorage.setItem("gwi_feedback",JSON.stringify(feedback));}catch(e){};},[feedback]);
   useEffect(function(){function onHash(){var h=window.location.hash;var v=hashToView(h);var sub=hashToSubId(h);setViewRaw(v);if(v==="persona-detail"&&sub)setActivePersonaId(sub);if(v==="journey"&&sub)setActivePersonaForJourney(sub);}window.addEventListener("hashchange",onHash);return function(){window.removeEventListener("hashchange",onHash);};},[]);
   useEffect(function(){function onKey(e:KeyboardEvent){if((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.key==="F"){e.preventDefault();setShowFeedbackModal(function(prev){return !prev;});}}document.addEventListener("keydown",onKey);return function(){document.removeEventListener("keydown",onKey);};},[]);
+  var _NAV_VIEWS=["dashboard","summary","wireframes","audit","personas","mapping","analytics"];
+  var _NAV_MAP:Record<string,string>={dashboard:"dashboard",summary:"summary","generated-audits":"summary",wireframes:"wireframes",audit:"audit",personas:"personas","persona-detail":"personas",mapping:"mapping",journey:"mapping",lifecycle:"mapping",affinity:"mapping",flows:"mapping",analytics:"analytics"};
+  useEffect(function(){
+    function onArrow(e:KeyboardEvent){
+      if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight")return;
+      var tag=(document.activeElement as HTMLElement)?.tagName;
+      if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT"||(document.activeElement as HTMLElement)?.isContentEditable)return;
+      var parent=_NAV_MAP[view]||"dashboard";
+      var idx=_NAV_VIEWS.indexOf(parent);
+      if(idx===-1)return;
+      e.preventDefault();
+      var next=e.key==="ArrowRight"?(idx+1)%_NAV_VIEWS.length:(idx-1+_NAV_VIEWS.length)%_NAV_VIEWS.length;
+      setView(_NAV_VIEWS[next]);
+    }
+    document.addEventListener("keydown",onArrow);
+    return function(){document.removeEventListener("keydown",onArrow);};
+  },[view]);
   function _handleLogin(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}signInWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/user-not-found'?'Invalid email or password.':'Sign-in failed. Try again.');});}
   function _handleRegister(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}if(password.length<6){_setLoginError('Password must be at least 6 characters.');return;}createUserWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/email-already-in-use'?'Account already exists. Try signing in.':err.code==='auth/weak-password'?'Password must be at least 6 characters.':'Registration failed. Try again.');});}
   function _handleGoogleLogin(){_setLoginError(null);var p=new GoogleAuthProvider();p.setCustomParameters({hd:"gwi.com"});signInWithPopup(_auth,p).catch(function(err:any){_setLoginError(err.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':err.code==='auth/unauthorized-domain'?'This domain is not authorised in Firebase — contact your admin.':'Google sign-in failed. Try again. ('+( err.code||'')+')');});}
@@ -3041,7 +3066,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
           <Dropdown label="Journeys" items={MAPPING_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("mapping");}} forceActive={view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"}/>
           <button onClick={function(){setView("analytics");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="analytics"?C.pink:"transparent",color:view==="analytics"?C.white:C.grey7,flexShrink:0}}>Analytics</button>
           <div style={{flex:1}}/>
-          <UserMenu user={_user} onSignOut={function(){fbSignOut(_auth);}} onSettings={function(){setView("settings");}} onFeedbackPage={function(){setView("feedback");}} activeView={view}/>
+          <UserMenu user={_user} onSignOut={function(){fbSignOut(_auth);}} onSettings={function(){setView("settings");}} onFeedbackPage={function(){setView("feedback");}} onGuide={function(){setView("guide");}} activeView={view}/>
         </div>
       )}
       <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column",paddingTop:isMobile?0:52}}>
@@ -3058,6 +3083,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit).catch(function(){});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
         {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id)).catch(function(){});}} onUpdateAudit={function(updated){if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",updated.id),updated).catch(function(){});}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
         {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards}/>}
+        {view==="guide"&&<GuidePage/>}
         {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData} onAddRec={function(action,pageUrl){var pageObj=pages.find(function(p){return p.url===pageUrl;});var newAction=Object.assign({},action,{status:"todo"});var existing=auditData.find(function(p){return p.url===pageUrl;});if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}}} onRemoveRec={function(actionId,pageUrl){setAuditData(function(prev){return prev.map(function(p){return p.url!==pageUrl?p:Object.assign({},p,{actions:(p.actions||[]).filter(function(a:any){return a.id!==actionId;})});});});}} lovedComponents={lovedComponents} onLoveComponent={function(lc){setLovedComponents(function(prev){return (prev as any[]).concat([lc]);});}} onUnloveComponent={function(id){setLovedComponents(function(prev){return (prev as any[]).filter(function(lc:any){return lc.id!==id;});});}}/>}
       </div>
       {view==="feedback"&&<FeedbackPage feedback={feedback} onDeleteFeedback={function(id){setFeedback(function(prev){return(prev as any[]).filter(function(f){return f.id!==id;});});if(_user)deleteDoc(doc(_db,"users",_user.uid,"feedback",id)).catch(function(){});}} onSubmit={function(entry){var full=Object.assign({},entry,{user:_user?_user.email:""});setFeedback(function(prev){return prev.concat([full]);});if(_user)setDoc(doc(_db,"users",_user.uid,"feedback",full.id),full).catch(function(){});}} onEditFeedback={function(id,newText){setFeedback(function(prev){return(prev as any[]).map(function(f){return f.id===id?Object.assign({},f,{feedback:newText}):f;});});if(_user){var entry=(feedback as any[]).find(function(f){return f.id===id;});if(entry)setDoc(doc(_db,"users",_user.uid,"feedback",id),Object.assign({},entry,{feedback:newText})).catch(function(){});}}}/>}
