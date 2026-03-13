@@ -1216,7 +1216,7 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
               {pageDrag.dropIdx===pageIdx&&<DropLine/>}
               <div draggable onDragStart={function(){pageDrag.onDragStart(pageIdx);}} onDragOver={function(e){pageDrag.onDragOver(e,pageIdx);}} onDrop={function(e){pageDrag.onDrop(e,pageIdx);}} onDragEnd={pageDrag.onDragEnd}
                 style={{background:C.white,border:"1px solid "+(isOpen?C.pink:C.grey4),borderRadius:14,marginBottom:8,overflow:"hidden",opacity:pageDrag.dropIdx===pageIdx?0.5:1}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,padding:"16px 20px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:14,padding:"16px 20px"}}>
                   <div style={{cursor:"grab",color:C.grey5,fontSize:16,flexShrink:0,userSelect:"none"}}>⠿</div>
                   <button onClick={function(){setOpenPage(isOpen?null:page.id);}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left",padding:0,minWidth:0}}>
                     <span style={{fontWeight:700,color:C.black,fontSize:15,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{page.label}</span>
