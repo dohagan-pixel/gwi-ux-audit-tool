@@ -2659,9 +2659,11 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   var [lovedView,setLovedView]=useState(null as {pageUrl:string,label:string}|null);
   var [lcHeights,setLcHeights]=useState({} as {[id:string]:number});
   var iframeRef=useRef<HTMLIFrameElement>(null);
-  function extractSection(html:string,recNum:number){try{var parser=new DOMParser();var d=parser.parseFromString(html,"text/html");var badge=d.querySelector('[data-rec="'+recNum+'"]');if(!badge)return null;var el:Element=badge as Element;while(el.parentElement&&el.parentElement!==d.body){el=el.parentElement;}if(!el||el===d.body)return badge.parentElement?(badge.parentElement as HTMLElement).outerHTML:null;return(el as HTMLElement).outerHTML;}catch(e){return null;}}
+  // extractSection is kept only as a guard (checks badge exists) and to save a sectionHtml fallback.
+  // Display now uses the full wireframe + scroll-clipping in the iframe onLoad handler.
+  function extractSection(html:string,recNum:number){try{var parser=new DOMParser();var d=parser.parseFromString(html,"text/html");var badge=d.querySelector('[data-rec="'+recNum+'"]');if(!badge)return null;return badge.parentElement?(badge.parentElement as HTMLElement).outerHTML:"<!-- section "+recNum+" -->";}catch(e){return null;}}
   function extractSharedCss(html:string){var matches=html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi)||[];return matches.map(function(m){return m.replace(/<\/?style[^>]*>/gi,"");}).join("\n");}
-  function wrapSection(sectionHtml:string,sharedCss:string){return'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;}'+sharedCss+'</style></head><body>'+sectionHtml+'</body></html>';}
+  function wrapSection(sectionHtml:string,sharedCss:string){return'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{box-sizing:border-box}html,body{margin:0;padding:0;overflow:hidden;}body{background:#f5f5f5;font-family:Arial,sans-serif;}'+sharedCss+'</style></head><body>'+sectionHtml+'</body></html>';}
   var isMobile=useWidth()<768;
   var active=wireframes.find(function(w){return w.id===activeId;});
   var starredWireframes=wireframes.filter(function(w){return w.starred;});
@@ -2771,7 +2773,66 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                       );})}
                     </div>
                   )}
-                  {(function(){var wire=wireframes.find(function(w:any){return w.id===lc.wireframeId;});var sHtml=wire?extractSection(wire.html,lc.recNum):lc.sectionHtml;var css=wire?extractSharedCss(wire.html):lc.sharedCss||"";return(<iframe srcDoc={wrapSection(sHtml||lc.sectionHtml||"<p style='padding:16px;color:#999'>No preview available</p>",css)} title={lc.title} sandbox="allow-same-origin allow-scripts" style={{width:"100%",border:"none",height:(lcHeights[lc.id]||800)+"px",display:"block"}} onLoad={function(e){var f=e.currentTarget as HTMLIFrameElement;var id=lc.id;try{var doc=f.contentDocument;if(!doc)return;var maxB=0;Array.from(doc.querySelectorAll("*")).forEach(function(el){try{var r=el.getBoundingClientRect();if(r.bottom>maxB)maxB=r.bottom;}catch(er){}});if(maxB>10){setLcHeights(function(prev){var newH=Math.max(200,maxB+24);if(Math.abs((prev[id]||0)-newH)<2)return prev;var n=Object.assign({},prev);n[id]=newH;return n;});}else{var sh=doc.documentElement.scrollHeight||doc.body.scrollHeight;if(sh>10){setLcHeights(function(prev){var n=Object.assign({},prev);n[id]=Math.max(200,sh+24);return n;});}}}catch(ex){}}}/>);})()}
+                  {(function(){
+                    var wire=wireframes.find(function(w:any){return w.id===lc.wireframeId;});
+                    // Use the full wireframe HTML so we can scroll to the exact section.
+                    // Fall back to the saved sectionHtml (wrapped) for older loved components.
+                    var srcDocHtml=wire?wire.html:wrapSection(lc.sectionHtml||"<p style='padding:16px;color:#999'>No preview available</p>",lc.sharedCss||"");
+                    var recNum=lc.recNum as number;
+                    return(
+                      <iframe
+                        srcDoc={srcDocHtml}
+                        title={lc.title}
+                        sandbox="allow-same-origin allow-scripts"
+                        style={{width:"100%",border:"none",height:(lcHeights[lc.id]||600)+"px",display:"block"}}
+                        onLoad={function(e){
+                          var f=e.currentTarget as HTMLIFrameElement;
+                          var id=lc.id;
+                          try{
+                            var doc=f.contentDocument;
+                            if(!doc)return;
+                            // Hide scrollbars so clipped content looks clean
+                            doc.documentElement.style.overflow="hidden";
+                            doc.body.style.overflow="hidden";
+                            // Ensure we start from the top before measuring
+                            doc.documentElement.scrollTop=0;
+                            doc.body.scrollTop=0;
+                            var badge=doc.querySelector('[data-rec="'+recNum+'"]') as HTMLElement|null;
+                            if(!badge){
+                              // No badge: show the full content height
+                              var sh=doc.documentElement.scrollHeight||doc.body.scrollHeight||400;
+                              setLcHeights(function(prev){var n=Object.assign({},prev);n[id]=Math.max(200,sh);return n;});
+                              return;
+                            }
+                            // getBoundingClientRect with scrollTop=0 gives document-relative position
+                            var badgeTop=badge.getBoundingClientRect().top;
+                            var sectionTop=Math.max(0,badgeTop-24);
+                            // Find the bottom of this section: start of the next badge, or the badge's position:relative container
+                            var nextBadge=doc.querySelector('[data-rec="'+(recNum+1)+'"]') as HTMLElement|null;
+                            var sectionBottom:number;
+                            if(nextBadge){
+                              sectionBottom=nextBadge.getBoundingClientRect().top-8;
+                            }else{
+                              // Walk up from badge to find the nearest position:relative container
+                              var par:HTMLElement|null=badge.parentElement as HTMLElement|null;
+                              while(par&&par!==doc.body){
+                                if(par.style&&par.style.position==="relative"){break;}
+                                par=par.parentElement as HTMLElement|null;
+                              }
+                              sectionBottom=(par&&par!==doc.body)?par.getBoundingClientRect().bottom:doc.documentElement.scrollHeight;
+                            }
+                            var sectionH=Math.max(200,sectionBottom-sectionTop+24);
+                            // Scroll the iframe viewport to the start of this section
+                            doc.documentElement.scrollTop=sectionTop;
+                            doc.body.scrollTop=sectionTop;
+                            setLcHeights(function(prev){var n=Object.assign({},prev);n[id]=sectionH;return n;});
+                          }catch(ex){
+                            try{var doc2=f.contentDocument;if(doc2){var sh2=doc2.documentElement.scrollHeight||doc2.body.scrollHeight||400;setLcHeights(function(prev){var n=Object.assign({},prev);n[id]=Math.max(200,sh2);return n;});}}catch(ex2){}
+                          }
+                        }}
+                      />
+                    );
+                  })()}
 
                 </div>
               );
