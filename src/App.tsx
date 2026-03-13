@@ -1266,14 +1266,8 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
   var [status,setStatus]=useState("loading");
   var [errorMsg,setErrorMsg]=useState("");
   var [progress,setProgress]=useState(0);
-  var intervalRef=useRef(null);
   var hasFetched=useRef(false);
-  useEffect(function(){
-    // ~60 second target: slow steady climb to 92%
-    intervalRef.current=setInterval(function(){setProgress(function(prev){if(prev>=92){clearInterval(intervalRef.current);return prev;}return Math.min(prev+(prev<30?0.6:prev<60?0.35:prev<80?0.2:0.08),92);});},200);
-    return function(){clearInterval(intervalRef.current);};
-  },[]);
-  useEffect(function(){if(status==="done"||status==="error"){clearInterval(intervalRef.current);setProgress(100);}},[status]);
+  useEffect(function(){if(status==="done"||status==="error"){setProgress(100);}},[status]);
   useEffect(function(){
     if(hasFetched.current)return;
     hasFetched.current=true;
@@ -1299,7 +1293,7 @@ function GeneratingModal({onClose,onDone,prompt,pageLabel,images}){
               if(!line.startsWith("data: "))return;
               var data=line.slice(6).trim();
               if(data==="[DONE]"){finish(fullText);return;}
-              try{var parsed=JSON.parse(data);if(parsed.error){setErrorMsg(parsed.error);setStatus("error");finished=true;return;}if(parsed.t)fullText+=parsed.t;}catch(e){}
+              try{var parsed=JSON.parse(data);if(parsed.error){setErrorMsg(parsed.error);setStatus("error");finished=true;return;}if(parsed.t){fullText+=parsed.t;setProgress(Math.min(fullText.length/28672*100,96));}}catch(e){}
             });
             if(!finished)pump();
           }).catch(function(err){setErrorMsg(err&&err.message?err.message:"Stream read error");setStatus("error");});
@@ -1326,14 +1320,9 @@ function WireframeModal({page,personas,onClose,onSave}){
   var [html,setHtml]=useState("");
   var [errorMsg,setErrorMsg]=useState("");
   var [progress,setProgress]=useState(0);
-  var intervalRef=useRef(null);
   var hasFetched=useRef(false);
   var hasSaved=useRef(false);
-  useEffect(function(){
-    intervalRef.current=setInterval(function(){setProgress(function(prev){if(prev>=92){clearInterval(intervalRef.current);return prev;}return Math.min(prev+(prev<30?0.6:prev<60?0.35:prev<80?0.2:0.08),92);});},200);
-    return function(){clearInterval(intervalRef.current);};
-  },[]);
-  useEffect(function(){if(status==="done"||status==="error"){clearInterval(intervalRef.current);setProgress(100);}},[status]);
+  useEffect(function(){if(status==="done"||status==="error"){setProgress(100);}},[status]);
   useEffect(function(){
     if(hasFetched.current)return;
     hasFetched.current=true;
@@ -1346,7 +1335,7 @@ function WireframeModal({page,personas,onClose,onSave}){
         if(!ct.includes("text/event-stream")){return r.text().then(function(raw){try{var d=JSON.parse(raw);setErrorMsg(d.error||"Unknown error");}catch(e){setErrorMsg("Server error: "+raw.slice(0,300));}setStatus("error");});}
         var reader=r.body.getReader();var decoder=new TextDecoder();var fullText="";var buf="";var finished=false;
         function finish(text){if(finished)return;finished=true;if(text){if(onSave&&!hasSaved.current){hasSaved.current=true;onSave({id:"wf-"+Date.now(),pageLabel:page.label,pageUrl:page.url,date:new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}),html:text,actions:page.actions||[]});}setHtml(text);setStatus("done");}else{setErrorMsg("No content returned.");setStatus("error");}}
-        function pump(){reader.read().then(function(result){if(result.done){finish(fullText);return;}buf+=decoder.decode(result.value,{stream:true});var lines=buf.split("\n");buf=lines.pop()||"";lines.forEach(function(line){if(!line.startsWith("data: "))return;var data=line.slice(6).trim();if(data==="[DONE]"){finish(fullText);return;}try{var parsed=JSON.parse(data);if(parsed.error){setErrorMsg(parsed.error);setStatus("error");finished=true;return;}if(parsed.t)fullText+=parsed.t;}catch(e){}});if(!finished)pump();}).catch(function(err){setErrorMsg(err&&err.message?err.message:"Stream error");setStatus("error");});}
+        function pump(){reader.read().then(function(result){if(result.done){finish(fullText);return;}buf+=decoder.decode(result.value,{stream:true});var lines=buf.split("\n");buf=lines.pop()||"";lines.forEach(function(line){if(!line.startsWith("data: "))return;var data=line.slice(6).trim();if(data==="[DONE]"){finish(fullText);return;}try{var parsed=JSON.parse(data);if(parsed.error){setErrorMsg(parsed.error);setStatus("error");finished=true;return;}if(parsed.t){fullText+=parsed.t;setProgress(Math.min(fullText.length/28672*100,96));}}catch(e){}});if(!finished)pump();}).catch(function(err){setErrorMsg(err&&err.message?err.message:"Stream error");setStatus("error");});}
         pump();
       })
       .catch(function(err){setErrorMsg(err&&err.message?err.message:"Network error");setStatus("error");});
