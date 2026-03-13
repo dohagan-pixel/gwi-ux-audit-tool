@@ -1156,13 +1156,27 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
       <BlackHero eyebrow="GWI Website - UX" title="Recommendations" desc="All the actions you have decided to work on, in one place." why="This is where audit findings become real work.">
         <button onClick={onAddAction} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add UX Action</button>
       </BlackHero>
-      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12,marginBottom:28}}>
-        {[[String(auditData.length),"Pages audited",C.black,C.white],[String(totalActions),"Total actions",C.grey3,C.grey8],[String(inProgActions),"In progress",C.blueBg,C.blueDark],[String(doneActions),"Completed","#E6F9F2","#005C3B"]].map(function(item){return(
-          <div key={item[1]} style={{background:item[2],borderRadius:12,padding:"16px 20px"}}>
-            <div style={{fontSize:36,fontWeight:800,color:item[3],lineHeight:1}}>{item[0]}</div>
-            <div style={{fontSize:13,fontWeight:600,color:item[3],opacity:0.7,marginTop:6}}>{item[1]}</div>
-          </div>
-        );})}
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12,marginBottom:20}}>
+        {["Critical","High","Medium","Low"].map(function(pri){
+          var pc=pCfg[pri]||pCfg.Medium;
+          var priPages=auditData.filter(function(p){return p.priority===pri;});
+          var priTotal=priPages.reduce(function(s,p){return s+p.actions.length;},0);
+          var priDone=priPages.reduce(function(s,p){return s+p.actions.filter(function(a){return a.status==="done";}).length;},0);
+          var priPct=priTotal?Math.round(priDone/priTotal*100):0;
+          return(
+            <div key={pri} style={{background:pc.bg,border:"1px solid "+pc.border,borderRadius:12,padding:"16px 20px"}}>
+              <div style={{fontSize:11,fontWeight:700,color:pc.text,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>{pri}</div>
+              <div style={{display:"flex",alignItems:"baseline",gap:3,marginBottom:4}}>
+                <span style={{fontSize:40,fontWeight:800,color:pc.text,lineHeight:1}}>{priDone}</span>
+                <span style={{fontSize:20,fontWeight:700,color:pc.text,opacity:0.4}}>/{priTotal}</span>
+              </div>
+              <div style={{fontSize:11,fontWeight:600,color:pc.text,opacity:0.6,marginBottom:10}}>actions complete</div>
+              <div style={{background:"rgba(0,0,0,0.1)",borderRadius:99,height:4,overflow:"hidden"}}>
+                <div style={{width:priPct+"%",background:pc.text,height:"100%",borderRadius:99,transition:"width 0.4s"}}/>
+              </div>
+            </div>
+          );
+        })}
       </div>
       <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"16px 20px",marginBottom:20}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
