@@ -5,7 +5,7 @@ import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
-import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, List, LayoutGrid, Folder, FolderOpen } from "lucide-react";
+import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, List, LayoutGrid, Folder, FolderOpen, Heart } from "lucide-react";
 
 const C = {
   pink:"#FF0077",white:"#FFFFFF",black:"#101720",offBlack:"#2A3447",
@@ -2648,7 +2648,7 @@ function ConfirmResetScreen({oobCode}:{oobCode:string}){
     </div>
   );
 }
-function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWireframe,auditData,onAddRec,onRemoveRec}){
+function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWireframe,auditData,onAddRec,onRemoveRec,lovedComponents,onLoveComponent,onUnloveComponent}:any){
   var [activeId,setActiveId]=useState(wireframes.length>0?wireframes[wireframes.length-1].id:null);
   var [editing,setEditing]=useState(false);
   var [editLabel,setEditLabel]=useState("");
@@ -2656,7 +2656,11 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   var [addedRecs,setAddedRecs]=useState({});
   var [viewport,setViewport]=useState("desktop");
   var [openFolders,setOpenFolders]=useState({} as {[key:string]:boolean});
+  var [lovedView,setLovedView]=useState(null as {pageUrl:string,label:string}|null);
   var iframeRef=useRef<HTMLIFrameElement>(null);
+  function extractSection(html:string,recNum:number){try{var parser=new DOMParser();var d=parser.parseFromString(html,"text/html");var badge=d.querySelector('[data-rec="'+recNum+'"]');if(!badge)return null;var el:Element|null=badge.parentElement;while(el&&el!==d.body){var st=(el as HTMLElement).style&&(el as HTMLElement).style.position;if(st==="relative")return(el as HTMLElement).outerHTML;if(["SECTION","ARTICLE","HEADER","FOOTER","MAIN"].includes(el.tagName))return(el as HTMLElement).outerHTML;el=el.parentElement;}return badge.parentElement?(badge.parentElement as HTMLElement).outerHTML:null;}catch(e){return null;}}
+  function extractSharedCss(html:string){var matches=html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi)||[];return matches.map(function(m){return m.replace(/<\/?style[^>]*>/gi,"");}).join("\n");}
+  function wrapSection(sectionHtml:string,sharedCss:string){return'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;}'+sharedCss+'</style></head><body>'+sectionHtml+'</body></html>';}
   var isMobile=useWidth()<768;
   var active=wireframes.find(function(w){return w.id===activeId;});
   var starredWireframes=wireframes.filter(function(w){return w.starred;});
@@ -2717,7 +2721,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                   var isActive=w.id===activeId;
                   return(
                     <div key={w.id} style={{background:isActive?"#FFF0F7":"transparent"}}>
-                      <button onClick={function(){setActiveId(w.id);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 14px 8px 34px",border:"none",borderLeft:"3px solid "+(isActive?C.pink:"transparent"),background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+                      <button onClick={function(){setActiveId(w.id);setLovedView(null);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 14px 8px 34px",border:"none",borderLeft:"3px solid "+(isActive?C.pink:"transparent"),background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
                         {w.starred&&<Star size={10} fill="#FFC107" color="#FFC107" style={{flexShrink:0}}/>}
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontSize:12,fontWeight:700,color:isActive?C.black:C.grey8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w.pageLabel}</div>
@@ -2727,12 +2731,52 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                     </div>
                   );
                 })}
+                {isOpen&&(function(){var pl=(lovedComponents||[]).filter(function(lc:any){return lc.pageUrl===folder.url;});if(pl.length===0)return null;var isLV=lovedView&&lovedView.pageUrl===folder.url;return(<div style={{background:isLV?"#FFF0F7":"transparent"}}><button onClick={function(){setLovedView({pageUrl:folder.url,label:folder.label});setActiveId(null as any);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 14px 8px 34px",border:"none",borderLeft:"3px solid "+(isLV?C.pink:"transparent"),background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><Heart size={10} fill={C.pink} color={C.pink} style={{flexShrink:0}}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:700,color:isLV?C.black:C.grey8}}>Loved components</div><div style={{fontSize:10,color:C.grey6,marginTop:1}}>{pl.length} saved</div></div></button></div>);})()}
               </div>
             );
           });
         })()}
       </div>
-      {active&&(
+      {lovedView?(
+        <div style={{flex:1,display:"flex",flexDirection:"column",minHeight:0,background:C.grey2,overflow:"hidden"}}>
+          <div style={{padding:isMobile?"16px 16px 0":"28px 28px 0",flexShrink:0}}>
+            <div style={{background:C.black,borderRadius:16,padding:isMobile?"20px":"24px 28px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8,display:"flex",alignItems:"center",gap:5}}><Heart size={11} fill={C.pink} color={C.pink}/>Loved Components</div>
+                <h2 style={{color:C.white,fontSize:22,fontWeight:800,margin:"0 0 4px"}}>{lovedView.label}</h2>
+                <p style={{color:C.grey6,fontSize:13,margin:0}}>{(lovedComponents||[]).filter(function(lc:any){return lc.pageUrl===lovedView.pageUrl;}).length} saved component{(lovedComponents||[]).filter(function(lc:any){return lc.pageUrl===lovedView.pageUrl;}).length!==1?"s":""}</p>
+              </div>
+            </div>
+          </div>
+          <div style={{flex:1,padding:isMobile?"16px":"24px 28px 28px",overflow:"auto",display:"flex",flexDirection:"column",gap:20}}>
+            {(lovedComponents||[]).filter(function(lc:any){return lc.pageUrl===lovedView.pageUrl;}).map(function(lc:any){
+              return(
+                <div key={lc.id} style={{background:C.white,borderRadius:16,overflow:"hidden",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+                  <div style={{padding:"18px 24px",borderBottom:"1px solid "+C.grey4,display:"flex",alignItems:"flex-start",gap:12}}>
+                    <span style={{background:"#FFF0F7",color:C.pink,width:28,height:28,borderRadius:7,flexShrink:0,display:"inline-flex",alignItems:"center",justifyContent:"center"}}><Heart size={13} fill={C.pink}/></span>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:15,fontWeight:800,color:C.black,marginBottom:4,lineHeight:1.4}}>{lc.title||"Recommendation #"+lc.recNum}</div>
+                      <div style={{fontSize:11,color:C.grey6}}>{lc.date} · from {lc.pageLabel} wireframe</div>
+                    </div>
+                    <button onClick={function(){if(onUnloveComponent)onUnloveComponent(lc.id);}} title="Remove" style={{background:"none",border:"none",cursor:"pointer",color:C.grey5,padding:4,borderRadius:6,display:"flex",alignItems:"center",flexShrink:0}} onMouseEnter={function(e){e.currentTarget.style.color="#CC0000";}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey5;}}><Trash2 size={14}/></button>
+                  </div>
+                  {(lc.change||lc.why||lc.shows)&&(
+                    <div style={{padding:"14px 24px",borderBottom:"1px solid "+C.grey4,display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:10}}>
+                      {[{label:"Change",value:lc.change,labelColor:C.pink},{label:"Why it matters",value:lc.why,labelColor:C.grey8},{label:"Data",value:lc.shows,labelColor:C.grey8}].filter(function(col){return!!col.value;}).map(function(col){return(
+                        <div key={col.label} style={{background:C.grey2,borderRadius:8,padding:"10px 12px"}}>
+                          <div style={{fontSize:10,fontWeight:700,color:col.labelColor,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:5}}>{col.label}</div>
+                          <div style={{fontSize:12,color:C.grey8,lineHeight:1.6}}>{col.value}</div>
+                        </div>
+                      );})}
+                    </div>
+                  )}
+                  <iframe srcDoc={wrapSection(lc.sectionHtml,lc.sharedCss||"")} title={lc.title} sandbox="allow-same-origin" style={{width:"100%",border:"none",minHeight:180,display:"block"}} onLoad={function(e){try{var f=e.currentTarget as HTMLIFrameElement;if(f.contentDocument&&f.contentDocument.body){f.style.height=Math.max(180,f.contentDocument.body.scrollHeight+20)+"px";}}catch(ex){}}}/>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ):active&&(
         <div style={{flex:1,display:"flex",flexDirection:"column",minHeight:0,background:C.grey2,overflow:"hidden",position:"relative"}}>
           <div style={{padding:isMobile?"16px 16px 0":"28px 28px 0",flexShrink:0}}>
             <div style={{background:C.black,borderRadius:16,padding:isMobile?"20px":"24px 28px"}}>
@@ -2805,6 +2849,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                         ):null;})}
                       </div>
                     )}
+                    {(function(){var lcId=(active?active.id:"")+"-rec-"+activeRec;var isLoved=(lovedComponents||[]).some(function(lc:any){return lc.id===lcId;});var sHtml=active?extractSection(active.html,activeRec as number):null;return(<button onClick={function(){if(isLoved){if(onUnloveComponent)onUnloveComponent(lcId);}else{if(!onLoveComponent||!sHtml)return;onLoveComponent({id:lcId,wireframeId:active.id,pageUrl:active.pageUrl,pageLabel:active.pageLabel,recNum:activeRec,title:activeRecAction?activeRecAction.text:"Recommendation #"+activeRec,change:activeRecAction?activeRecAction.change||"":"",why:activeRecAction?activeRecAction.why||"":"",shows:activeRecAction?activeRecAction.shows||"":"",sectionHtml:sHtml,sharedCss:extractSharedCss(active.html),date:new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})});}}} style={{width:"100%",background:isLoved?"#FFF0F7":C.grey2,color:isLoved?C.pink:C.grey7,border:"1px solid "+(isLoved?C.pink:C.grey4),borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:sHtml||isLoved?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10,opacity:sHtml||isLoved?1:0.5}}><Heart size={14} fill={isLoved?C.pink:"none"} color={isLoved?C.pink:C.grey7}/>{isLoved?"Saved to Loved components":"Save to Loved components"}</button>);})()}
                     {isGreen?(
                       <button onClick={function(){if(onRemoveRec&&actionIdForRemove){onRemoveRec(actionIdForRemove,active?active.pageUrl:"/");var _upd2=(activeActions as any[]).slice();if(_upd2[(activeRec as number)-1])_upd2[(activeRec as number)-1]=Object.assign({},_upd2[(activeRec as number)-1],{id:""});var _updWf2=Object.assign({},active,{actions:_upd2});setWireframes(function(prev){return prev.map(function(w){return w.id===active.id?_updWf2:w;});});if(onUpdateWireframe)onUpdateWireframe(_updWf2);setAddedRecs(function(prev){var n=Object.assign({},prev);delete n[recKey];return n;});}}} style={{width:"100%",background:"#E6F9F2",color:"#005C3B",border:"1px solid #A7F3D0",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>
                         Remove from Recommendations
@@ -2826,6 +2871,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
 }
 
 export default function App(){
+
   var VALID_VIEWS=["dashboard","audit","generated-audits","summary","personas","persona-detail","mapping","journey","lifecycle","affinity","flows","analytics","settings","wireframes","feedback"];
   function hashToView(h){var v=(h||"").replace(/^#\//,"").split("/")[0];return VALID_VIEWS.indexOf(v)>=0?v:"dashboard";}
   function hashToSubId(h){var parts=(h||"").replace(/^#\//,"").split("/");return parts.length>1?decodeURIComponent(parts[1]):null;}
@@ -2844,6 +2890,7 @@ export default function App(){
   var [showAddAction,setShowAddAction]=useState(false);
   var [generatedAudits,setGeneratedAudits]=useState(function(){try{var s=localStorage.getItem("gwi_generated_audits");return s?JSON.parse(s):[];}catch(e){return [];}});
   var [savedWireframes,setSavedWireframes]=useState(function(){try{var s=localStorage.getItem("gwi_saved_wireframes");return s?JSON.parse(s):[];}catch(e){return [];}});
+  var [lovedComponents,setLovedComponents]=useState(function(){try{var s=localStorage.getItem("gwi_loved_components");return s?JSON.parse(s):[];}catch(e){return [];}});
   var [feedback,setFeedback]=useState(function(){try{var s=localStorage.getItem("gwi_feedback");return s?JSON.parse(s):[];}catch(e){return [];}});
   var [showFeedbackModal,setShowFeedbackModal]=useState(false);
   var [feedbackToast,setFeedbackToast]=useState(false);
@@ -2857,6 +2904,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
   useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,stages:stages,personas:personas,pages:pages,journeys:journeys,gaCards:gaCards,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[ auditData,stages,personas,pages,journeys,gaCards,_user]);
   useEffect(function(){try{localStorage.setItem("gwi_generated_audits",JSON.stringify(generatedAudits));}catch(e){};},[generatedAudits]);
   useEffect(function(){try{localStorage.setItem("gwi_saved_wireframes",JSON.stringify(savedWireframes));}catch(e){};},[savedWireframes]);
+  useEffect(function(){try{localStorage.setItem("gwi_loved_components",JSON.stringify(lovedComponents));}catch(e){};},[lovedComponents]);
   useEffect(function(){try{localStorage.setItem("gwi_feedback",JSON.stringify(feedback));}catch(e){};},[feedback]);
   useEffect(function(){function onHash(){var h=window.location.hash;var v=hashToView(h);var sub=hashToSubId(h);setViewRaw(v);if(v==="persona-detail"&&sub)setActivePersonaId(sub);if(v==="journey"&&sub)setActivePersonaForJourney(sub);}window.addEventListener("hashchange",onHash);return function(){window.removeEventListener("hashchange",onHash);};},[]);
   function _handleLogin(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}signInWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/user-not-found'?'Invalid email or password.':'Sign-in failed. Try again.');});}
@@ -2901,7 +2949,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit).catch(function(){});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
         {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id)).catch(function(){});}} onUpdateAudit={function(updated){if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",updated.id),updated).catch(function(){});}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
         {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards}/>}
-        {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData} onAddRec={function(action,pageUrl){var pageObj=pages.find(function(p){return p.url===pageUrl;});var newAction=Object.assign({},action,{status:"todo"});var existing=auditData.find(function(p){return p.url===pageUrl;});if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}}} onRemoveRec={function(actionId,pageUrl){setAuditData(function(prev){return prev.map(function(p){return p.url!==pageUrl?p:Object.assign({},p,{actions:(p.actions||[]).filter(function(a:any){return a.id!==actionId;})});});});}}/>}
+        {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData} onAddRec={function(action,pageUrl){var pageObj=pages.find(function(p){return p.url===pageUrl;});var newAction=Object.assign({},action,{status:"todo"});var existing=auditData.find(function(p){return p.url===pageUrl;});if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}}} onRemoveRec={function(actionId,pageUrl){setAuditData(function(prev){return prev.map(function(p){return p.url!==pageUrl?p:Object.assign({},p,{actions:(p.actions||[]).filter(function(a:any){return a.id!==actionId;})});});});}} lovedComponents={lovedComponents} onLoveComponent={function(lc){setLovedComponents(function(prev){return (prev as any[]).concat([lc]);});}} onUnloveComponent={function(id){setLovedComponents(function(prev){return (prev as any[]).filter(function(lc:any){return lc.id!==id;});});}}/>}
       </div>
       {view==="feedback"&&<FeedbackPage feedback={feedback} onDeleteFeedback={function(id){setFeedback(function(prev){return(prev as any[]).filter(function(f){return f.id!==id;});});if(_user)deleteDoc(doc(_db,"users",_user.uid,"feedback",id)).catch(function(){});}}/>}
       {showAddAction&&<AddActionModal auditData={auditData} setAuditData={setAuditData} pages={pages} onClose={function(){setShowAddAction(false);}}/>}
