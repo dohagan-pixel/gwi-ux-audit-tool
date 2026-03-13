@@ -359,7 +359,7 @@ function MappingSidebar({activeId,setView,isMobile,personas,activePersona,setAct
   );
 }
 
-function JourneySummaryPanel({personaId,journeys,setView,setActivePersonaForJourney}){
+function JourneySummaryPanel({personaId,journeys,setView,setActivePersonaForJourney,goToJourney}){
   var journey=journeys[personaId]||[];
   var [open,setOpen]=useState(null);
   if(!journey.length)return <div style={{background:"rgba(255,255,255,0.1)",borderRadius:12,padding:16,textAlign:"center"}}><p style={{color:"rgba(255,255,255,0.6)",fontSize:13,margin:0}}>No journey steps yet.</p></div>;
@@ -381,7 +381,7 @@ function JourneySummaryPanel({personaId,journeys,setView,setActivePersonaForJour
         </div>
       )}
       <div style={{display:"flex",justifyContent:"flex-end",marginTop:4}}>
-        <button onClick={function(){setActivePersonaForJourney(personaId);setView("journey");}} style={{background:"transparent",border:"none",color:C.white,padding:"7px 0",fontSize:12,fontWeight:600,cursor:"pointer"}}>View full journey map</button>
+        <button onClick={function(){if(goToJourney)goToJourney(personaId);else{setActivePersonaForJourney(personaId);setView("journey");}}} style={{background:"transparent",border:"none",color:C.white,padding:"7px 0",fontSize:12,fontWeight:600,cursor:"pointer"}}>View full journey map</button>
       </div>
     </div>
   );
@@ -636,7 +636,7 @@ function MappingDash({setView}){
   );
 }
 
-function PersonasDash({personas,setView,setActivePersona}){
+function PersonasDash({personas,setView,goToPersona}){
   var isMobile=useWidth()<768;
   return(
     <PageWrap isMobile={isMobile}>
@@ -645,7 +645,7 @@ function PersonasDash({personas,setView,setActivePersona}){
         {personas.map(function(p){
           var col=getPersonaColor(p);
           return(
-            <button key={p.id} onClick={function(){setActivePersona(p.id);setView("persona-detail");}} style={Object.assign({},cardStyle)} onMouseEnter={cardHoverIn} onMouseLeave={cardHoverOut}>
+            <button key={p.id} onClick={function(){goToPersona(p.id);}} style={Object.assign({},cardStyle)} onMouseEnter={cardHoverIn} onMouseLeave={cardHoverOut}>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
                 <div style={{background:col.bg,border:"1px solid "+col.border,borderRadius:99,width:10,height:10,flexShrink:0}}/>
                 <div style={{fontSize:17,fontWeight:800,color:C.offBlack}}>{p.label}</div>
@@ -660,7 +660,7 @@ function PersonasDash({personas,setView,setActivePersona}){
   );
 }
 
-function PersonasPage({personas,journeys,setView,setActivePersonaForJourney,initialPersonaId}){
+function PersonasPage({personas,journeys,setView,setActivePersonaForJourney,goToJourney,initialPersonaId}){
   var [active,setActive]=useState(initialPersonaId||(personas[0]?personas[0].id:null));
   var isMobile=useWidth()<768;
   useEffect(function(){if(initialPersonaId)setActive(initialPersonaId);},[initialPersonaId]);
@@ -724,7 +724,7 @@ function PersonasPage({personas,journeys,setView,setActivePersonaForJourney,init
                   <div style={{marginTop:16,paddingTop:16,borderTop:"1px solid rgba(255,255,255,0.1)"}}>
                     <h4 style={{fontSize:12,fontWeight:700,color:C.white,marginBottom:4}}>Pages Across Lifecycle</h4>
                     <p style={{fontSize:12,color:C.grey6,marginBottom:12}}>Click any stage to see which pages this persona visits and why.</p>
-                    <JourneySummaryPanel personaId={p.id} journeys={journeys} setView={setView} setActivePersonaForJourney={setActivePersonaForJourney}/>
+                    <JourneySummaryPanel personaId={p.id} journeys={journeys} setView={setView} setActivePersonaForJourney={setActivePersonaForJourney} goToJourney={goToJourney}/>
                   </div>
                 )}
               </div>
@@ -877,7 +877,7 @@ function AffinityPage({personas,setView}){
   );
 }
 
-function JourneyPage({pages,personas,journeys,initialPersonaId,setView}){
+function JourneyPage({pages,personas,journeys,initialPersonaId,setView,goToJourney}){
   var [activePersona,setActivePersona]=useState(initialPersonaId||(personas[0]?personas[0].id:null));
   var [activeStage,setActiveStage]=useState(null);
   var isMobile=useWidth()<768;
@@ -892,7 +892,7 @@ function JourneyPage({pages,personas,journeys,initialPersonaId,setView}){
   var pageStageMap={};journey.forEach(function(j){j.pages.forEach(function(url){if(!pageStageMap[url])pageStageMap[url]=[];pageStageMap[url].push(j.stage);});});
   return(
     <div style={{display:"flex",flexDirection:isMobile?"column":"row",height:"100%",overflow:"hidden"}}>
-      <MappingSidebar activeId="journey" setView={setView} isMobile={isMobile} personas={personas} activePersona={activePersona} setActivePersona={function(id){setActivePersona(id);setActiveStage(null);}}/>
+      <MappingSidebar activeId="journey" setView={setView} isMobile={isMobile} personas={personas} activePersona={activePersona} setActivePersona={function(id){if(goToJourney)goToJourney(id);else{setActivePersona(id);setActiveStage(null);}}}/>
       <div style={{flex:1,overflow:"auto",padding:isMobile?16:20,background:C.grey2}}>
         <div style={{maxWidth:920,margin:"0 auto",paddingBottom:80}}>
           <BlackHero eyebrow="How personas move through gwi.com" title="Journey Mapper" desc="Every persona has a different entry point, a different set of questions, and a different path through the site." why="The Journey Mapper makes visible something that is easy to miss: each persona takes a completely different path through gwi.com."/>
@@ -2559,7 +2559,8 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
 
 export default function App(){
   var VALID_VIEWS=["dashboard","audit","generated-audits","summary","personas","persona-detail","mapping","journey","lifecycle","affinity","flows","analytics","settings","wireframes","feedback"];
-  function hashToView(h){var v=(h||"").replace(/^#\//,"");return VALID_VIEWS.indexOf(v)>=0?v:"dashboard";}
+  function hashToView(h){var v=(h||"").replace(/^#\//,"").split("/")[0];return VALID_VIEWS.indexOf(v)>=0?v:"dashboard";}
+  function hashToSubId(h){var parts=(h||"").replace(/^#\//,"").split("/");return parts.length>1?decodeURIComponent(parts[1]):null;}
   var [view,setViewRaw]=useState(function(){return hashToView(window.location.hash);});
   function setView(v){window.location.hash="#/"+v;setViewRaw(v);}
   var [stages,setStages]=useState(INIT_STAGES);
@@ -2568,8 +2569,10 @@ export default function App(){
   var [journeys,setJourneys]=useState(INIT_JOURNEYS);
   var [gaCards,setGaCards]=useState(INIT_GA_CARDS);
   var [auditData,setAuditData]=useState(INIT_AUDIT);
-  var [activePersonaId,setActivePersonaId]=useState(null);
-  var [activePersonaForJourney,setActivePersonaForJourney]=useState(null);
+  var [activePersonaId,setActivePersonaId]=useState(function(){var v=hashToView(window.location.hash);return v==="persona-detail"?hashToSubId(window.location.hash):null;});
+  var [activePersonaForJourney,setActivePersonaForJourney]=useState(function(){var v=hashToView(window.location.hash);return v==="journey"?hashToSubId(window.location.hash):null;});
+  function goToPersona(id){window.location.hash="#/persona-detail/"+encodeURIComponent(id);setViewRaw("persona-detail");setActivePersonaId(id);}
+  function goToJourney(id){window.location.hash="#/journey/"+encodeURIComponent(id);setViewRaw("journey");setActivePersonaForJourney(id);}
   var [showAddAction,setShowAddAction]=useState(false);
   var [generatedAudits,setGeneratedAudits]=useState(function(){try{var s=localStorage.getItem("gwi_generated_audits");return s?JSON.parse(s):[];}catch(e){return [];}});
   var [savedWireframes,setSavedWireframes]=useState(function(){try{var s=localStorage.getItem("gwi_saved_wireframes");return s?JSON.parse(s):[];}catch(e){return [];}});
@@ -2587,7 +2590,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
   useEffect(function(){try{localStorage.setItem("gwi_generated_audits",JSON.stringify(generatedAudits));}catch(e){};},[generatedAudits]);
   useEffect(function(){try{localStorage.setItem("gwi_saved_wireframes",JSON.stringify(savedWireframes));}catch(e){};},[savedWireframes]);
   useEffect(function(){try{localStorage.setItem("gwi_feedback",JSON.stringify(feedback));}catch(e){};},[feedback]);
-  useEffect(function(){function onHash(){setViewRaw(hashToView(window.location.hash));}window.addEventListener("hashchange",onHash);return function(){window.removeEventListener("hashchange",onHash);};},[]);
+  useEffect(function(){function onHash(){var h=window.location.hash;var v=hashToView(h);var sub=hashToSubId(h);setViewRaw(v);if(v==="persona-detail"&&sub)setActivePersonaId(sub);if(v==="journey"&&sub)setActivePersonaForJourney(sub);}window.addEventListener("hashchange",onHash);return function(){window.removeEventListener("hashchange",onHash);};},[]);
   function _handleLogin(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}signInWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/user-not-found'?'Invalid email or password.':'Sign-in failed. Try again.');});}
   function _handleRegister(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}if(password.length<6){_setLoginError('Password must be at least 6 characters.');return;}createUserWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/email-already-in-use'?'Account already exists. Try signing in.':err.code==='auth/weak-password'?'Password must be at least 6 characters.':'Registration failed. Try again.');});}
   function _handleGoogleLogin(){_setLoginError(null);var p=new GoogleAuthProvider();p.setCustomParameters({hd:"gwi.com"});signInWithPopup(_auth,p).catch(function(err:any){_setLoginError(err.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':err.code==='auth/unauthorized-domain'?'This domain is not authorised in Firebase — contact your admin.':'Google sign-in failed. Try again. ('+( err.code||'')+')');});}
@@ -2618,12 +2621,12 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
       )}
       <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column",paddingTop:isMobile?0:52}}>
         {view==="dashboard"&&<Dashboard personas={personas} auditData={auditData} setView={setView} onFeedback={function(){setShowFeedbackModal(true);}}/>}
-        {view==="personas"&&<PersonasDash personas={personas} setView={setView} setActivePersona={setActivePersonaId}/>}
-        {view==="persona-detail"&&<PersonasPage personas={personas} journeys={journeys} setView={setView} setActivePersonaForJourney={setActivePersonaForJourney} initialPersonaId={activePersonaId}/>}
+        {view==="personas"&&<PersonasDash personas={personas} setView={setView} goToPersona={goToPersona}/>}
+        {view==="persona-detail"&&<PersonasPage personas={personas} journeys={journeys} setView={setView} setActivePersonaForJourney={setActivePersonaForJourney} goToJourney={goToJourney} initialPersonaId={activePersonaId}/>}
         {view==="mapping"&&<MappingDash setView={setView}/>}
         {view==="lifecycle"&&<CustomerMappingPage stages={stages} personas={personas} journeys={journeys} setView={setView}/>}
         {view==="affinity"&&<AffinityPage personas={personas} setView={setView}/>}
-        {view==="journey"&&<JourneyPage pages={pages} personas={personas} journeys={journeys} initialPersonaId={activePersonaForJourney} setView={setView}/>}
+        {view==="journey"&&<JourneyPage pages={pages} personas={personas} journeys={journeys} initialPersonaId={activePersonaForJourney} setView={setView} goToJourney={goToJourney}/>}
         {view==="flows"&&<UserFlowsPage setView={setView}/>}
         {view==="audit"&&<AuditPage personas={personas} pages={pages} auditData={auditData} setAuditData={setAuditData} onAddAction={function(){setShowAddAction(true);}} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} setView={setView}/>}
         {view==="analytics"&&<AnalyticsPage gaCards={gaCards}/>}
