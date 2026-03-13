@@ -5,7 +5,7 @@ import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
-import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, List, LayoutGrid } from "lucide-react";
+import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, List, LayoutGrid, Folder, FolderOpen } from "lucide-react";
 
 const C = {
   pink:"#FF0077",white:"#FFFFFF",black:"#101720",offBlack:"#2A3447",
@@ -2655,6 +2655,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   var [activeRec,setActiveRec]=useState(null);
   var [addedRecs,setAddedRecs]=useState({});
   var [viewport,setViewport]=useState("desktop");
+  var [openFolders,setOpenFolders]=useState({} as {[key:string]:boolean});
   var iframeRef=useRef<HTMLIFrameElement>(null);
   var isMobile=useWidth()<768;
   var active=wireframes.find(function(w){return w.id===activeId;});
@@ -2687,28 +2688,49 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   return(
     <div style={{display:"flex",flexDirection:isMobile?"column":"row",flex:1,minHeight:0,background:C.grey2}}>
       <div style={{width:isMobile?"100%":220,background:C.white,borderRight:"1px solid "+C.grey4,flexShrink:0,display:"flex",flexDirection:"column",overflow:"auto"}}>
-        <div style={{padding:"14px 16px",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",borderBottom:"1px solid "+C.grey4}}>Saved Wireframes</div>
-        {unstarredWireframes.map(function(w){var isActive=w.id===activeId;return(
-          <div key={w.id} style={{borderBottom:"1px solid "+C.grey3,background:isActive?C.grey3:"transparent"}}>
-            <button onClick={function(){setActiveId(w.id);setEditing(false);}} style={{textAlign:"left",padding:"12px 16px",borderLeft:"4px solid "+(isActive?C.pink:"transparent"),background:"transparent",color:isActive?C.black:C.grey8,border:"none",cursor:"pointer",width:"100%"}}>
-              <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>{w.pageLabel}</div>
-              <div style={{fontSize:11,color:C.grey6}}>{w.date}</div>
-            </button>
-          </div>
-        );})}
-        {starredWireframes.length>0&&(<>
-          <div style={{padding:"14px 16px",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",borderTop:"2px solid "+C.grey4,borderBottom:"1px solid "+C.grey4,display:"flex",alignItems:"center",gap:6}}>
-            <Star size={11} fill="#FFC107" color="#FFC107"/><span>Starred</span>
-          </div>
-          {starredWireframes.map(function(w){var isActive=w.id===activeId;return(
-            <div key={"star-"+w.id} style={{borderBottom:"1px solid "+C.grey3,background:isActive?C.grey3:"transparent"}}>
-              <button onClick={function(){setActiveId(w.id);setEditing(false);}} style={{textAlign:"left",padding:"12px 16px",borderLeft:"4px solid "+(isActive?"#FFC107":"transparent"),background:"transparent",color:isActive?C.black:C.grey8,border:"none",cursor:"pointer",width:"100%"}}>
-                <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>{w.pageLabel}</div>
-                <div style={{fontSize:11,color:C.grey6}}>{w.date}</div>
-              </button>
-            </div>
-          );})}
-        </>)}
+        <div style={{padding:"14px 16px",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",borderBottom:"1px solid "+C.grey4}}>Wireframes</div>
+        {(function(){
+          var knownUrls=(auditData||[]).map(function(p:any){return p.url;});
+          var folders=(auditData||[]).map(function(page:any){
+            var pw=wireframes.filter(function(w){return w.pageUrl===page.url;});
+            if(pw.length===0)return null;
+            return {url:page.url,label:page.label,wires:pw};
+          }).filter(Boolean) as {url:string,label:string,wires:any[]}[];
+          var orphans=wireframes.filter(function(w){return !knownUrls.includes(w.pageUrl);});
+          if(orphans.length>0)folders.push({url:"__other__",label:"Other",wires:orphans});
+          if(folders.length===0)return <div style={{padding:"20px 16px",fontSize:12,color:C.grey6,fontStyle:"italic"}}>No wireframes yet</div>;
+          return folders.map(function(folder){
+            var isOpen=openFolders[folder.url]!==false;
+            var starred=folder.wires.filter(function(w){return w.starred;});
+            var unstarred=folder.wires.filter(function(w){return !w.starred;}).slice().reverse();
+            var ordered=starred.concat(unstarred);
+            var FolderIcon=isOpen?FolderOpen:Folder;
+            return(
+              <div key={folder.url} style={{borderBottom:"1px solid "+C.grey4}}>
+                <button onClick={function(){setOpenFolders(function(prev){var n=Object.assign({},prev);n[folder.url]=!isOpen;return n;});}} style={{width:"100%",textAlign:"left",padding:"10px 14px",background:"transparent",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:7}}>
+                  <ChevronRight size={11} color={C.grey5} style={{flexShrink:0,transform:isOpen?"rotate(90deg)":"rotate(0deg)",transition:"transform 0.15s"}}/>
+                  <FolderIcon size={13} color={isOpen?C.pink:C.grey6} style={{flexShrink:0}}/>
+                  <span style={{fontSize:12,fontWeight:700,color:C.offBlack,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{folder.label}</span>
+                  <span style={{fontSize:10,fontWeight:600,color:C.grey6,background:C.grey3,borderRadius:99,padding:"1px 6px",flexShrink:0}}>{folder.wires.length}</span>
+                </button>
+                {isOpen&&ordered.map(function(w){
+                  var isActive=w.id===activeId;
+                  return(
+                    <div key={w.id} style={{background:isActive?"#FFF0F7":"transparent"}}>
+                      <button onClick={function(){setActiveId(w.id);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 14px 8px 34px",border:"none",borderLeft:"3px solid "+(isActive?C.pink:"transparent"),background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+                        {w.starred&&<Star size={10} fill="#FFC107" color="#FFC107" style={{flexShrink:0}}/>}
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:12,fontWeight:700,color:isActive?C.black:C.grey8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w.pageLabel}</div>
+                          <div style={{fontSize:10,color:C.grey6,marginTop:1}}>{w.date}</div>
+                        </div>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          });
+        })()}
       </div>
       {active&&(
         <div style={{flex:1,display:"flex",flexDirection:"column",minHeight:0,background:C.grey2,overflow:"hidden",position:"relative"}}>
