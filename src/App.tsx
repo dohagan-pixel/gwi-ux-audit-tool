@@ -1157,8 +1157,10 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
     {key:"fi",label:"Fill-ins",Icon:ClipboardList,impact:"Low",effort:"Low",bg:C.grey3,border:C.grey5,text:C.grey8},
     {key:"dp",label:"Deprioritise",Icon:AlertTriangle,impact:"Low",effort:"High",bg:"#FFF0F0",border:"#FFAAAA",text:"#CC0000"},
   ];
-  var [matDrag,setMatDrag]=useState({id:null,pageId:null} as any);
+  var [matDrag,setMatDrag]=useState({id:null,pageId:null,fromCol:null} as any);
   var [matDropTarget,setMatDropTarget]=useState(null as string|null);
+  var [matDropIdx,setMatDropIdx]=useState(null as number|null);
+  var [matColOrder,setMatColOrder]=useState({} as any);
 
   return(<>
     <PageWrap isMobile={isMobile}>
@@ -1269,16 +1271,36 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
               var qDone=qActions.filter(function(a){return a.status==="done";}).length;
               var qPct=qTotal?Math.round(qDone/qTotal*100):0;
               var isDropTarget=matDropTarget===q.key;
+              var ord=matColOrder[q.key];
+              var orderedActions=ord?qActions.slice().sort(function(a,b){var ai=ord.indexOf(a.id);var bi=ord.indexOf(b.id);if(ai===-1)ai=9999;if(bi===-1)bi=9999;return ai-bi;}):qActions;
               return(
                 <div key={q.key}
-                  onDragOver={function(e){e.preventDefault();setMatDropTarget(q.key);}}
-                  onDragLeave={function(e){if(!(e.currentTarget as HTMLDivElement).contains(e.relatedTarget as Node)){setMatDropTarget(null);}}}
+                  onDragOver={function(e){e.preventDefault();setMatDropTarget(q.key);setMatDropIdx(orderedActions.length);}}
+                  onDragLeave={function(e){if(!(e.currentTarget as HTMLDivElement).contains(e.relatedTarget as Node)){setMatDropTarget(null);setMatDropIdx(null);}}}
                   onDrop={function(e){
-                    e.preventDefault();setMatDropTarget(null);
-                    if(!matDrag.id)return;
-                    updateAction(matDrag.pageId,matDrag.id,"effort",q.effort==="Low"?"Low":"High");
-                    updateAction(matDrag.pageId,matDrag.id,"impact",q.impact);
-                    setMatDrag({id:null,pageId:null});
+                    e.preventDefault();
+                    var dropPos=matDropIdx!==null?matDropIdx:orderedActions.length;
+                    var fromCol=matDrag.fromCol;var dragId=matDrag.id;var dragPageId=matDrag.pageId;
+                    setMatDropTarget(null);setMatDropIdx(null);setMatDrag({id:null,pageId:null,fromCol:null});
+                    if(!dragId)return;
+                    if(fromCol!==q.key){
+                      updateAction(dragPageId,dragId,"effort",q.effort==="Low"?"Low":"High");
+                      updateAction(dragPageId,dragId,"impact",q.impact);
+                    }
+                    setMatColOrder(function(prev){
+                      var n=Object.assign({},prev);
+                      if(fromCol===q.key){
+                        var ids=orderedActions.map(function(a){return a.id;});
+                        var fi=ids.indexOf(dragId);ids.splice(fi,1);
+                        var adj=dropPos>fi?dropPos-1:dropPos;ids.splice(adj,0,dragId);
+                        n[q.key]=ids;
+                      } else {
+                        if(n[fromCol])n[fromCol]=n[fromCol].filter(function(id){return id!==dragId;});
+                        var tids=orderedActions.map(function(a){return a.id;});
+                        tids.splice(dropPos,0,dragId);n[q.key]=tids;
+                      }
+                      return n;
+                    });
                   }}
                   style={{background:isDropTarget?"rgba(0,0,0,0.04)":q.bg,border:"1.5px solid "+(isDropTarget?q.text:q.border),borderRadius:12,overflow:"hidden",display:"flex",flexDirection:"column",transition:"background 0.15s, border-color 0.15s"}}>
                   <div style={{padding:"16px 20px",borderBottom:"1px solid "+q.border}}>
@@ -1293,25 +1315,35 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
                     </div>
                   </div>
                   <div style={{padding:"10px 12px",display:"flex",flexDirection:"column",gap:4,flex:1,minHeight:60}}>
-                    {qActions.length===0
+                    {orderedActions.length===0
                       ?<div style={{fontSize:12,color:q.text,opacity:0.45,fontStyle:"italic",textAlign:"center",padding:"16px 0"}}>{isDropTarget?"Drop here":"None yet"}</div>
-                      :qActions.map(function(a){
+                      :orderedActions.map(function(a,actionIdx){
                         var done=a.status==="done";
                         var isDragging=matDrag.id===a.id;
                         return(
-                          <div key={a.id}
-                            draggable
-                            onDragStart={function(e){e.dataTransfer.effectAllowed="move";setMatDrag({id:a.id,pageId:a.pageId});}}
-                            onDragEnd={function(){setMatDrag({id:null,pageId:null});setMatDropTarget(null);}}
-                            style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(0,0,0,0.07)",borderRadius:8,padding:"8px 10px",display:"flex",alignItems:"flex-start",gap:8,cursor:"grab",opacity:isDragging?0.35:1,transition:"opacity 0.15s"}}>
-                            <GripVertical size={13} color={C.grey5} style={{flexShrink:0,marginTop:2}}/>
-                            <div onClick={function(){var order=["todo","inprogress","done"];var next=order[(order.indexOf(a.status)+1)%order.length];setActionStatus(a.pageId,a.id,next);}} style={{cursor:"pointer",flexShrink:0,paddingTop:1}}>
-                              <span style={{background:statusCfg[a.status].bg,color:statusCfg[a.status].text,border:"1px solid "+statusCfg[a.status].border,fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>{statusCfg[a.status].label}</span>
+                          <div key={a.id}>
+                            {isDropTarget&&matDropIdx===actionIdx&&!isDragging&&<DropLine/>}
+                            <div
+                              draggable
+                              onDragStart={function(e){e.dataTransfer.effectAllowed="move";setMatDrag({id:a.id,pageId:a.pageId,fromCol:q.key});}}
+                              onDragEnd={function(){setMatDrag({id:null,pageId:null,fromCol:null});setMatDropTarget(null);setMatDropIdx(null);}}
+                              onDragOver={function(e){
+                                e.preventDefault();e.stopPropagation();
+                                var rect=(e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                                var insertAt=e.clientY<rect.top+rect.height/2?actionIdx:actionIdx+1;
+                                setMatDropTarget(q.key);setMatDropIdx(insertAt);
+                              }}
+                              style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(0,0,0,0.07)",borderRadius:8,padding:"8px 10px",display:"flex",alignItems:"flex-start",gap:8,cursor:"grab",opacity:isDragging?0.35:1,transition:"opacity 0.15s"}}>
+                              <GripVertical size={13} color={C.grey5} style={{flexShrink:0,marginTop:2}}/>
+                              <div onClick={function(){var order=["todo","inprogress","done"];var next=order[(order.indexOf(a.status)+1)%order.length];setActionStatus(a.pageId,a.id,next);}} style={{cursor:"pointer",flexShrink:0,paddingTop:1}}>
+                                <span style={{background:statusCfg[a.status].bg,color:statusCfg[a.status].text,border:"1px solid "+statusCfg[a.status].border,fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>{statusCfg[a.status].label}</span>
+                              </div>
+                              <div style={{flex:1,minWidth:0}}>
+                                <div style={{fontSize:12,fontWeight:700,color:done?C.grey6:C.offBlack,textDecoration:done?"line-through":"none",lineHeight:1.4}}>{a.text}</div>
+                                <div style={{fontSize:10,color:q.text,opacity:0.7,marginTop:2}}>{a.pageLabel}</div>
+                              </div>
                             </div>
-                            <div style={{flex:1,minWidth:0}}>
-                              <div style={{fontSize:12,fontWeight:700,color:done?C.grey6:C.offBlack,textDecoration:done?"line-through":"none",lineHeight:1.4}}>{a.text}</div>
-                              <div style={{fontSize:10,color:q.text,opacity:0.7,marginTop:2}}>{a.pageLabel}</div>
-                            </div>
+                            {isDropTarget&&actionIdx===orderedActions.length-1&&matDropIdx===orderedActions.length&&<DropLine/>}
                           </div>
                         );
                       })
