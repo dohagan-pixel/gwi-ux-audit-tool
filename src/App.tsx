@@ -2659,10 +2659,37 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   var [lovedView,setLovedView]=useState(null as {pageUrl:string,label:string}|null);
   var [lcHeights,setLcHeights]=useState({} as {[id:string]:number});
   var iframeRef=useRef<HTMLIFrameElement>(null);
-  // extractSection: for new wireframes uses data-section-rec (precise container extraction).
-  // For old wireframes (no data-section-rec), returns badge parent as fallback sectionHtml.
-  // Also used as a guard to check whether a badge exists before enabling "Save to Loved components".
-  function extractSection(html:string,recNum:number){try{var parser=new DOMParser();var d=parser.parseFromString(html,"text/html");var secEl=d.querySelector('[data-section-rec="'+recNum+'"]');if(secEl)return(secEl as HTMLElement).outerHTML;var badge=d.querySelector('[data-rec="'+recNum+'"]');if(!badge)return null;return badge.parentElement?(badge.parentElement as HTMLElement).outerHTML:"<!-- section "+recNum+" -->";}catch(e){return null;}}
+  // extractSection: pulls out just the component block for a given recommendation number.
+  // Strategy 1 (new wireframes): look for data-section-rec="N" attribute on the container.
+  // Strategy 2 (old wireframes): starting from body, recursively descend into whichever child
+  //   contains the target badge, stopping when we reach an element that holds THIS badge but
+  //   no other badges — that's the exclusive section container.
+  function extractSection(html:string,recNum:number){
+    try{
+      var parser=new DOMParser();
+      var d=parser.parseFromString(html,"text/html");
+      // Strategy 1: new wireframes have data-section-rec on the container
+      var secEl=d.querySelector('[data-section-rec="'+recNum+'"]');
+      if(secEl)return(secEl as HTMLElement).outerHTML;
+      // Strategy 2: find the badge, then descend from body to find smallest exclusive container
+      var badge=d.querySelector('[data-rec="'+recNum+'"]');
+      if(!badge)return null;
+      function findContainer(el:Element):Element{
+        for(var i=0;i<el.children.length;i++){
+          var child=el.children[i];
+          if(child===badge||child.contains(badge)){
+            // Does this child contain only our badge (no sibling badges)?
+            var others=Array.from(child.querySelectorAll('[data-rec]')).filter(function(b){return b.getAttribute('data-rec')!==String(recNum);});
+            if(others.length===0)return child; // exclusive: this is our section
+            return findContainer(child); // has multiple badges: go deeper
+          }
+        }
+        return el; // fallback: return current level
+      }
+      var container=findContainer(d.body);
+      return(container as HTMLElement).outerHTML;
+    }catch(e){return null;}
+  }
   function extractSharedCss(html:string){var matches=html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi)||[];return matches.map(function(m){return m.replace(/<\/?style[^>]*>/gi,"");}).join("\n");}
   function wrapSection(sectionHtml:string,sharedCss:string){return'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{box-sizing:border-box}html,body{margin:0;padding:0;overflow:hidden;}body{background:#f5f5f5;font-family:Arial,sans-serif;}'+sharedCss+'</style></head><body>'+sectionHtml+'</body></html>';}
   var isMobile=useWidth()<768;
@@ -2775,83 +2802,28 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                     </div>
                   )}
                   {(function(){
+                    // Extract JUST the component block and render it standalone at natural height.
+                    // extractSection uses data-section-rec (new wires) or the exclusive-container
+                    // algorithm (old wires) to find the smallest element that contains only this badge.
                     var wire=wireframes.find(function(w:any){return w.id===lc.wireframeId;});
-                    var recNum=lc.recNum as number;
-                    // For new wireframes: extract the data-section-rec container directly → wrap and render at natural height.
-                    // For old wireframes (no data-section-rec): load full HTML and scroll-clip to the badge position.
-                    var newStyleSection=wire?(function(){var parser=new DOMParser();var d=parser.parseFromString(wire.html,"text/html");return d.querySelector('[data-section-rec="'+recNum+'"]') as HTMLElement|null;})():null;
+                    var sectionHtml=wire?extractSection(wire.html,lc.recNum):(lc.sectionHtml||null);
                     var css=wire?extractSharedCss(wire.html):(lc.sharedCss||"");
-                    if(newStyleSection){
-                      // NEW wireframe: extracted section, show at natural height
-                      var srcDoc=wrapSection(newStyleSection.outerHTML,css);
-                      return(
-                        <iframe
-                          srcDoc={srcDoc}
-                          title={lc.title}
-                          sandbox="allow-same-origin allow-scripts"
-                          style={{width:"100%",border:"none",height:(lcHeights[lc.id]||400)+"px",display:"block"}}
-                          onLoad={function(e){
-                            var f=e.currentTarget as HTMLIFrameElement;
-                            var id=lc.id;
-                            try{
-                              var doc=f.contentDocument;
-                              if(!doc)return;
-                              var sh=doc.documentElement.scrollHeight||doc.body.scrollHeight||400;
-                              setLcHeights(function(prev){var n=Object.assign({},prev);n[id]=Math.max(200,sh);return n;});
-                            }catch(ex){}
-                          }}
-                        />
-                      );
-                    }
-                    // OLD wireframe (or fallback): scroll-clip approach.
-                    // Use full wireframe HTML so we can find badge positions and scroll to the section.
-                    var srcDocHtml=wire?wire.html:wrapSection(lc.sectionHtml||"<p style='padding:16px;color:#999'>No preview available</p>",lc.sharedCss||"");
+                    if(!sectionHtml)return <div style={{padding:"16px 24px",color:C.grey6,fontSize:12,fontStyle:"italic"}}>No preview available</div>;
                     return(
                       <iframe
-                        srcDoc={srcDocHtml}
+                        srcDoc={wrapSection(sectionHtml,css)}
                         title={lc.title}
                         sandbox="allow-same-origin allow-scripts"
-                        style={{width:"100%",border:"none",height:(lcHeights[lc.id]||600)+"px",display:"block"}}
+                        style={{width:"100%",border:"none",height:(lcHeights[lc.id]||400)+"px",display:"block"}}
                         onLoad={function(e){
                           var f=e.currentTarget as HTMLIFrameElement;
                           var id=lc.id;
                           try{
                             var doc=f.contentDocument;
                             if(!doc)return;
-                            // Hide scrollbars via CSS (NOT overflow:hidden — that blocks scrollTop)
-                            var st=doc.createElement("style");
-                            st.textContent="html,body{scrollbar-width:none!important;-ms-overflow-style:none!important}html::-webkit-scrollbar,body::-webkit-scrollbar{display:none!important}";
-                            (doc.head||doc.documentElement).appendChild(st);
-                            // Ensure we start from the top before measuring
-                            doc.documentElement.scrollTop=0;
-                            doc.body.scrollTop=0;
-                            var badge=doc.querySelector('[data-rec="'+recNum+'"]') as HTMLElement|null;
-                            if(!badge){
-                              var sh=doc.documentElement.scrollHeight||doc.body.scrollHeight||400;
-                              setLcHeights(function(prev){var n=Object.assign({},prev);n[id]=Math.max(200,sh);return n;});
-                              return;
-                            }
-                            // getBoundingClientRect with scrollTop=0 gives document-relative position
-                            var badgeTop=badge.getBoundingClientRect().top;
-                            var sectionTop=Math.max(0,badgeTop-24);
-                            // Find section bottom: next badge start, or position:relative container bottom
-                            var nextBadge=doc.querySelector('[data-rec="'+(recNum+1)+'"]') as HTMLElement|null;
-                            var sectionBottom:number;
-                            if(nextBadge){
-                              sectionBottom=nextBadge.getBoundingClientRect().top-8;
-                            }else{
-                              var par:HTMLElement|null=badge.parentElement as HTMLElement|null;
-                              while(par&&par!==doc.body){if(par.style&&par.style.position==="relative")break;par=par.parentElement as HTMLElement|null;}
-                              sectionBottom=(par&&par!==doc.body)?par.getBoundingClientRect().bottom:doc.documentElement.scrollHeight;
-                            }
-                            var sectionH=Math.max(200,sectionBottom-sectionTop+24);
-                            // Scroll to section — works because overflow is NOT set to hidden
-                            doc.documentElement.scrollTop=sectionTop;
-                            doc.body.scrollTop=sectionTop;
-                            setLcHeights(function(prev){var n=Object.assign({},prev);n[id]=sectionH;return n;});
-                          }catch(ex){
-                            try{var d2=f.contentDocument;if(d2){var sh2=d2.documentElement.scrollHeight||d2.body.scrollHeight||400;setLcHeights(function(prev){var n=Object.assign({},prev);n[id]=Math.max(200,sh2);return n;});}}catch(x){}
-                          }
+                            var sh=doc.documentElement.scrollHeight||doc.body.scrollHeight||400;
+                            setLcHeights(function(prev){var n=Object.assign({},prev);n[id]=Math.max(200,sh);return n;});
+                          }catch(ex){}
                         }}
                       />
                     );
