@@ -1158,6 +1158,8 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
   var isMobile=useWidth()<768;
   var prevOpen=useRef(null);
   var pageDrag=useDragList(auditData,setAuditData);
+  var matrixDragRef=useRef<any>(null);
+  var [matrixDropTarget,setMatrixDropTarget]=useState<any>(null);
 
   function triggerGenerate(page){
     if(generating[page.id]||page.issue)return;
@@ -1184,6 +1186,27 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
   }
   function deleteAction(pageId,actionId){setAuditData(function(prev){return prev.map(function(p){if(p.id!==pageId)return p;return Object.assign({},p,{actions:p.actions.filter(function(a){return a.id!==actionId;})});});});}
   function reorderActions(pageId,next){setAuditData(function(prev){return prev.map(function(p){return p.id!==pageId?p:Object.assign({},p,{actions:next});});});}
+  function handleMatrixDrop(e:any,toPri:string,priActions:any[],toIdx:number){
+    e.preventDefault();
+    var drag=matrixDragRef.current;
+    if(!drag){setMatrixDropTarget(null);return;}
+    if(drag.fromPri===toPri){
+      var fromIdx=drag.fromIdx;
+      if(fromIdx===toIdx){setMatrixDropTarget(null);return;}
+      var newFlat=priActions.slice();
+      var moved=newFlat.splice(fromIdx,1)[0];
+      newFlat.splice(fromIdx<toIdx?toIdx-1:toIdx,0,moved);
+      setAuditData(function(prev){return prev.map(function(page){
+        if(page.priority!==toPri)return page;
+        var ordered=newFlat.filter(function(a){return a.pageId===page.id;}).map(function(a){return page.actions.find(function(x){return x.id===a.id;});}).filter(Boolean);
+        return Object.assign({},page,{actions:ordered});
+      });});
+    } else {
+      setAuditData(function(prev){return prev.map(function(p){return p.id===drag.pageId?Object.assign({},p,{priority:toPri}):p;});});
+    }
+    matrixDragRef.current=null;
+    setMatrixDropTarget(null);
+  }
   function calcDelta(before,after){var b=parseFloat(before),a=parseFloat(after);if(isNaN(b)||isNaN(a)||b===0)return null;return{pct:((a-b)/b*100).toFixed(1),positive:a>=b};}
 
   var totalActions=auditData.reduce(function(s,p){return s+p.actions.length;},0);
@@ -1297,9 +1320,13 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
             var priTotal=priPages.reduce(function(s,p){return s+p.actions.length;},0);
             var priDone=priPages.reduce(function(s,p){return s+p.actions.filter(function(a){return a.status==="done";}).length;},0);
             var priPct=priTotal?Math.round(priDone/priTotal*100):0;
-            var priActions=priPages.reduce(function(acc,pg){return acc.concat(pg.actions.map(function(a){return Object.assign({},a,{pageLabel:pg.label,pageId:pg.id});}));},[] as any[]);
+            var priActions=priPages.reduce(function(acc,pg){return acc.concat(pg.actions.map(function(a){return Object.assign({},a,{pageLabel:pg.label,pageId:pg.id,fromPri:pri});}));},[] as any[]);
+            var isDropTarget=matrixDropTarget&&matrixDropTarget.toPri===pri;
             return(
-              <div key={pri} style={{background:pc.bg,border:"1.5px solid "+pc.border,borderRadius:12,overflow:"hidden"}}>
+              <div key={pri}
+                style={{background:pc.bg,border:"1.5px solid "+(isDropTarget?pc.text:pc.border),borderRadius:12,overflow:"hidden",transition:"border-color 0.1s"}}
+                onDragOver={function(e){e.preventDefault();if(!matrixDragRef.current)return;setMatrixDropTarget({toPri:pri,toIdx:priActions.length});}}
+                onDrop={function(e){handleMatrixDrop(e,pri,priActions,priActions.length);}}>
                 <div style={{padding:"16px 20px",borderBottom:"1px solid "+pc.border}}>
                   <div style={{fontSize:11,fontWeight:700,color:pc.text,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8}}>{pri}</div>
                   <div style={{display:"flex",alignItems:"baseline",gap:3,marginBottom:4}}>
@@ -1311,24 +1338,39 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
                     <div style={{width:priPct+"%",background:pc.text,height:"100%",borderRadius:99,transition:"width 0.4s"}}/>
                   </div>
                 </div>
-                <div style={{padding:"10px 12px",display:"flex",flexDirection:"column",gap:4}}>
+                <div style={{padding:"10px 12px",display:"flex",flexDirection:"column",gap:0,minHeight:40}}
+                  onDragOver={function(e){e.preventDefault();if(!matrixDragRef.current)return;setMatrixDropTarget({toPri:pri,toIdx:priActions.length});}}
+                  onDrop={function(e){handleMatrixDrop(e,pri,priActions,priActions.length);}}>
                   {priActions.length===0
                     ?<div style={{fontSize:12,color:pc.text,opacity:0.45,fontStyle:"italic",textAlign:"center",padding:"16px 0"}}>No actions</div>
-                    :priActions.map(function(a){
+                    :priActions.map(function(a,actionIdx){
                       var done=a.status==="done";
+                      var isDragging=matrixDragRef.current&&matrixDragRef.current.actionId===a.id;
+                      var showDropLine=isDropTarget&&matrixDropTarget.toIdx===actionIdx;
                       return(
-                        <div key={a.id} style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(0,0,0,0.07)",borderRadius:8,padding:"8px 10px",display:"flex",alignItems:"flex-start",gap:8}}>
-                          <div onClick={function(){var order=["todo","inprogress","done"];var next=order[(order.indexOf(a.status)+1)%order.length];setActionStatus(a.pageId,a.id,next);}} style={{cursor:"pointer",flexShrink:0,paddingTop:1}}>
-                            <span style={{background:statusCfg[a.status].bg,color:statusCfg[a.status].text,border:"1px solid "+statusCfg[a.status].border,fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>{statusCfg[a.status].label}</span>
-                          </div>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:12,fontWeight:700,color:done?C.grey6:C.offBlack,textDecoration:done?"line-through":"none",lineHeight:1.4}}>{a.text}</div>
-                            <div style={{fontSize:10,color:pc.text,opacity:0.7,marginTop:2}}>{a.pageLabel}</div>
+                        <div key={a.id}>
+                          {showDropLine&&<div style={{height:3,background:pc.text,borderRadius:99,margin:"2px 0"}}/>}
+                          <div
+                            draggable
+                            onDragStart={function(e){e.stopPropagation();matrixDragRef.current={actionId:a.id,pageId:a.pageId,fromPri:pri,fromIdx:actionIdx};}}
+                            onDragOver={function(e){e.preventDefault();e.stopPropagation();if(!matrixDragRef.current)return;setMatrixDropTarget({toPri:pri,toIdx:actionIdx});}}
+                            onDrop={function(e){e.stopPropagation();handleMatrixDrop(e,pri,priActions,actionIdx);}}
+                            onDragEnd={function(){matrixDragRef.current=null;setMatrixDropTarget(null);}}
+                            style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(0,0,0,0.07)",borderRadius:8,padding:"8px 10px",display:"flex",alignItems:"flex-start",gap:8,marginBottom:4,opacity:isDragging?0.4:1,cursor:"grab",transition:"opacity 0.15s"}}>
+                            <div style={{color:C.grey5,fontSize:12,flexShrink:0,paddingTop:2,userSelect:"none"}}>⠿</div>
+                            <div onClick={function(){var order=["todo","inprogress","done"];var next=order[(order.indexOf(a.status)+1)%order.length];setActionStatus(a.pageId,a.id,next);}} style={{cursor:"pointer",flexShrink:0,paddingTop:1}}>
+                              <span style={{background:statusCfg[a.status].bg,color:statusCfg[a.status].text,border:"1px solid "+statusCfg[a.status].border,fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>{statusCfg[a.status].label}</span>
+                            </div>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{fontSize:12,fontWeight:700,color:done?C.grey6:C.offBlack,textDecoration:done?"line-through":"none",lineHeight:1.4}}>{a.text}</div>
+                              <div style={{fontSize:10,color:pc.text,opacity:0.7,marginTop:2}}>{a.pageLabel}</div>
+                            </div>
                           </div>
                         </div>
                       );
                     })
                   }
+                  {isDropTarget&&matrixDropTarget.toIdx===priActions.length&&<div style={{height:3,background:pc.text,borderRadius:99,margin:"2px 0"}}/>}
                 </div>
               </div>
             );
