@@ -5,7 +5,7 @@ import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
-import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone, Lightbulb, MessageSquare } from "lucide-react";
+import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, List, LayoutGrid } from "lucide-react";
 
 const C = {
   pink:"#FF0077",white:"#FFFFFF",black:"#101720",offBlack:"#2A3447",
@@ -1150,13 +1150,15 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
   var todoActions=totalActions-doneActions-inProgActions;
   var [auditView,setAuditView]=useState("list");
   var effortMap={"Low":"Low","Medium":"High","High":"High"} as any;
-  var allA=auditData.reduce(function(acc,pg){return acc.concat(pg.actions.map(function(a){return Object.assign({},a,{pageLabel:pg.label,pageId:pg.id,impact:(pg.priority==="Critical"||pg.priority==="High")?"High":"Low"});}));},[] as any[]);
+  var allA=auditData.reduce(function(acc,pg){return acc.concat(pg.actions.map(function(a){return Object.assign({},a,{pageLabel:pg.label,pageId:pg.id,impact:a.impact||(pg.priority==="Critical"||pg.priority==="High"?"High":"Low")});}));},[] as any[]);
   var matrixQuadrants=[
-    {key:"qw",label:"Quick Wins",icon:"⭐",impact:"High",effort:"Low",bg:"#E6F9F2",border:"#80D4B0",text:"#005C3B"},
-    {key:"bb",label:"Big Bets",icon:"🚀",impact:"High",effort:"High",bg:C.blueBg,border:C.blueLight,text:C.blueDark},
-    {key:"fi",label:"Fill-ins",icon:"📋",impact:"Low",effort:"Low",bg:C.grey3,border:C.grey5,text:C.grey8},
-    {key:"dp",label:"Deprioritise",icon:"⚠️",impact:"Low",effort:"High",bg:"#FFF0F0",border:"#FFAAAA",text:"#CC0000"},
+    {key:"qw",label:"Quick Wins",Icon:Zap,impact:"High",effort:"Low",bg:"#E6F9F2",border:"#80D4B0",text:"#005C3B"},
+    {key:"bb",label:"Big Bets",Icon:TrendingUp,impact:"High",effort:"High",bg:C.blueBg,border:C.blueLight,text:C.blueDark},
+    {key:"fi",label:"Fill-ins",Icon:ClipboardList,impact:"Low",effort:"Low",bg:C.grey3,border:C.grey5,text:C.grey8},
+    {key:"dp",label:"Deprioritise",Icon:AlertTriangle,impact:"Low",effort:"High",bg:"#FFF0F0",border:"#FFAAAA",text:"#CC0000"},
   ];
+  var [matDrag,setMatDrag]=useState({id:null,pageId:null} as any);
+  var [matDropTarget,setMatDropTarget]=useState(null as string|null);
 
   return(<>
     <PageWrap isMobile={isMobile}>
@@ -1172,7 +1174,7 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
           var qPct=qTotal?Math.round(qDone/qTotal*100):0;
           return(
             <div key={q.key} onClick={function(){setAuditView("matrix");}} style={{background:q.bg,border:"1px solid "+q.border,borderRadius:12,padding:"16px 20px",cursor:"pointer",transition:"box-shadow 0.15s"}} onMouseEnter={function(e){(e.currentTarget as HTMLDivElement).style.boxShadow="0 4px 16px rgba(0,0,0,0.12)";}} onMouseLeave={function(e){(e.currentTarget as HTMLDivElement).style.boxShadow="none";}}>
-              <div style={{fontSize:11,fontWeight:700,color:q.text,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10,display:"flex",alignItems:"center",gap:5}}><span>{q.icon}</span>{q.label}</div>
+              <div style={{fontSize:11,fontWeight:700,color:q.text,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10,display:"flex",alignItems:"center",gap:5}}><q.Icon size={13} strokeWidth={2.5}/>{q.label}</div>
               <div style={{display:"flex",alignItems:"baseline",gap:3,marginBottom:4}}>
                 <span style={{fontSize:40,fontWeight:800,color:q.text,lineHeight:1}}>{qDone}</span>
                 <span style={{fontSize:20,fontWeight:700,color:q.text,opacity:0.4}}>/{qTotal}</span>
@@ -1202,9 +1204,10 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
           <div style={{width:(totalActions?doneActions/totalActions*100:0)+"%",background:"#00A86B",height:"100%",flexShrink:0,borderRadius:"0 99px 99px 0",transition:"width 0.4s"}}/>
         </div>
       </div>
-      <div style={{display:"flex",gap:8,marginBottom:16}}>
-        <button onClick={function(){setAuditView("list");}} style={{padding:"8px 18px",borderRadius:8,fontSize:12,fontWeight:700,border:"1px solid "+(auditView==="list"?C.pink:C.grey4),background:auditView==="list"?C.pink:"transparent",color:auditView==="list"?C.white:C.grey7,cursor:"pointer"}}>List</button>
-        <button onClick={function(){setAuditView("matrix");}} style={{padding:"8px 18px",borderRadius:8,fontSize:12,fontWeight:700,border:"1px solid "+(auditView==="matrix"?C.pink:C.grey4),background:auditView==="matrix"?C.pink:"transparent",color:auditView==="matrix"?C.white:C.grey7,cursor:"pointer"}}>Priority Matrix</button>
+      <div style={{display:"inline-flex",background:C.grey3,borderRadius:12,padding:4,gap:0,marginBottom:16,position:"relative"}}>
+        <div style={{position:"absolute",top:4,left:auditView==="list"?4:"calc(50% + 2px)",width:"calc(50% - 6px)",height:"calc(100% - 8px)",background:C.white,borderRadius:9,boxShadow:"0 1px 4px rgba(0,0,0,0.13)",transition:"left 0.2s cubic-bezier(0.4,0,0.2,1)",pointerEvents:"none"}}/>
+        <button onClick={function(){setAuditView("list");}} title="List view" style={{position:"relative",zIndex:1,display:"flex",alignItems:"center",gap:6,padding:"7px 18px",borderRadius:9,border:"none",background:"transparent",color:auditView==="list"?C.offBlack:C.grey6,fontWeight:700,fontSize:12,cursor:"pointer",transition:"color 0.15s"}}><List size={15} strokeWidth={2.2}/>List</button>
+        <button onClick={function(){setAuditView("matrix");}} title="Matrix view" style={{position:"relative",zIndex:1,display:"flex",alignItems:"center",gap:6,padding:"7px 18px",borderRadius:9,border:"none",background:"transparent",color:auditView==="matrix"?C.offBlack:C.grey6,fontWeight:700,fontSize:12,cursor:"pointer",transition:"color 0.15s"}}><LayoutGrid size={15} strokeWidth={2.2}/>Matrix</button>
       </div>
       {auditView==="list"&&<div>
         {auditData.map(function(page,pageIdx){
@@ -1265,10 +1268,21 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
               var qTotal=qActions.length;
               var qDone=qActions.filter(function(a){return a.status==="done";}).length;
               var qPct=qTotal?Math.round(qDone/qTotal*100):0;
+              var isDropTarget=matDropTarget===q.key;
               return(
-                <div key={q.key} style={{background:q.bg,border:"1.5px solid "+q.border,borderRadius:12,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+                <div key={q.key}
+                  onDragOver={function(e){e.preventDefault();setMatDropTarget(q.key);}}
+                  onDragLeave={function(e){if(!(e.currentTarget as HTMLDivElement).contains(e.relatedTarget as Node)){setMatDropTarget(null);}}}
+                  onDrop={function(e){
+                    e.preventDefault();setMatDropTarget(null);
+                    if(!matDrag.id)return;
+                    updateAction(matDrag.pageId,matDrag.id,"effort",q.effort==="Low"?"Low":"High");
+                    updateAction(matDrag.pageId,matDrag.id,"impact",q.impact);
+                    setMatDrag({id:null,pageId:null});
+                  }}
+                  style={{background:isDropTarget?"rgba(0,0,0,0.04)":q.bg,border:"1.5px solid "+(isDropTarget?q.text:q.border),borderRadius:12,overflow:"hidden",display:"flex",flexDirection:"column",transition:"background 0.15s, border-color 0.15s"}}>
                   <div style={{padding:"16px 20px",borderBottom:"1px solid "+q.border}}>
-                    <div style={{fontSize:11,fontWeight:700,color:q.text,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8,display:"flex",alignItems:"center",gap:5}}><span>{q.icon}</span>{q.label}</div>
+                    <div style={{fontSize:11,fontWeight:700,color:q.text,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8,display:"flex",alignItems:"center",gap:5}}><q.Icon size={13} strokeWidth={2.5}/>{q.label}</div>
                     <div style={{display:"flex",alignItems:"baseline",gap:3,marginBottom:4}}>
                       <span style={{fontSize:32,fontWeight:800,color:q.text,lineHeight:1}}>{qDone}</span>
                       <span style={{fontSize:16,fontWeight:700,color:q.text,opacity:0.4}}>/{qTotal}</span>
@@ -1278,13 +1292,19 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
                       <div style={{width:qPct+"%",background:q.text,height:"100%",borderRadius:99,transition:"width 0.4s"}}/>
                     </div>
                   </div>
-                  <div style={{padding:"10px 12px",display:"flex",flexDirection:"column",gap:4,flex:1}}>
+                  <div style={{padding:"10px 12px",display:"flex",flexDirection:"column",gap:4,flex:1,minHeight:60}}>
                     {qActions.length===0
-                      ?<div style={{fontSize:12,color:q.text,opacity:0.45,fontStyle:"italic",textAlign:"center",padding:"16px 0"}}>None yet</div>
+                      ?<div style={{fontSize:12,color:q.text,opacity:0.45,fontStyle:"italic",textAlign:"center",padding:"16px 0"}}>{isDropTarget?"Drop here":"None yet"}</div>
                       :qActions.map(function(a){
                         var done=a.status==="done";
+                        var isDragging=matDrag.id===a.id;
                         return(
-                          <div key={a.id} style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(0,0,0,0.07)",borderRadius:8,padding:"8px 10px",display:"flex",alignItems:"flex-start",gap:8}}>
+                          <div key={a.id}
+                            draggable
+                            onDragStart={function(e){e.dataTransfer.effectAllowed="move";setMatDrag({id:a.id,pageId:a.pageId});}}
+                            onDragEnd={function(){setMatDrag({id:null,pageId:null});setMatDropTarget(null);}}
+                            style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(0,0,0,0.07)",borderRadius:8,padding:"8px 10px",display:"flex",alignItems:"flex-start",gap:8,cursor:"grab",opacity:isDragging?0.35:1,transition:"opacity 0.15s"}}>
+                            <GripVertical size={13} color={C.grey5} style={{flexShrink:0,marginTop:2}}/>
                             <div onClick={function(){var order=["todo","inprogress","done"];var next=order[(order.indexOf(a.status)+1)%order.length];setActionStatus(a.pageId,a.id,next);}} style={{cursor:"pointer",flexShrink:0,paddingTop:1}}>
                               <span style={{background:statusCfg[a.status].bg,color:statusCfg[a.status].text,border:"1px solid "+statusCfg[a.status].border,fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>{statusCfg[a.status].label}</span>
                             </div>
