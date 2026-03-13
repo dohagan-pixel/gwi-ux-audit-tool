@@ -1362,6 +1362,10 @@ function AnalyticsPage({gaCards}){
         </div>
         {tab==="ga"&&(
           <>
+            <div style={{marginBottom:16,background:C.grey3,border:"1px solid "+C.grey5,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"flex-start",gap:8}}>
+              <AlertTriangle size={14} color={C.grey7} style={{flexShrink:0,marginTop:1}}/>
+              <span style={{fontSize:12,color:C.grey7,lineHeight:1.6}}><strong style={{color:C.grey8}}>Heads up:</strong> All GA4 links below are filtered to approximately the last 28 days. If you are exporting a CSV, update the date range in GA4 before downloading to make sure you get the full period you need.</span>
+            </div>
             <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill,minmax(260px,1fr))",gap:16}}>
               {(gaCards||[]).map(function(card){return(
                 <a key={card.id||card.title} href={card.url} target="_blank" rel="noreferrer"
@@ -1374,10 +1378,6 @@ function AnalyticsPage({gaCards}){
                   <CardLink label="Open in GA4"/>
                 </a>
               );})}
-            </div>
-            <div style={{marginTop:16,background:C.grey3,border:"1px solid "+C.grey5,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"flex-start",gap:8}}>
-              <AlertTriangle size={14} color={C.grey7} style={{flexShrink:0,marginTop:1}}/>
-              <span style={{fontSize:12,color:C.grey7,lineHeight:1.6}}><strong style={{color:C.grey8}}>Heads up:</strong> All GA4 links above are filtered to approximately the last 28 days. If you are exporting a CSV, update the date range in GA4 before downloading to make sure you get the full period you need.</span>
             </div>
           </>
         )}
@@ -2805,10 +2805,10 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                   var hasDrafts=unstarred.length>0;
                   var pl=(lovedComponents||[]).filter(function(lc:any){return lc.pageUrl===folder.url;});
                   return(<>
-                    {hasStarred&&<div style={{padding:"4px 14px 2px",fontSize:9,fontWeight:700,color:C.grey6,textTransform:"uppercase",letterSpacing:"0.07em",background:C.grey3,borderTop:"1px solid "+C.grey4}}>Starred</div>}
-                    {starred.map(function(w){var isActive=w.id===activeId;return(<div key={w.id} style={{background:isActive?"#FFF0F7":"transparent"}}><button onClick={function(){setActiveId(w.id);setLovedView(null);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 14px 8px 34px",border:"none",borderLeft:"3px solid "+(isActive?C.pink:"transparent"),background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><Star size={10} fill="#FFC107" color="#FFC107" style={{flexShrink:0}}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:700,color:isActive?C.black:C.grey8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w.pageLabel}</div><div style={{fontSize:10,color:C.grey6,marginTop:1}}>{w.date}</div></div></button></div>);})}
                     {hasDrafts&&<div style={{padding:"4px 14px 2px",fontSize:9,fontWeight:700,color:C.grey6,textTransform:"uppercase",letterSpacing:"0.07em",background:C.grey3,borderTop:"1px solid "+C.grey4}}>Drafts</div>}
                     {unstarred.map(function(w){var isActive=w.id===activeId;return(<div key={w.id} style={{background:isActive?"#FFF0F7":"transparent"}}><button onClick={function(){setActiveId(w.id);setLovedView(null);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 14px 8px 34px",border:"none",borderLeft:"3px solid "+(isActive?C.pink:"transparent"),background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:700,color:isActive?C.black:C.grey8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w.pageLabel}</div><div style={{fontSize:10,color:C.grey6,marginTop:1}}>{w.date}</div></div></button></div>);})}
+                    {hasStarred&&<div style={{padding:"4px 14px 2px",fontSize:9,fontWeight:700,color:C.grey6,textTransform:"uppercase",letterSpacing:"0.07em",background:C.grey3,borderTop:"1px solid "+C.grey4}}>Starred</div>}
+                    {starred.map(function(w){var isActive=w.id===activeId;return(<div key={w.id} style={{background:isActive?"#FFF0F7":"transparent"}}><button onClick={function(){setActiveId(w.id);setLovedView(null);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 14px 8px 34px",border:"none",borderLeft:"3px solid "+(isActive?C.pink:"transparent"),background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><Star size={10} fill="#FFC107" color="#FFC107" style={{flexShrink:0}}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:700,color:isActive?C.black:C.grey8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w.pageLabel}</div><div style={{fontSize:10,color:C.grey6,marginTop:1}}>{w.date}</div></div></button></div>);})}
                     {pl.length>0&&<div style={{padding:"4px 14px 2px",fontSize:9,fontWeight:700,color:C.grey6,textTransform:"uppercase",letterSpacing:"0.07em",background:C.grey3,borderTop:"1px solid "+C.grey4}}>Loved</div>}
                     {pl.length>0&&(function(){var isLV=lovedView&&lovedView.pageUrl===folder.url;return(<div style={{background:isLV?"#FFF0F7":"transparent"}}><button onClick={function(){setLovedView({pageUrl:folder.url,label:folder.label});setActiveId(null as any);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 14px 8px 34px",border:"none",borderLeft:"3px solid "+(isLV?C.pink:"transparent"),background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><Heart size={10} fill={C.pink} color={C.pink} style={{flexShrink:0}}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:700,color:isLV?C.black:C.grey8}}>Loved components</div><div style={{fontSize:10,color:C.grey6,marginTop:1}}>{pl.length} saved</div></div></button></div>);}())}
                   </>);
