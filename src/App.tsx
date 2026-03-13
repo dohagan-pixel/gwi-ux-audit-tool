@@ -1149,18 +1149,7 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
   var inProgActions=auditData.reduce(function(s,p){return s+p.actions.filter(function(a){return a.status==="inprogress";}).length;},0);
   var todoActions=totalActions-doneActions-inProgActions;
   var [auditView,setAuditView]=useState("list");
-  var effortMap={"Low":"Low","Medium":"High","High":"High"} as any;
-  var allA=auditData.reduce(function(acc,pg){return acc.concat(pg.actions.map(function(a){return Object.assign({},a,{pageLabel:pg.label,pageId:pg.id,impact:a.impact||(pg.priority==="Critical"||pg.priority==="High"?"High":"Low")});}));},[] as any[]);
-  var matrixQuadrants=[
-    {key:"qw",label:"Quick Wins",Icon:Zap,impact:"High",effort:"Low",bg:"#E6F9F2",border:"#80D4B0",text:"#005C3B"},
-    {key:"bb",label:"Big Bets",Icon:TrendingUp,impact:"High",effort:"High",bg:C.blueBg,border:C.blueLight,text:C.blueDark},
-    {key:"fi",label:"Fill-ins",Icon:ClipboardList,impact:"Low",effort:"Low",bg:C.grey3,border:C.grey5,text:C.grey8},
-    {key:"dp",label:"Deprioritise",Icon:AlertTriangle,impact:"Low",effort:"High",bg:"#FFF0F0",border:"#FFAAAA",text:"#CC0000"},
-  ];
-  var [matDrag,setMatDrag]=useState({id:null,pageId:null,fromCol:null} as any);
-  var [matDropTarget,setMatDropTarget]=useState(null as string|null);
-  var [matDropIdx,setMatDropIdx]=useState(null as number|null);
-  var [matColOrder,setMatColOrder]=useState({} as any);
+  var priorityLevels=["Critical","High","Medium","Low"];
 
   return(<>
     <PageWrap isMobile={isMobile}>
@@ -1169,23 +1158,24 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
         <button onClick={onAddAction} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add UX Action</button>
       </BlackHero>
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12,marginBottom:20}}>
-        {matrixQuadrants.map(function(q){
-          var qActions=allA.filter(function(a){return a.effort&&a.impact===q.impact&&effortMap[a.effort]===q.effort;});
-          var qTotal=qActions.length;
-          var qDone=qActions.filter(function(a){return a.status==="done";}).length;
-          var qPct=qTotal?Math.round(qDone/qTotal*100):0;
+        {priorityLevels.map(function(pri){
+          var pc=pCfg[pri]||pCfg.Medium;
+          var priPages=auditData.filter(function(p){return p.priority===pri;});
+          var priTotal=priPages.reduce(function(s,p){return s+p.actions.length;},0);
+          var priDone=priPages.reduce(function(s,p){return s+p.actions.filter(function(a){return a.status==="done";}).length;},0);
+          var priPct=priTotal?Math.round(priDone/priTotal*100):0;
           return(
-            <div key={q.key} onClick={function(){setAuditView("matrix");}} style={{background:q.bg,border:"1px solid "+q.border,borderRadius:12,padding:"16px 20px",cursor:"pointer",transition:"box-shadow 0.15s"}} onMouseEnter={function(e){(e.currentTarget as HTMLDivElement).style.boxShadow="0 4px 16px rgba(0,0,0,0.12)";}} onMouseLeave={function(e){(e.currentTarget as HTMLDivElement).style.boxShadow="none";}}>
-              <div style={{fontSize:11,fontWeight:700,color:q.text,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10,display:"flex",alignItems:"center",gap:5}}><q.Icon size={13} strokeWidth={2.5}/>{q.label}</div>
+            <div key={pri} onClick={function(){setAuditView("matrix");}} style={{background:pc.bg,border:"1px solid "+pc.border,borderRadius:12,padding:"16px 20px",cursor:"pointer",transition:"box-shadow 0.15s"}} onMouseEnter={function(e){(e.currentTarget as HTMLDivElement).style.boxShadow="0 4px 16px rgba(0,0,0,0.12)";}} onMouseLeave={function(e){(e.currentTarget as HTMLDivElement).style.boxShadow="none";}}>
+              <div style={{fontSize:11,fontWeight:700,color:pc.text,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>{pri}</div>
               <div style={{display:"flex",alignItems:"baseline",gap:3,marginBottom:4}}>
-                <span style={{fontSize:40,fontWeight:800,color:q.text,lineHeight:1}}>{qDone}</span>
-                <span style={{fontSize:20,fontWeight:700,color:q.text,opacity:0.4}}>/{qTotal}</span>
+                <span style={{fontSize:40,fontWeight:800,color:pc.text,lineHeight:1}}>{priDone}</span>
+                <span style={{fontSize:20,fontWeight:700,color:pc.text,opacity:0.4}}>/{priTotal}</span>
               </div>
-              <div style={{fontSize:11,fontWeight:600,color:q.text,opacity:0.6,marginBottom:10}}>actions complete</div>
+              <div style={{fontSize:11,fontWeight:600,color:pc.text,opacity:0.6,marginBottom:10}}>actions complete</div>
               <div style={{background:"rgba(0,0,0,0.1)",borderRadius:99,height:4,overflow:"hidden",marginBottom:10}}>
-                <div style={{width:qPct+"%",background:q.text,height:"100%",borderRadius:99,transition:"width 0.4s"}}/>
+                <div style={{width:priPct+"%",background:pc.text,height:"100%",borderRadius:99,transition:"width 0.4s"}}/>
               </div>
-              <div style={{fontSize:11,fontWeight:600,color:q.text,opacity:0.5,display:"flex",alignItems:"center",gap:3}}>View matrix →</div>
+              <div style={{fontSize:11,fontWeight:600,color:pc.text,opacity:0.5,display:"flex",alignItems:"center",gap:3}}>View matrix →</div>
             </div>
           );
         })}
@@ -1257,118 +1247,49 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
         {pageDrag.dropIdx===auditData.length&&<DropLine/>}
       </div>}
       {auditView==="matrix"&&(
-        <div>
-          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12,marginBottom:12}}>
-            {matrixQuadrants.map(function(q){
-              var qActions=allA.filter(function(a){return a.effort&&a.impact===q.impact&&effortMap[a.effort]===q.effort;});
-              var qTotal=qActions.length;
-              var qDone=qActions.filter(function(a){return a.status==="done";}).length;
-              var qPct=qTotal?Math.round(qDone/qTotal*100):0;
-              var isDropTarget=matDropTarget===q.key;
-              var ord=matColOrder[q.key];
-              var orderedActions=ord?qActions.slice().sort(function(a,b){var ai=ord.indexOf(a.id);var bi=ord.indexOf(b.id);if(ai===-1)ai=9999;if(bi===-1)bi=9999;return ai-bi;}):qActions;
-              return(
-                <div key={q.key}
-                  onDragOver={function(e){e.preventDefault();setMatDropTarget(q.key);setMatDropIdx(orderedActions.length);}}
-                  onDragLeave={function(e){if(!(e.currentTarget as HTMLDivElement).contains(e.relatedTarget as Node)){setMatDropTarget(null);setMatDropIdx(null);}}}
-                  onDrop={function(e){
-                    e.preventDefault();
-                    var dropPos=matDropIdx!==null?matDropIdx:orderedActions.length;
-                    var fromCol=matDrag.fromCol;var dragId=matDrag.id;var dragPageId=matDrag.pageId;
-                    setMatDropTarget(null);setMatDropIdx(null);setMatDrag({id:null,pageId:null,fromCol:null});
-                    if(!dragId)return;
-                    if(fromCol!==q.key){
-                      updateAction(dragPageId,dragId,"effort",q.effort==="Low"?"Low":"High");
-                      updateAction(dragPageId,dragId,"impact",q.impact);
-                    }
-                    setMatColOrder(function(prev){
-                      var n=Object.assign({},prev);
-                      if(fromCol===q.key){
-                        var ids=orderedActions.map(function(a){return a.id;});
-                        var fi=ids.indexOf(dragId);ids.splice(fi,1);
-                        var adj=dropPos>fi?dropPos-1:dropPos;ids.splice(adj,0,dragId);
-                        n[q.key]=ids;
-                      } else {
-                        if(n[fromCol])n[fromCol]=n[fromCol].filter(function(id){return id!==dragId;});
-                        var tids=orderedActions.map(function(a){return a.id;});
-                        tids.splice(dropPos,0,dragId);n[q.key]=tids;
-                      }
-                      return n;
-                    });
-                  }}
-                  style={{background:isDropTarget?"rgba(0,0,0,0.04)":q.bg,border:"1.5px solid "+(isDropTarget?q.text:q.border),borderRadius:12,overflow:"hidden",display:"flex",flexDirection:"column",transition:"background 0.15s, border-color 0.15s"}}>
-                  <div style={{padding:"16px 20px",borderBottom:"1px solid "+q.border}}>
-                    <div style={{fontSize:11,fontWeight:700,color:q.text,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8,display:"flex",alignItems:"center",gap:5}}><q.Icon size={13} strokeWidth={2.5}/>{q.label}</div>
-                    <div style={{display:"flex",alignItems:"baseline",gap:3,marginBottom:4}}>
-                      <span style={{fontSize:32,fontWeight:800,color:q.text,lineHeight:1}}>{qDone}</span>
-                      <span style={{fontSize:16,fontWeight:700,color:q.text,opacity:0.4}}>/{qTotal}</span>
-                    </div>
-                    <div style={{fontSize:11,fontWeight:600,color:q.text,opacity:0.6,marginBottom:8}}>actions complete</div>
-                    <div style={{background:"rgba(0,0,0,0.1)",borderRadius:99,height:4,overflow:"hidden"}}>
-                      <div style={{width:qPct+"%",background:q.text,height:"100%",borderRadius:99,transition:"width 0.4s"}}/>
-                    </div>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12}}>
+          {priorityLevels.map(function(pri){
+            var pc=pCfg[pri]||pCfg.Medium;
+            var priPages=auditData.filter(function(p){return p.priority===pri;});
+            var priTotal=priPages.reduce(function(s,p){return s+p.actions.length;},0);
+            var priDone=priPages.reduce(function(s,p){return s+p.actions.filter(function(a){return a.status==="done";}).length;},0);
+            var priPct=priTotal?Math.round(priDone/priTotal*100):0;
+            var priActions=priPages.reduce(function(acc,pg){return acc.concat(pg.actions.map(function(a){return Object.assign({},a,{pageLabel:pg.label,pageId:pg.id});}));},[] as any[]);
+            return(
+              <div key={pri} style={{background:pc.bg,border:"1.5px solid "+pc.border,borderRadius:12,overflow:"hidden"}}>
+                <div style={{padding:"16px 20px",borderBottom:"1px solid "+pc.border}}>
+                  <div style={{fontSize:11,fontWeight:700,color:pc.text,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8}}>{pri}</div>
+                  <div style={{display:"flex",alignItems:"baseline",gap:3,marginBottom:4}}>
+                    <span style={{fontSize:32,fontWeight:800,color:pc.text,lineHeight:1}}>{priDone}</span>
+                    <span style={{fontSize:16,fontWeight:700,color:pc.text,opacity:0.4}}>/{priTotal}</span>
                   </div>
-                  <div style={{padding:"10px 12px",display:"flex",flexDirection:"column",gap:4,flex:1,minHeight:60}}>
-                    {orderedActions.length===0
-                      ?<div style={{fontSize:12,color:q.text,opacity:0.45,fontStyle:"italic",textAlign:"center",padding:"16px 0"}}>{isDropTarget?"Drop here":"None yet"}</div>
-                      :orderedActions.map(function(a,actionIdx){
-                        var done=a.status==="done";
-                        var isDragging=matDrag.id===a.id;
-                        return(
-                          <div key={a.id}>
-                            {isDropTarget&&matDropIdx===actionIdx&&!isDragging&&<DropLine/>}
-                            <div
-                              draggable
-                              onDragStart={function(e){e.dataTransfer.effectAllowed="move";setMatDrag({id:a.id,pageId:a.pageId,fromCol:q.key});}}
-                              onDragEnd={function(){setMatDrag({id:null,pageId:null,fromCol:null});setMatDropTarget(null);setMatDropIdx(null);}}
-                              onDragOver={function(e){
-                                e.preventDefault();e.stopPropagation();
-                                var rect=(e.currentTarget as HTMLDivElement).getBoundingClientRect();
-                                var insertAt=e.clientY<rect.top+rect.height/2?actionIdx:actionIdx+1;
-                                setMatDropTarget(q.key);setMatDropIdx(insertAt);
-                              }}
-                              style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(0,0,0,0.07)",borderRadius:8,padding:"8px 10px",display:"flex",alignItems:"flex-start",gap:8,cursor:"grab",opacity:isDragging?0.35:1,transition:"opacity 0.15s"}}>
-                              <GripVertical size={13} color={C.grey5} style={{flexShrink:0,marginTop:2}}/>
-                              <div onClick={function(){var order=["todo","inprogress","done"];var next=order[(order.indexOf(a.status)+1)%order.length];setActionStatus(a.pageId,a.id,next);}} style={{cursor:"pointer",flexShrink:0,paddingTop:1}}>
-                                <span style={{background:statusCfg[a.status].bg,color:statusCfg[a.status].text,border:"1px solid "+statusCfg[a.status].border,fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>{statusCfg[a.status].label}</span>
-                              </div>
-                              <div style={{flex:1,minWidth:0}}>
-                                <div style={{fontSize:12,fontWeight:700,color:done?C.grey6:C.offBlack,textDecoration:done?"line-through":"none",lineHeight:1.4}}>{a.text}</div>
-                                <div style={{fontSize:10,color:q.text,opacity:0.7,marginTop:2}}>{a.pageLabel}</div>
-                              </div>
-                            </div>
-                            {isDropTarget&&actionIdx===orderedActions.length-1&&matDropIdx===orderedActions.length&&<DropLine/>}
-                          </div>
-                        );
-                      })
-                    }
+                  <div style={{fontSize:11,fontWeight:600,color:pc.text,opacity:0.6,marginBottom:8}}>actions complete</div>
+                  <div style={{background:"rgba(0,0,0,0.1)",borderRadius:99,height:4,overflow:"hidden"}}>
+                    <div style={{width:priPct+"%",background:pc.text,height:"100%",borderRadius:99,transition:"width 0.4s"}}/>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-          {allA.filter(function(a){return !a.effort;}).length>0&&(
-            <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:16}}>
-              <div style={{marginBottom:10}}>
-                <div style={{fontSize:13,fontWeight:800,color:C.offBlack}}>Effort not yet set <span style={{fontWeight:600,color:C.grey6}}>({allA.filter(function(a){return !a.effort;}).length})</span></div>
-                <div style={{fontSize:12,color:C.grey6,marginTop:2}}>Set effort on each action in List view to place it in the matrix.</div>
+                <div style={{padding:"10px 12px",display:"flex",flexDirection:"column",gap:4}}>
+                  {priActions.length===0
+                    ?<div style={{fontSize:12,color:pc.text,opacity:0.45,fontStyle:"italic",textAlign:"center",padding:"16px 0"}}>No actions</div>
+                    :priActions.map(function(a){
+                      var done=a.status==="done";
+                      return(
+                        <div key={a.id} style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(0,0,0,0.07)",borderRadius:8,padding:"8px 10px",display:"flex",alignItems:"flex-start",gap:8}}>
+                          <div onClick={function(){var order=["todo","inprogress","done"];var next=order[(order.indexOf(a.status)+1)%order.length];setActionStatus(a.pageId,a.id,next);}} style={{cursor:"pointer",flexShrink:0,paddingTop:1}}>
+                            <span style={{background:statusCfg[a.status].bg,color:statusCfg[a.status].text,border:"1px solid "+statusCfg[a.status].border,fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>{statusCfg[a.status].label}</span>
+                          </div>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:12,fontWeight:700,color:done?C.grey6:C.offBlack,textDecoration:done?"line-through":"none",lineHeight:1.4}}>{a.text}</div>
+                            <div style={{fontSize:10,color:pc.text,opacity:0.7,marginTop:2}}>{a.pageLabel}</div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  }
+                </div>
               </div>
-              <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                {allA.filter(function(a){return !a.effort;}).map(function(a){return(
-                  <div key={a.id} style={{background:C.grey3,borderRadius:8,padding:"8px 12px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                    <span style={{background:statusCfg[a.status].bg,color:statusCfg[a.status].text,border:"1px solid "+statusCfg[a.status].border,fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,flexShrink:0}}>{statusCfg[a.status].label}</span>
-                    <span style={{fontSize:12,fontWeight:600,color:C.offBlack,flex:1,minWidth:100}}>{a.text}</span>
-                    <span style={{fontSize:11,color:C.grey6,marginRight:4}}>{a.pageLabel}</span>
-                    <div style={{display:"flex",gap:4,flexShrink:0}}>
-                      {["Low","Medium","High"].map(function(ef){return(
-                        <button key={ef} onClick={function(){updateAction(a.pageId,a.id,"effort",ef);}} style={{background:ef==="Low"?"#E6F9F2":ef==="High"?"#FFF0F0":C.white,color:ef==="Low"?"#005C3B":ef==="High"?"#CC0000":C.grey7,border:"1px solid "+(ef==="Low"?"#80D4B0":ef==="High"?"#FFAAAA":C.grey4),borderRadius:99,padding:"2px 10px",fontSize:10,fontWeight:700,cursor:"pointer"}}>{ef}</button>
-                      );})}
-                    </div>
-                  </div>
-                );})}
-              </div>
-            </div>
-          )}
+            );
+          })}
         </div>
       )}
     </PageWrap>
