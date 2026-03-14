@@ -394,8 +394,16 @@ function PageWrap({children,isMobile}){
   return(<div style={{background:C.grey2,height:"100%",overflow:"auto",padding:isMobile?"20px 16px 0":"40px 32px 0"}}><div style={{maxWidth:920,margin:"0 auto",paddingBottom:80}}>{children}</div></div>);
 }
 
-function BlackHero({eyebrow,title,desc,children,why}){
+function BlackHero({eyebrow,title,desc,children,why,right}){
   var [showWhy,setShowWhy]=useState(false);
+  var textCol=(
+    <>
+      {eyebrow&&<div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>{eyebrow}</div>}
+      <h1 style={{color:C.white,fontSize:26,fontWeight:800,margin:"0 0 8px",lineHeight:1.2}}>{title}</h1>
+      {desc&&<p style={{color:C.grey6,fontSize:15,lineHeight:1.7,margin:children?"0 0 16px":0}}>{desc}</p>}
+      {children}
+    </>
+  );
   return(
     <div style={{background:C.black,borderRadius:16,padding:"28px 32px",marginBottom:24,position:"relative"}}>
       {why&&(<>
@@ -411,10 +419,12 @@ function BlackHero({eyebrow,title,desc,children,why}){
           </div>
         )}
       </>)}
-      {eyebrow&&<div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>{eyebrow}</div>}
-      <h1 style={{color:C.white,fontSize:26,fontWeight:800,margin:"0 0 8px",lineHeight:1.2}}>{title}</h1>
-      {desc&&<p style={{color:C.grey6,fontSize:15,lineHeight:1.7,margin:children?"0 0 16px":0}}>{desc}</p>}
-      {children}
+      {right?(
+        <div style={{display:"flex",alignItems:"center",gap:0,flexWrap:"wrap"}}>
+          <div style={{flex:1,minWidth:220}}>{textCol}</div>
+          <div style={{flexShrink:0,paddingLeft:36,borderLeft:"1px solid rgba(255,255,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center"}}>{right}</div>
+        </div>
+      ):textCol}
     </div>
   );
 }
@@ -1646,20 +1656,18 @@ function FeedbackPage({feedback,onDeleteFeedback,onSubmit,onEditFeedback}){
   var avgRating=ratingItems.length>0?ratingItems.reduce(function(s:number,fb:any){return s+fb.rating;},0)/ratingItems.length:0;
   return(
     <PageWrap isMobile={isMobile}>
-      <BlackHero eyebrow="Team input" title="Feedback" desc="Ratings and notes from the team — everything submitted through the feedback form lives here.">{ratingItems.length>0&&(
-        <div style={{display:"flex",alignItems:"center",gap:20,paddingTop:16,borderTop:"1px solid rgba(255,255,255,0.08)"}}>
-          <div style={{display:"flex",alignItems:"baseline",gap:6}}>
-            <span style={{fontSize:36,fontWeight:800,color:C.white,lineHeight:1}}>{avgRating.toFixed(1)}</span>
-            <span style={{fontSize:13,color:"rgba(255,255,255,0.35)"}}>/ 5</span>
+      <BlackHero eyebrow="Team input" title="Feedback" desc="Ratings and notes from the team — everything submitted through the feedback form lives here." right={ratingItems.length>0?(
+        <div style={{textAlign:"center",padding:"0 8px"}}>
+          <div style={{display:"flex",alignItems:"baseline",justifyContent:"center",gap:6,marginBottom:10}}>
+            <span style={{fontSize:44,fontWeight:800,color:C.white,lineHeight:1}}>{avgRating.toFixed(1)}</span>
+            <span style={{fontSize:14,color:"rgba(255,255,255,0.35)"}}>/ 5</span>
           </div>
-          <div>
-            <div style={{display:"flex",gap:3,marginBottom:5}}>
-              {[1,2,3,4,5].map(function(n){var filled=n<=Math.round(avgRating);return(<Star key={n} size={18} fill={filled?C.pink:"none"} stroke={filled?C.pink:"rgba(255,255,255,0.2)"} strokeWidth={1.5}/>);})}
-            </div>
-            <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",fontWeight:500}}>from {ratingItems.length} rating{ratingItems.length===1?"":"s"}</div>
+          <div style={{display:"flex",gap:4,justifyContent:"center",marginBottom:6}}>
+            {[1,2,3,4,5].map(function(n){var filled=n<=Math.round(avgRating);return(<Star key={n} size={20} fill={filled?C.pink:"none"} stroke={filled?C.pink:"rgba(255,255,255,0.2)"} strokeWidth={1.5}/>);})}
           </div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",fontWeight:500}}>from {ratingItems.length} rating{ratingItems.length===1?"":"s"}</div>
         </div>
-      )}</BlackHero>
+      ):undefined}/>
       <div style={{marginBottom:20}}>
         {!showForm?(
           <button onClick={function(){setShowForm(true);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><Plus size={15}/>Add feedback</button>
