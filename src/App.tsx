@@ -2163,35 +2163,92 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
     var obj=visiblePages.find(function(p){return p.url===selectedPage;});
     var pageLabel=selectedPage==="all"?"the gwi.com website overall":(obj?obj.label+" page ("+selectedPage+")":selectedPage);
 
-    var personaCtx="";
-    personas.forEach(function(p){personaCtx+="- "+p.label+" ("+p.tagline+"): Entry via "+p.entry+". Drives: "+p.drives+". Bugs: "+p.bugs+". Website needs: "+p.website+".\n";});
-    var lifecycleCtx="";
-    stages.forEach(function(s){lifecycleCtx+="- "+s.label+": Goal: "+s.gwi_goal+". Anxiety: "+s.anxiety+".\n";});
-
     var p="You are a UX strategist auditing "+pageLabel+" for gwi.com.\n\n";
 
     if(hasCsvFiles){p+="=== UPLOADED DATA ===\n";csvFiles.forEach(function(f){p+="File: "+f.name+"\n"+f.text.slice(0,3000)+(f.text.length>3000?"\n[truncated]":"")+"\n";});p+="=== END DATA ===\n\n";}
     if(hasHeatmaps){p+="Heatmap images are attached. Red/orange = high engagement, blue/grey = low.\n\n";}
 
-    p+="PERSONAS: "+personas.map(function(pe){return pe.label+" ("+pe.tagline+")";}).join("; ")+".\n\n";
+    // Full persona data
+    p+="=== PERSONAS ("+personas.length+") ===\n";
+    personas.forEach(function(pe){
+      p+="— "+pe.label+": \""+pe.tagline+"\"\n";
+      if(pe.entry)p+="  Entry: "+pe.entry+"\n";
+      if(pe.who)p+="  Who: "+pe.who+"\n";
+      if(pe.what)p+="  What they do: "+pe.what+"\n";
+      if(pe.drives)p+="  Drives: "+pe.drives+"\n";
+      if(pe.bugs)p+="  Bugs them: "+pe.bugs+"\n";
+      if(pe.grabs)p+="  Grabs attention: "+pe.grabs+"\n";
+      if(pe.concerns)p+="  Concerns: "+pe.concerns+"\n";
+      if(pe.whyUs)p+="  Why GWI: "+pe.whyUs+"\n";
+      if(pe.platform)p+="  Platform behaviour: "+pe.platform+"\n";
+      if(pe.website)p+="  Website needs: "+pe.website+"\n";
+      p+="\n";
+    });
 
+    // Full lifecycle stage data
+    p+="=== LIFECYCLE STAGES ("+stages.length+") ===\n";
+    stages.forEach(function(s){
+      p+="— "+s.label+(s.highlight?" [FOCUS STAGE]":"")+"\n";
+      if(s.gwi_goal)p+="  GWI goal: "+s.gwi_goal+"\n";
+      if(s.hmw)p+="  How Might We: "+s.hmw+"\n";
+      if(s.signupNote)p+="  Website role: "+s.signupNote+"\n";
+      if(s.push)p+="  Push: "+s.push+"\n";
+      if(s.pull)p+="  Pull: "+s.pull+"\n";
+      if(s.habit)p+="  Habit: "+s.habit+"\n";
+      if(s.anxiety)p+="  Anxiety: "+s.anxiety+"\n";
+      p+="\n";
+    });
+
+    // Journey steps per persona
+    var hasJourneys=personas.some(function(pe){return (journeys[pe.id]||[]).length>0;});
+    if(hasJourneys){
+      p+="=== CUSTOMER JOURNEYS ===\n";
+      personas.forEach(function(pe){
+        var pj=journeys[pe.id]||[];
+        if(!pj.length)return;
+        p+=pe.label+":\n";
+        pj.forEach(function(step){
+          p+="  "+step.stage+": "+step.note;
+          if(step.pages&&step.pages.length)p+=" [pages: "+step.pages.join(", ")+"]";
+          p+="\n";
+        });
+        p+="\n";
+      });
+    }
+
+    // Active client list grouped by type
+    var activeClients=(clientList as any[]).filter(function(c){return !c.notes.toLowerCase().includes("no longer");});
+    if(activeClients.length>0){
+      p+="=== ACTIVE GWI CLIENTS ("+activeClients.length+") ===\n";
+      p+="Use this list when recommending social proof, logo walls, or sector-specific use cases.\n";
+      var byType:{[key:string]:any[]}={};
+      activeClients.forEach(function(c){if(!byType[c.type])byType[c.type]=[];byType[c.type].push(c);});
+      Object.keys(byType).forEach(function(type){
+        p+=type+"s: "+byType[type].map(function(c){return c.name+(c.hasCase?" (case study)":"");}).join(", ")+"\n";
+      });
+      p+="\n";
+    }
+
+    // Case studies / proof points
     if((caseStudies as any[]).length>0){
-      p+="REAL GWI CUSTOMER PROOF POINTS — use these when relevant in SHOWS and CHANGE fields to ground recommendations in specific, credible outcomes rather than generic best practice:\n\n";
+      p+="=== REAL GWI CUSTOMER PROOF POINTS ===\n";
+      p+="Use these in SHOWS and CHANGE fields to ground recommendations in specific, credible outcomes:\n\n";
       (caseStudies as any[]).forEach(function(cs){
-        p+="- "+cs.company+" ("+cs.sector+"): "+cs.outcome;
+        p+="— "+cs.company+" ("+cs.sector+"): "+cs.outcome;
         if(cs.metric)p+=" Key metric: "+cs.metric+".";
         if(cs.quote)p+=" Quote: \""+cs.quote+"\"";
         p+="\n";
       });
-      p+="\nWhen a finding touches social proof, CTAs, use-case framing, speed-to-value, pitch-winning, or data credibility — reference the relevant proof point with the actual number. Prefer specific metrics over vague claims.\n\n";
+      p+="\nWhen a finding touches social proof, CTAs, use-case framing, speed-to-value, pitch-winning, or data credibility — reference the relevant proof point with the actual number.\n\n";
     }
 
-    p+="Produce exactly 12 UX findings for this page. Output ONLY the findings — no intro, no summary, no other sections.\n\n";
-    p+="Use this EXACT format for every finding (all 4 fields required):\n\n";
+    p+="=== AUDIT TASK ===\n";
+    p+="Produce exactly 12 UX findings for "+pageLabel+". Output ONLY the findings — no intro, no summary, no other sections.\n\n";
+    p+="Use this EXACT format for every finding (all fields required):\n\n";
     p+="FINDING: 1. Title of finding\n";
-    p+="SHOWS: What the evidence or observation shows\n";
-    p+="WHY: Why this is a problem for users\n";
-    p+="CHANGE: The specific fix recommended\n";
+    p+="SHOWS: What the current page does or fails to do\n";
+    p+="WHY: Why this is a problem — name the specific persona(s) and lifecycle stage(s) it blocks\n";
+    p+="CHANGE: The specific fix recommended (reference a proof point or client name where relevant)\n";
     p+="METRIC: Metric to track success\n\n";
     p+="FINDING: 2. Next finding title\n";
     p+="SHOWS: ...\n";
