@@ -3089,7 +3089,16 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
     var script='<script data-injected="1">'+clickScript+msgScript+initScript+'<\/script>';
     var editStyle='<style data-injected="1">[data-eh]{outline:1px dashed rgba(0,0,0,0.22)!important;cursor:text!important;}[contenteditable="true"]{outline:1.5px solid #FF0077!important;border-radius:2px;}<\/style>';
     var editScript='<script data-injected="1">(function(){if(window.__ei)return;window.__ei=1;var T=["H1","H2","H3","H4","H5","H6","P","A","BUTTON","LABEL","SPAN","STRONG","EM","LI","TD","TH"];var ed=null,or=null;function ge(el){while(el&&el!==document.body){if(T.indexOf(el.tagName)>=0&&!el.closest("[data-rec]"))return el;el=el.parentElement;}return null;}document.addEventListener("mouseover",function(e){var el=ge(e.target);if(el&&el!==ed)el.setAttribute("data-eh","1");});document.addEventListener("mouseout",function(e){var el=ge(e.target);if(el&&el!==ed)el.removeAttribute("data-eh");});document.addEventListener("dblclick",function(e){var el=ge(e.target);if(!el)return;e.preventDefault();e.stopPropagation();if(ed&&ed!==el){ed.contentEditable="false";ed=null;}el.removeAttribute("data-eh");or=el.innerHTML;el.contentEditable="true";el.focus();ed=el;},true);document.addEventListener("keydown",function(e){if(!ed)return;if(e.key==="Escape"){ed.innerHTML=or;ed.contentEditable="false";ed.removeAttribute("data-eh");ed=null;e.preventDefault();}if(e.key==="Enter"&&!e.shiftKey&&["H1","H2","H3","H4","H5","H6","BUTTON","LABEL"].indexOf(ed.tagName)>=0){ed.blur();e.preventDefault();}});document.addEventListener("paste",function(e){if(!ed)return;e.preventDefault();var t=(e.clipboardData||window.clipboardData).getData("text/plain");document.execCommand("insertText",false,t);});document.addEventListener("focusout",function(e){if(ed&&e.target===ed){ed.contentEditable="false";ed.removeAttribute("data-eh");ed=null;sv();}});function sv(){var inj=Array.from(document.querySelectorAll("[data-injected=\\"1\\"]"));inj.forEach(function(el){el.parentNode&&el.parentNode.removeChild(el);});document.querySelectorAll("[data-eh]").forEach(function(el){el.removeAttribute("data-eh");});document.querySelectorAll("[contenteditable]").forEach(function(el){el.removeAttribute("contenteditable");});var h="<!DOCTYPE html>"+document.documentElement.outerHTML;inj.forEach(function(el){try{document.body.appendChild(el);}catch(x){}});window.parent.postMessage({type:"wireframe-content-saved",html:h},"*");}})();<\/script>';
-    var idx=html.lastIndexOf("</body>");if(idx>=0)return html.slice(0,idx)+style+script+editStyle+editScript+html.slice(idx);return html+style+script+editStyle+editScript;
+    var lc=html.toLowerCase();
+    var headIdx=lc.lastIndexOf("</head>");
+    var bodyIdx=lc.lastIndexOf("</body>");
+    if(headIdx>=0&&bodyIdx>=0){
+      // Inject styles into <head>, scripts before </body> — safest, avoids landing inside a CSS block
+      return html.slice(0,headIdx)+style+editStyle+html.slice(headIdx,bodyIdx)+script+editScript+html.slice(bodyIdx);
+    }
+    if(bodyIdx>=0){return html.slice(0,bodyIdx)+style+script+editStyle+editScript+html.slice(bodyIdx);}
+    if(headIdx>=0){return html.slice(0,headIdx)+style+editStyle+html.slice(headIdx)+script+editScript;}
+    return html+style+script+editStyle+editScript;
   }
   var _ap=active&&auditData?auditData.find(function(p){return p.url===active.pageUrl;}):null;
   var activeActions=active&&active.actions&&active.actions.length?active.actions:(_ap?_ap.actions:[]);
