@@ -1372,12 +1372,15 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
                             onDragEnd={function(){matrixDragRef.current=null;setMatrixDropTarget(null);}}
                             style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(0,0,0,0.07)",borderRadius:8,padding:"8px 10px",display:"flex",alignItems:"flex-start",gap:8,marginBottom:4,opacity:isDragging?0.4:1,cursor:"grab",transition:"opacity 0.15s"}}>
                             <div style={{color:C.grey5,fontSize:12,flexShrink:0,paddingTop:2,userSelect:"none"}}>⠿</div>
-                            <div onClick={function(){var order=["todo","inprogress","done"];var next=order[(order.indexOf(a.status)+1)%order.length];setActionStatus(a.pageId,a.id,next);}} style={{cursor:"pointer",flexShrink:0,paddingTop:1}}>
-                              <span style={{background:statusCfg[a.status].bg,color:statusCfg[a.status].text,border:"1px solid "+statusCfg[a.status].border,fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>{statusCfg[a.status].label}</span>
-                            </div>
                             <div style={{flex:1,minWidth:0}}>
-                              <div style={{fontSize:12,fontWeight:700,color:done?C.grey6:C.offBlack,textDecoration:done?"line-through":"none",lineHeight:1.4}}>{a.text}</div>
-                              <div style={{fontSize:10,color:pc.text,opacity:0.7,marginTop:2}}>{a.pageLabel}</div>
+                              <div style={{fontSize:12,fontWeight:700,color:done?C.grey6:C.offBlack,textDecoration:done?"line-through":"none",lineHeight:1.4,marginBottom:5}}>{a.text}</div>
+                              <div style={{fontSize:10,color:pc.text,opacity:0.7,marginBottom:5}}>{a.pageLabel}</div>
+                              <div style={{display:"flex",alignItems:"center",gap:5}}>
+                                <div onClick={function(){var order=["todo","inprogress","done"];var next=order[(order.indexOf(a.status)+1)%order.length];setActionStatus(a.pageId,a.id,next);}} style={{cursor:"pointer",flexShrink:0}}>
+                                  <span style={{background:statusCfg[a.status].bg,color:statusCfg[a.status].text,border:"1px solid "+statusCfg[a.status].border,fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99}}>{statusCfg[a.status].label}</span>
+                                </div>
+                                {a.effort&&<span style={{background:a.effort==="Low"?"#E6F9F2":a.effort==="High"?"#FFF0F0":C.grey3,color:a.effort==="Low"?"#005C3B":a.effort==="High"?"#CC0000":C.grey8,border:"1px solid "+(a.effort==="Low"?"#80D4B0":a.effort==="High"?"#FFAAAA":C.grey5),fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:99,flexShrink:0}}>{a.effort} effort</span>}
+                              </div>
                             </div>
                           </div>
                         </div>
