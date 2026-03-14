@@ -2775,7 +2775,7 @@ function GuidePage(){
       <BlackHero eyebrow="GWI Website - UX" title="How to use" desc="A quick walkthrough of every section in the tool."/>
       {[
         {step:"1",title:"Set up your pages",desc:"Go to Settings → Pages and make sure all the pages you want to audit are listed. You can add, hide, or delete pages. These pages drive the audit, recommendations, and analytics — so keep them up to date."},
-        {step:"2",title:"Run a UX audit",desc:"Go to UX Audit and select a page to audit. Choose the relevant personas and lifecycle stage, then click Generate. Claude will scan the page against UX best practices and output a structured set of findings."},
+        {step:"2",title:"Run a UX audit",desc:"Go to UX Audit, select a page, and click Generate. Claude receives everything you've configured in Settings: the full detail of all 5 personas (entry points, drives, anxieties, what they need from the website), all 9 lifecycle stages (goals, push/pull/habit/anxiety per stage, website role), and every customer journey step mapped per persona.\n\nIt also receives your active client list — so it can suggest specific logo walls and sector-relevant proof — and your saved case studies, so CHANGE recommendations reference real GWI customer outcomes with actual metrics rather than generic best practice.\n\nEvery finding follows the same format: SHOWS (what the page currently does), WHY (which persona and lifecycle stage it blocks, by name), CHANGE (the specific fix), and METRIC (how to measure success)."},
         {step:"3",title:"Add recommendations",desc:"From the UX Audit results, click 'Add to Recommendations' next to any finding. This adds it to the Recommendations tracker where you can manage status, assign effort, and track progress."},
         {step:"4",title:"Generate a wireframe",desc:"On any page in the Recommendations view, click 'Generate Wireframe'. Claude will produce a low-fidelity wireframe showing exactly how the improved page could look. Wireframes are saved and viewable in the Wireframes section."},
         {step:"5",title:"Track progress",desc:"Use the Recommendations page to manage actions. Toggle between List and Matrix views. Click the priority cards (Critical / High / Medium / Low) to jump into the matrix. Mark actions as To Do, In Progress, or Done."},
@@ -2789,7 +2789,7 @@ function GuidePage(){
           </div>
           <div>
             <div style={{fontSize:15,fontWeight:700,color:C.black,marginBottom:6}}>{item.title}</div>
-            <div style={{fontSize:14,color:C.grey7,lineHeight:1.7}}>{item.desc}</div>
+            {item.desc.split("\n\n").map(function(para,i){return <div key={i} style={{fontSize:14,color:C.grey7,lineHeight:1.7,marginBottom:i<item.desc.split("\n\n").length-1?10:0}}>{para}</div>;})}
           </div>
         </div>
       );})}
