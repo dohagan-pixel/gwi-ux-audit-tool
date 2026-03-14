@@ -2190,7 +2190,7 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
 }
 
 function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,journeys,setJourneys,gaCards,setGaCards}){
-  var [tab,setTab]=useState("pages");
+  var [tab,setTab]=useState("home");
   var [newPage,setNewPage]=useState({url:"",label:"",section:"Products"});
   var [editingPersona,setEditingPersona]=useState(null);
   var [personaDraft,setPersonaDraft]=useState({});
@@ -2224,11 +2224,40 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
   return(
     <PageWrap isMobile={isMobile}>
       <BlackHero eyebrow="GWI Website - UX" title="Settings" desc="The quality of every audit depends on the data behind it."/>
-      <div style={{display:"flex",gap:4,marginBottom:28,background:C.grey4,borderRadius:10,padding:4,width:isMobile?"100%":"fit-content",overflowX:"auto"}}>
-        {[["pages","Pages"],["personas","Personas"],["stages","Lifecycle Stages"],["journeys","Journey Steps"],["ga","Google Analytics"]].map(function(x){return(
-          <button key={x[0]} onClick={function(){setTab(x[0]);}} style={{padding:"8px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:tab===x[0]?C.pink:"transparent",color:tab===x[0]?C.white:C.grey7,flexShrink:0,whiteSpace:"nowrap"}}>{x[1]}</button>
-        );})}
-      </div>
+      {tab==="home"&&(function(){
+        var totalSteps=Object.values(journeys).reduce(function(n,s){return n+(s as any[]).length;},0);
+        var _sc=[
+          {id:"pages",icon:<FileText size={20}/>,label:"Pages",desc:"Manage the pages included in the audit framework. These drive every audit, recommendation, and analytics card.",stat:pages.length+" page"+(pages.length===1?"":"s")},
+          {id:"personas",icon:<Users size={20}/>,label:"Personas",desc:"Define and maintain the personas that shape how each page is evaluated during an audit.",stat:personas.length+" persona"+(personas.length===1?"":"s")},
+          {id:"stages",icon:<Layers size={20}/>,label:"Lifecycle Stages",desc:"Configure the stages visitors move through — from first click to sign-up and beyond.",stat:stages.length+" stage"+(stages.length===1?"":"s")},
+          {id:"journeys",icon:<Map size={20}/>,label:"Journey Steps",desc:"Map out the steps for each persona across the customer lifecycle.",stat:totalSteps+" step"+(totalSteps===1?"":"s")},
+          {id:"ga",icon:<BarChart2 size={20}/>,label:"Google Analytics",desc:"Set up GA4 report links that appear on the Analytics page for quick access.",stat:gaCards.length+" report"+(gaCards.length===1?"":"s")},
+        ];
+        return(
+          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
+            {_sc.map(function(s){return(
+              <button key={s.id} onClick={function(){setTab(s.id);}} style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"20px 22px",cursor:"pointer",textAlign:"left",display:"flex",flexDirection:"column",gap:0,transition:"box-shadow 0.15s,border-color 0.15s"}} onMouseEnter={function(e){e.currentTarget.style.borderColor=C.pink;e.currentTarget.style.boxShadow="0 4px 16px rgba(255,0,119,0.1)";}} onMouseLeave={function(e){e.currentTarget.style.borderColor=C.grey4;e.currentTarget.style.boxShadow="none";}}>
+                <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+                  <div style={{background:"#FFEEF6",borderRadius:10,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:C.pink}}>{s.icon}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:15,fontWeight:700,color:C.black,marginBottom:2}}>{s.label}</div>
+                    <div style={{fontSize:12,color:C.grey6,fontWeight:500}}>{s.stat}</div>
+                  </div>
+                  <ArrowRight size={15} color={C.grey5} style={{flexShrink:0}}/>
+                </div>
+                <div style={{fontSize:13,color:C.grey7,lineHeight:1.65}}>{s.desc}</div>
+              </button>
+            );})}
+          </div>
+        );
+      })()}
+      {tab!=="home"&&(
+        <div style={{display:"flex",gap:4,marginBottom:28,background:C.grey4,borderRadius:10,padding:4,width:isMobile?"100%":"fit-content",overflowX:"auto"}}>
+          {[["home","← Overview"],["pages","Pages"],["personas","Personas"],["stages","Lifecycle Stages"],["journeys","Journey Steps"],["ga","Google Analytics"]].map(function(x){return(
+            <button key={x[0]} onClick={function(){setTab(x[0]);}} style={{padding:"8px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:tab===x[0]?C.pink:"transparent",color:tab===x[0]?C.white:C.grey7,flexShrink:0,whiteSpace:"nowrap"}}>{x[1]}</button>
+          );})}
+        </div>
+      )}
       {tab==="pages"&&(
         <div>
           <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:20,marginBottom:20}}>
