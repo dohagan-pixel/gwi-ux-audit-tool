@@ -2112,6 +2112,19 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
 
     p+="PERSONAS: "+personas.map(function(pe){return pe.label+" ("+pe.tagline+")";}).join("; ")+".\n\n";
 
+    p+="REAL GWI CUSTOMER PROOF POINTS — use these when relevant in SHOWS and CHANGE fields to ground recommendations in specific, credible outcomes rather than generic best practice:\n\n";
+    p+="Speed to insight / agency pitching:\n";
+    p+="- Barefoot Proximity reduced research turnaround by 35% and cut team size from 5 people to 1-2 per project using GWI. They needed the 'why' behind audience behaviour, not just the what and where.\n";
+    p+="- Kiwi Digital cut project turnaround from 5 days to 2 days by using GWI to build 360-degree consumer views combining demographics with attitudes, lifestyles and emotional drivers.\n";
+    p+="- Brilliant Noise win pitches using GWI as 'the proof point and core of the pitch'. Quote: 'Being able to augment existing personas without paying for primary research is amazing.' and 'GWI has a better UX and is better at modelling personas than any other tool.'\n\n";
+    p+="Lead generation & content marketing:\n";
+    p+="- VERB Brands used GWI to commission custom research on 1,000+ affluent consumers, turned the findings into a free 'State of Luxe' report, and achieved: 36% increase in inbound leads, 221% YoY inbound lead growth, 53% increase in website traffic, 27% email list growth.\n\n";
+    p+="Ad sales & first-party data validation:\n";
+    p+="- Nextdoor built a public Insights Hub combining their own first-party data with GWI consumer research, achieving a 197% increase in year-on-year web page views and becoming an ANA Genius Award finalist. Quote: 'GWI's data helps support and validate our internal first-party data.'\n\n";
+    p+="Enterprise democratisation / multi-market:\n";
+    p+="- City Football Group gave all 8 clubs equal access to consistent market research using GWI, transforming how they pitch sponsorships. Quote: 'GWI provides equality of data across all markets — it's transformed the way we talk about our sponsorship offering for clubs that previously had no research budget.'\n\n";
+    p+="When a finding touches social proof, CTAs, use-case framing, speed-to-value, pitch-winning, or data credibility — reference the relevant proof point with the actual number. Prefer specific metrics over vague claims.\n\n";
+
     p+="Produce exactly 12 UX findings for this page. Output ONLY the findings — no intro, no summary, no other sections.\n\n";
     p+="Use this EXACT format for every finding (all 4 fields required):\n\n";
     p+="FINDING: 1. Title of finding\n";
