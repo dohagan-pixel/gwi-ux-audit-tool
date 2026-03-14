@@ -3098,7 +3098,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   useEffect(function(){_editSaveRef.current={wireframes:wireframes,activeId:activeId,onUpdateWireframe:onUpdateWireframe};});
   useEffect(function(){if(contentSavedTs===0)return;var t=setTimeout(function(){setContentSavedTs(0);},2000);return function(){clearTimeout(t);};},[contentSavedTs]);
   useEffect(function(){function onMsg(e:any){if(!e.data||e.data.type!=="wireframe-content-saved")return;var html=e.data.html;var r=_editSaveRef.current;var cur=(r.wireframes||[]).find(function(w:any){return w.id===r.activeId;});if(!cur)return;var updated=Object.assign({},cur,{html:html});setWireframes(function(prev:any[]){return prev.map(function(w:any){return w.id===r.activeId?updated:w;});});if(r.onUpdateWireframe)r.onUpdateWireframe(updated);setContentSavedTs(Date.now());}window.addEventListener("message",onMsg);return function(){window.removeEventListener("message",onMsg);};},[]);
-  function injectRecScript(html:string):string{
+  function injectRecScript(html:string,actions?:any[]):string{
     if(!html)return"";
     // ── Cleanup: strip any previously-injected or corrupted content ───────────
     html=html.replace(/<style\s[^>]*data-injected[^>]*>[\s\S]*?<\/style>/gi,"");
@@ -3148,6 +3148,26 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
           +['in','𝕏','ig','yt'].map(function(lbl){return'<div style="width:30px;height:30px;background:#444;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;"><span style="color:#999;font-size:11px;">'+lbl+'</span></div>';}).join('')
           +'</div></div></div>';
         doc.body.appendChild(footerEl);
+      }
+      // ── Guarantee every recommendation has a section — inject missing ones ──
+      if(actions&&actions.length){
+        var presentRecs=new Set(Array.from(doc.querySelectorAll('[data-rec]')).map(function(el){return parseInt(el.getAttribute('data-rec')||'0');}).filter(function(n){return n>0;}));
+        var footerNode=doc.querySelector('[data-gwi-footer]');
+        actions.forEach(function(action:any,idx:number){
+          var num=idx+1;
+          if(presentRecs.has(num))return;
+          var rawTitle=action.text||('Recommendation '+num);
+          var title=rawTitle.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          var isEven=idx%2===0;
+          var bg=isEven?'#f4f4f6':'#eeeef2';
+          var imgBlock='<div style="background:#ddd;border-radius:8px;height:260px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:13px;font-weight:600;font-family:Arial,sans-serif;">Image / Mockup</div>';
+          var textBlock='<div style="position:relative;"><span data-rec="'+num+'" style="position:absolute;top:0;right:0;background:#FF0077;color:#fff;display:inline-flex;align-items:center;padding:0 10px;height:28px;border-radius:6px;font-size:11px;font-weight:700;font-family:Arial,sans-serif;cursor:pointer;">💡</span><div style="font-size:10px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">// REC '+num+': RECOMMENDATION</div><h2 style="font-size:22px;font-weight:800;color:#1a1a1a;margin:0 0 14px;line-height:1.35;padding-right:48px;">'+title+'</h2><p style="font-size:14px;color:#666;line-height:1.75;margin:0 0 22px;">Implementing this recommendation will improve the user experience and address the identified UX friction on this page.</p><div style="display:flex;gap:10px;"><a href="#" style="background:#FF0077;color:#fff;padding:11px 22px;border-radius:6px;font-weight:700;font-size:13px;text-decoration:none;display:inline-block;">Apply change</a><a href="#" style="background:transparent;color:#FF0077;padding:11px 22px;border-radius:6px;font-weight:700;font-size:13px;text-decoration:none;border:2px solid #FF0077;display:inline-block;">Learn more</a></div></div>';
+          var secEl=doc.createElement('section');
+          secEl.setAttribute('data-section-rec',String(num));
+          secEl.style.cssText='background:'+bg+';padding:60px 0;font-family:Arial,sans-serif;';
+          secEl.innerHTML='<div style="max-width:1200px;margin:0 auto;padding:0 40px;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;">'+(isEven?imgBlock+textBlock:textBlock+imgBlock)+'</div></div>';
+          if(footerNode){doc.body.insertBefore(secEl,footerNode);}else{doc.body.appendChild(secEl);}
+        });
       }
       // Scripts → end of <body> (after footer)
       var sc1=doc.createElement('script');sc1.setAttribute('data-injected','1');sc1.textContent=recJs;doc.body.appendChild(sc1);
@@ -3336,7 +3356,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
             </div>
           </div>
           <div style={{flex:1,padding:isMobile?"16px":"24px 28px 28px",minHeight:0,display:"flex",flexDirection:"column",alignItems:viewport==="mobile"?"center":"stretch"}}>
-            <iframe ref={iframeRef} srcDoc={injectRecScript(active.html)} title="Wireframe" sandbox="allow-same-origin allow-scripts" onLoad={function(){if(iframeRef.current&&iframeRef.current.contentWindow){iframeRef.current.contentWindow.postMessage({type:"set-rec-states",greenRecs:greenRecs},"*");}}} style={viewport==="mobile"?{flex:1,width:390,maxWidth:"calc(100% - 32px)",border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}:{flex:1,border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}}/>
+            <iframe ref={iframeRef} srcDoc={injectRecScript(active.html,activeActions)} title="Wireframe" sandbox="allow-same-origin allow-scripts" onLoad={function(){if(iframeRef.current&&iframeRef.current.contentWindow){iframeRef.current.contentWindow.postMessage({type:"set-rec-states",greenRecs:greenRecs},"*");}}} style={viewport==="mobile"?{flex:1,width:390,maxWidth:"calc(100% - 32px)",border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}:{flex:1,border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}}/>
           </div>
           {activeRec!==null&&(
             <div onClick={function(){setActiveRec(null);}} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:20}}>
