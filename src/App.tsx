@@ -1396,9 +1396,12 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
   </>);
 }
 
-function AnalyticsPage({gaCards}){
+function AnalyticsPage({gaCards,setGaCards}){
   var [tab,setTab]=useState("ga");
   var [showNotice,setShowNotice]=useState(function(){try{return localStorage.getItem("analytics_notice_dismissed")!=="1";}catch(e){return true;}});
+  var [hoveredCard,setHoveredCard]=useState<string|null>(null);
+  var [editingCard,setEditingCard]=useState<any>(null);
+  var [editUrl,setEditUrl]=useState("");
   var isMobile=useWidth()<768;
   var CARD_ICONS_MAP={LayoutDashboard:<LayoutDashboard size={22}/>,Home:<Home size={22}/>,Puzzle:<Puzzle size={22}/>,DollarSign:<DollarSign size={22}/>,FileText:<FileText size={22}/>,Bot:<Bot size={22}/>,MousePointerClick:<MousePointerClick size={22}/>,GitMerge:<GitMerge size={22}/>,BarChart2:<BarChart2 size={22}/>,Layers:<Layers size={22}/>,Zap:<Zap size={22}/>,Brain:<Brain size={22}/>};
   return(
@@ -1426,18 +1429,40 @@ function AnalyticsPage({gaCards}){
               <span style={{fontSize:12,color:C.grey7,lineHeight:1.6}}><strong style={{color:C.grey8}}>Heads up:</strong> All GA4 links below are filtered to approximately the last 28 days. If you are exporting a CSV, update the date range in GA4 before downloading to make sure you get the full period you need.</span>
             </div>
             <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill,minmax(260px,1fr))",gap:16}}>
-              {(gaCards||[]).map(function(card){return(
-                <a key={card.id||card.title} href={card.url} target="_blank" rel="noreferrer"
-                  style={{display:"flex",flexDirection:"column",gap:8,background:C.white,border:"1.5px solid "+C.grey4,borderRadius:14,padding:20,textDecoration:"none",color:"inherit"}}
-                  onMouseEnter={function(e){e.currentTarget.style.borderColor="#FFE8EE";e.currentTarget.style.boxShadow="0 4px 16px rgba(255,0,119,0.06)";}}
-                  onMouseLeave={function(e){e.currentTarget.style.borderColor=C.grey4;e.currentTarget.style.boxShadow="none";}}>
-                  <div style={{color:C.pink}}>{CARD_ICONS_MAP[card.iconKey]||<BarChart2 size={22}/>}</div>
-                  <div style={{fontSize:17,fontWeight:800,color:C.offBlack}}>{card.title}</div>
-                  <p style={{fontSize:15,color:C.grey7,lineHeight:1.65,margin:0,flex:1}}>{card.desc}</p>
-                  <CardLink label="Open in GA4"/>
-                </a>
+              {(gaCards||[]).map(function(card){var ckey=card.id||card.title;var isHov=hoveredCard===ckey;return(
+                <div key={ckey} style={{position:"relative"}} onMouseEnter={function(){setHoveredCard(ckey);}} onMouseLeave={function(){setHoveredCard(null);}}>
+                  <a href={card.url} target="_blank" rel="noreferrer"
+                    style={{display:"flex",flexDirection:"column",gap:8,background:C.white,border:"1.5px solid "+C.grey4,borderRadius:14,padding:20,textDecoration:"none",color:"inherit",height:"100%",boxSizing:"border-box"}}
+                    onMouseEnter={function(e){e.currentTarget.style.borderColor="#FFE8EE";e.currentTarget.style.boxShadow="0 4px 16px rgba(255,0,119,0.06)";}}
+                    onMouseLeave={function(e){e.currentTarget.style.borderColor=C.grey4;e.currentTarget.style.boxShadow="none";}}>
+                    <div style={{color:C.pink}}>{CARD_ICONS_MAP[card.iconKey]||<BarChart2 size={22}/>}</div>
+                    <div style={{fontSize:17,fontWeight:800,color:C.offBlack}}>{card.title}</div>
+                    <p style={{fontSize:15,color:C.grey7,lineHeight:1.65,margin:0,flex:1}}>{card.desc}</p>
+                    <CardLink label="Open in GA4"/>
+                  </a>
+                  <button onClick={function(e){e.preventDefault();e.stopPropagation();setEditingCard(card);setEditUrl(card.url||"");}} title="Edit URL" style={{position:"absolute",top:10,right:10,background:C.grey3,border:"none",borderRadius:6,width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.grey7,opacity:isHov?1:0,transition:"opacity 0.15s,background 0.15s",pointerEvents:isHov?"auto":"none"}} onMouseEnter={function(e){e.currentTarget.style.background=C.grey5;e.currentTarget.style.color=C.white;}} onMouseLeave={function(e){e.currentTarget.style.background=C.grey3;e.currentTarget.style.color=C.grey7;}}><Cog size={13}/></button>
+                </div>
               );})}
             </div>
+            {editingCard&&(
+              <div onClick={function(){setEditingCard(null);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:24}}>
+                <div onClick={function(e){e.stopPropagation();}} style={{background:C.white,borderRadius:16,padding:"28px 32px",maxWidth:480,width:"100%",boxShadow:"0 8px 48px rgba(0,0,0,0.2)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
+                    <span style={{background:C.grey3,width:34,height:34,borderRadius:10,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Cog size={16} color={C.grey7}/></span>
+                    <h2 style={{fontSize:16,fontWeight:800,color:C.black,margin:0,flex:1}}>{editingCard.title}</h2>
+                    <button onClick={function(){setEditingCard(null);}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey6,fontSize:22,lineHeight:1,padding:"0 0 2px",display:"flex",alignItems:"center"}}>×</button>
+                  </div>
+                  <div style={{marginBottom:20}}>
+                    <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>GA4 URL</div>
+                    <input autoFocus value={editUrl} onChange={function(e){setEditUrl(e.target.value);}} placeholder="https://analytics.google.com/analytics/web/..." style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+C.grey4,borderRadius:8,fontSize:13,color:C.offBlack,boxSizing:"border-box",outline:"none",fontFamily:"inherit"}} onFocus={function(e){e.currentTarget.style.borderColor=C.pink;}} onBlur={function(e){e.currentTarget.style.borderColor=C.grey4;}}/>
+                  </div>
+                  <div style={{display:"flex",gap:10}}>
+                    <button onClick={function(){setEditingCard(null);}} style={{flex:1,background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancel</button>
+                    <button onClick={function(){if(setGaCards)setGaCards(function(prev){return prev.map(function(c){return c.id===editingCard.id?Object.assign({},c,{url:editUrl.trim()}):c;});});setEditingCard(null);}} style={{flex:2,background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Save URL</button>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
         {tab==="hotjar"&&(
@@ -3190,7 +3215,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="journey"&&<JourneyPage pages={pages} personas={personas} journeys={journeys} initialPersonaId={activePersonaForJourney} setView={setView} goToJourney={goToJourney}/>}
         {view==="flows"&&<UserFlowsPage setView={setView}/>}
         {view==="audit"&&<AuditPage personas={personas} pages={pages} auditData={auditData} setAuditData={setAuditData} onAddAction={function(){setShowAddAction(true);}} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} setView={setView}/>}
-        {view==="analytics"&&<AnalyticsPage gaCards={gaCards}/>}
+        {view==="analytics"&&<AnalyticsPage gaCards={gaCards} setGaCards={setGaCards}/>}
         {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit).catch(function(){});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
         {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id)).catch(function(){});}} onUpdateAudit={function(updated){if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",updated.id),updated).catch(function(){});}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
         {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards}/>}
