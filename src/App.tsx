@@ -1968,156 +1968,36 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
   );
 }
 
-function DataAccordion({personas,stages,journeys,isMobile}){
+function DataAccordion({personas,stages,journeys,isMobile,clientList,caseStudies}){
   var [open,setOpen]=useState(false);
-  var [activeTab,setActiveTab]=useState("personas");
-  var AFFINITY_CLUSTERS=[
-    {name:"Cost and Value Anxiety",theme:"Across every stage of the customer journey, cost is the single most persistent blocker to conversion.",insight:"The website needs to reframe spend as investment at every touchpoint — not just on the pricing page.",signals:[{text:"Cost is prohibitive",type:"Anxiety",stage:"Awareness",personas:["Insight Guru","Inspiration Hunter","Commercial Closer"]},{text:"Cost will be high — will we use it enough to get value for money?",type:"Anxiety",stage:"Acquisition",personas:["Commercial Closer","Strategic Leader"]},{text:"ROI, ROI, and more ROI",type:"Drives",stage:"Cross-stage",personas:["Commercial Closer"]}]},
-    {name:"Speed and Friction",theme:"Time pressure is a constant across all personas. Any unnecessary step between intent and value is a drop-off risk.",insight:"The website must eliminate friction at every stage — from discovery to sign-up to first use.",signals:[{text:"Lack of speed and unnecessary friction in their workflows",type:"Bugs",stage:"Cross-stage",personas:["Inspiration Hunter"]},{text:"They need to work at speed and cannot spend time learning a new tool",type:"Habit",stage:"First User Adoption",personas:["Inspiration Hunter","Commercial Closer"]}]},
-    {name:"Trust and Credibility",theme:"Before committing time or budget, every persona needs proof that GWI is credible, accurate and safe to rely on.",insight:"Credibility signals must be front-loaded across the homepage, /data, and /case-studies.",signals:[{text:"Data trustworthiness — if the data is wrong, they are wrong",type:"Concerns",stage:"Cross-stage",personas:["Insight Guru"]},{text:"Security, compliance, and data governance",type:"Concerns",stage:"Cross-stage",personas:["Data Integrator"]}]},
-    {name:"Self-Serve vs Sales Friction",theme:"Self-serve personas actively avoid sales conversations. Forcing them into a demo flow is one of the biggest conversion killers on the site.",insight:"The website's primary CTA needs to be Sign up for free, not Book a demo.",signals:[{text:"A way to self-serve platform trial access without needing a sales call",type:"Website need",stage:"Cross-stage",personas:["Insight Guru"]},{text:"The sales person might waste my time",type:"Anxiety",stage:"Evaluation",personas:["Insight Guru","Inspiration Hunter"]}]},
-    {name:"Blank Canvas Anxiety",theme:"When users do not know where to start, they do not start at all. First User Adoption is the highest-risk stage.",insight:"The website directly shapes what users expect when they log in for the first time.",signals:[{text:"The way this tool works is overwhelming and I cannot get my head around it",type:"Anxiety",stage:"First User Adoption",personas:["Insight Guru","Inspiration Hunter","Commercial Closer"]}]},
-  ];
-  var PERSONA_FIELDS=[["Who they are","who"],["What they do","what"],["What drives them","drives"],["What bugs them","bugs"],["What grabs their attention","grabs"],["What concerns them","concerns"],["Why they use us","whyUs"],["How they use the platform","platform"]];
-  var tabStyle=function(id){return{padding:"7px 14px",borderRadius:7,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",background:activeTab===id?C.pink:"transparent",color:activeTab===id?C.white:C.grey7,whiteSpace:"nowrap"};};
+  var activeClients=(clientList as any[]).filter(function(c){return !c.notes.toLowerCase().includes("no longer");});
+  var totalSteps=personas.reduce(function(n,pe){return n+(journeys[pe.id]||[]).length;},0);
   return(
     <div style={{marginBottom:32}}>
       <button onClick={function(){setOpen(!open);}} style={{width:"100%",background:C.white,border:"1.5px solid "+C.grey4,borderRadius:open?"14px 14px 0 0":"14px",padding:"18px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",textAlign:"left"}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <Brain size={20} color={C.grey7}/>
-          <div><div style={{fontSize:15,fontWeight:800,color:C.black}}>The data behind this audit</div><div style={{fontSize:12,color:C.grey7,marginTop:2}}>{personas.length} personas · {stages.length} lifecycle stages · 5 affinity clusters · journey maps</div></div>
+          <div>
+            <div style={{fontSize:15,fontWeight:800,color:C.black}}>The data behind this audit</div>
+            <div style={{fontSize:12,color:C.grey7,marginTop:2}}>{personas.length} personas · {stages.length} lifecycle stages · {totalSteps} journey steps · {activeClients.length} clients · {(caseStudies as any[]).length} case studies</div>
+          </div>
         </div>
         <span style={{fontSize:13,color:C.grey6,fontWeight:700}}>{open?"▲":"▼"}</span>
       </button>
       {open&&(
-        <div style={{border:"1.5px solid "+C.grey4,borderTop:"none",borderRadius:"0 0 14px 14px",overflow:"hidden",background:C.white}}>
-          <div style={{padding:"12px 16px",borderBottom:"1px solid "+C.grey4,display:"flex",gap:4,overflowX:"auto",background:C.grey2}}>
-            {[["personas","Personas"],["journeys","Journeys"],["lifecycle","Lifecycle Stages"],["affinity","Affinity Clusters"]].map(function(x){return <button key={x[0]} onClick={function(){setActiveTab(x[0]);}} style={tabStyle(x[0])}>{x[1]}</button>;})}
+        <div style={{border:"1.5px solid "+C.grey4,borderTop:"none",borderRadius:"0 0 14px 14px",background:C.white,padding:"20px 24px",display:"flex",flexDirection:"column",gap:16}}>
+          <div>
+            <div style={{fontSize:12,fontWeight:700,color:C.black,marginBottom:6}}>Personas & lifecycle</div>
+            <p style={{fontSize:13,color:C.grey7,lineHeight:1.7,margin:0}}>Every audit draws on the full detail of all {personas.length} personas — entry points, drives, bugs, what grabs their attention, concerns, why they use GWI, platform behaviour, and what they need from the website. All {stages.length} lifecycle stages are included: the GWI goal, the How Might We, the website's role at that stage, and the push, pull, habit, and anxiety a visitor feels.</p>
           </div>
-          {activeTab==="personas"&&personas.map(function(p,pi){
-            var col=getPersonaColor(p);
-            return(
-              <div key={p.id} style={{borderBottom:pi<personas.length-1?"1px solid "+C.grey4:"none"}}>
-                <div style={{background:C.black,padding:"14px 20px",display:"flex",alignItems:"flex-start",gap:12}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontWeight:700,fontSize:15,color:C.white}}>{p.label}</div>
-                    <div style={{fontSize:12,color:C.grey5,fontStyle:"italic",marginTop:2}}>{p.tagline}</div>
-                    <div style={{fontSize:12,color:C.grey6,marginTop:4}}>Entry: {p.entry}</div>
-                  </div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:4,justifyContent:"flex-end",maxWidth:280}}>{p.traits.map(function(t){return <span key={t} style={{background:C.offBlack,color:C.grey5,border:"1px solid "+C.grey8,fontSize:11,fontWeight:600,padding:"2px 6px",borderRadius:99}}>{t}</span>;})}</div>
-                </div>
-                <div style={{padding:"16px 20px",background:C.white}}>
-                  <div style={{background:"#FFEEF6",border:"1px solid #FF80BB",borderRadius:8,padding:12,marginBottom:12}}>
-                    <div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",marginBottom:6}}>What they want from our website</div>
-                    <p style={{color:C.offBlack,fontSize:12,lineHeight:1.6,margin:0}}>{p.website}</p>
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8}}>
-                    {PERSONA_FIELDS.filter(function(x){return !!p[x[1]];}).map(function(x){return(
-                      <div key={x[1]} style={{background:C.grey3,borderRadius:8,padding:10}}>
-                        <div style={{fontSize:10,fontWeight:700,color:C.grey8,textTransform:"uppercase",marginBottom:4}}>{x[0]}</div>
-                        <p style={{color:C.offBlack,fontSize:12,lineHeight:1.5,margin:0}}>{p[x[1]]}</p>
-                      </div>
-                    );})}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          {activeTab==="journeys"&&personas.map(function(p,pi){
-            var col=getPersonaColor(p);
-            var journey=journeys[p.id]||[];
-            return(
-              <div key={p.id} style={{borderBottom:pi<personas.length-1?"1px solid "+C.grey4:"none"}}>
-                <div style={{background:C.black,padding:"12px 20px",display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{width:10,height:10,borderRadius:"50%",background:col.bg,border:"1.5px solid "+col.border,flexShrink:0}}/>
-                  <div style={{fontWeight:700,fontSize:14,color:C.white,flex:1}}>{p.label}</div>
-                  <span style={{fontSize:11,color:C.grey6}}>{journey.length} stages · {journey.reduce(function(a,j){return a+j.pages.length;},0)} touchpoints</span>
-                </div>
-                <div style={{padding:"12px 20px 16px",background:C.white}}>
-                  {journey.length===0?<p style={{fontSize:12,color:C.grey6,fontStyle:"italic",margin:0}}>No journey steps recorded.</p>:journey.map(function(step,si){
-                    var sc=STAGE_COLORS[step.stage]||{bg:C.grey3,text:C.grey8,border:C.grey5};
-                    return(
-                      <div key={si} style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:si<journey.length-1?10:0}}>
-                        <div style={{display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0,marginTop:2}}>
-                          <div style={{width:20,height:20,borderRadius:"50%",background:C.white,border:"2px solid "+C.pink,fontSize:10,fontWeight:800,color:C.black,display:"flex",alignItems:"center",justifyContent:"center"}}>{si+1}</div>
-                          {si<journey.length-1&&<div style={{width:1,height:16,background:C.grey4,margin:"2px 0"}}/>}
-                        </div>
-                        <div style={{flex:1,background:C.grey3,borderRadius:8,padding:"8px 12px"}}>
-                          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4,flexWrap:"wrap"}}>
-                            <span style={{background:sc.bg,color:sc.text,border:"1px solid "+sc.border,fontSize:10,fontWeight:700,padding:"1px 7px",borderRadius:99}}>{step.stage}</span>
-                            <span style={{fontSize:11,color:C.grey7}}>{step.note}</span>
-                          </div>
-                          <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                            {step.pages.map(function(url){return <span key={url} style={{background:C.white,border:"1px solid "+C.grey5,fontSize:10,color:C.pink,padding:"1px 6px",borderRadius:4,fontFamily:"monospace"}}>{url.replace("https://gwi.ai","gwi.ai").replace("https://trust.gwi.com","trust.gwi.com")}</span>;})}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-          {activeTab==="lifecycle"&&stages.map(function(s,si){
-            var roleConf=signupRoleConfig[s.signupRole]||signupRoleConfig.none;
-            return(
-              <div key={s.id} style={{borderBottom:si<stages.length-1?"1px solid "+C.grey4:"none"}}>
-                <div style={{background:C.black,padding:"12px 20px",display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontWeight:700,fontSize:14,color:C.white}}>{s.label}</div>
-                    {s.highlight&&<span style={{fontSize:10,fontWeight:700,background:C.pink,color:C.white,padding:"1px 7px",borderRadius:99,marginTop:4,display:"inline-block"}}>Focus Stage</span>}
-                  </div>
-                  <span style={{background:roleConf.pill.bg,color:roleConf.pill.text,fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99}}>{roleConf.label}</span>
-                </div>
-                <div style={{padding:"12px 20px 16px",background:C.white}}>
-                  <div style={{background:"#FFEEF6",border:"1px solid #FF80BB",borderRadius:8,padding:10,marginBottom:10}}>
-                    <div style={{fontSize:10,fontWeight:700,color:C.pink,textTransform:"uppercase",marginBottom:4}}>How Might We</div>
-                    <p style={{fontSize:12,color:C.offBlack,lineHeight:1.5,margin:0}}>{s.hmw}</p>
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:8}}>
-                    {[["GWI Goal",s.gwi_goal,"#E6F9F2","#005C3B"],["Push",s.push,C.grey3,C.grey8],["Pull",s.pull,C.grey3,C.grey8],["Habit",s.habit,"#FFF8E6","#7A4F00"],["Anxiety",s.anxiety,"#FCE4EC","#880E4F"]].filter(function(x){return !!x[1];}).map(function(x){return(
-                      <div key={x[0]} style={{background:x[2],borderRadius:8,padding:10}}>
-                        <div style={{fontSize:10,fontWeight:700,color:x[3],textTransform:"uppercase",marginBottom:4}}>{x[0]}</div>
-                        <p style={{color:C.offBlack,fontSize:12,lineHeight:1.5,margin:0}}>{x[1]}</p>
-                      </div>
-                    );})}
-                  </div>
-                  {s.signupNote&&<div style={{background:C.grey3,borderRadius:8,padding:10}}>
-                    <div style={{fontSize:10,fontWeight:700,color:C.grey8,textTransform:"uppercase",marginBottom:4}}>Website Role</div>
-                    <p style={{fontSize:12,color:C.offBlack,lineHeight:1.5,margin:0}}>{s.signupNote}</p>
-                  </div>}
-                </div>
-              </div>
-            );
-          })}
-          {activeTab==="affinity"&&AFFINITY_CLUSTERS.map(function(cluster,ci){
-            return(
-              <div key={ci} style={{borderBottom:ci<AFFINITY_CLUSTERS.length-1?"1px solid "+C.grey4:"none"}}>
-                <div style={{background:C.black,padding:"12px 20px"}}>
-                  <div style={{fontWeight:700,fontSize:14,color:C.white,marginBottom:4}}>{cluster.name}</div>
-                  <p style={{fontSize:12,color:C.grey5,lineHeight:1.5,margin:0}}>{cluster.theme}</p>
-                </div>
-                <div style={{padding:"12px 20px 16px",background:C.white}}>
-                  <div style={{background:C.grey3,borderRadius:8,padding:10,marginBottom:10}}>
-                    <div style={{fontSize:10,fontWeight:700,color:C.grey8,textTransform:"uppercase",marginBottom:4}}>What this means for GWI</div>
-                    <p style={{fontSize:12,color:C.offBlack,lineHeight:1.5,margin:0}}>{cluster.insight}</p>
-                  </div>
-                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                    {cluster.signals.map(function(sig,si){return(
-                      <div key={si} style={{background:"#FFEEF6",border:"1px solid #FF80BB",borderRadius:8,padding:10}}>
-                        <div style={{display:"flex",gap:6,marginBottom:4,flexWrap:"wrap"}}>
-                          <span style={{background:C.white,color:C.grey8,fontSize:10,fontWeight:700,padding:"1px 7px",borderRadius:99,border:"1px solid "+C.grey4}}>{sig.type}</span>
-                          <span style={{background:C.white,color:C.grey8,fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:99,border:"1px solid "+C.grey4}}>{sig.stage}</span>
-                        </div>
-                        <p style={{fontSize:12,fontWeight:700,color:C.black,margin:"0 0 4px"}}>{sig.text}</p>
-                        <p style={{fontSize:11,color:C.grey7,margin:0}}>{sig.personas.join(", ")}</p>
-                      </div>
-                    );})}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          <div>
+            <div style={{fontSize:12,fontWeight:700,color:C.black,marginBottom:6}}>Journeys, clients & case studies</div>
+            <p style={{fontSize:13,color:C.grey7,lineHeight:1.7,margin:0}}>All {totalSteps} customer journey steps are included per persona — showing which lifecycle stage they're at, what they're trying to do, and which pages they visit. {activeClients.length} active clients are grouped by type so Claude can suggest specific logo walls and sector-relevant proof. {(caseStudies as any[]).length} saved case studies are injected as proof points — with company, metric, and pull quote — so CHANGE recommendations reference real GWI customer outcomes with actual numbers rather than generic best practice.</p>
+          </div>
+          <div>
+            <div style={{fontSize:12,fontWeight:700,color:C.black,marginBottom:6}}>Output format</div>
+            <p style={{fontSize:13,color:C.grey7,lineHeight:1.7,margin:0}}>Every finding follows the same structure: SHOWS (what the page currently does or fails to do), WHY (which persona and lifecycle stage it blocks, named specifically), CHANGE (the specific fix, referencing a proof point or client where relevant), and METRIC (how to measure success).</p>
+          </div>
         </div>
       )}
     </div>
@@ -2344,7 +2224,7 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
           <button onClick={handleCopy} style={{width:"100%",background:copied?"#00A86B":C.white,color:copied?C.white:C.black,border:"none",borderRadius:8,padding:"12px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>{copied?"Copied to clipboard":"Copy to clipboard"}</button>
         </div>
       )}
-      <DataAccordion personas={personas} stages={stages} journeys={journeys} isMobile={isMobile}/>
+      <DataAccordion personas={personas} stages={stages} journeys={journeys} isMobile={isMobile} clientList={clientList} caseStudies={caseStudies}/>
       {showModal&&auditPrompt&&<GeneratingModal prompt={auditPrompt} images={auditImages} pageLabel={selectedPage==="all"?"All Pages":(visiblePages.find(function(p){return p.url===selectedPage;})||{label:selectedPage}).label} onDone={function(text){setGeneratedAuditText(text);}} onClose={handleModalClose}/>}
     </PageWrap>
   );
