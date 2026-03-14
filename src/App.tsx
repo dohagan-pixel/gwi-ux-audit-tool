@@ -3082,6 +3082,26 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   useEffect(function(){if(contentSavedTs===0)return;var t=setTimeout(function(){setContentSavedTs(0);},2000);return function(){clearTimeout(t);};},[contentSavedTs]);
   useEffect(function(){function onMsg(e:any){if(!e.data||e.data.type!=="wireframe-content-saved")return;var html=e.data.html;var r=_editSaveRef.current;var cur=(r.wireframes||[]).find(function(w:any){return w.id===r.activeId;});if(!cur)return;var updated=Object.assign({},cur,{html:html});setWireframes(function(prev:any[]){return prev.map(function(w:any){return w.id===r.activeId?updated:w;});});if(r.onUpdateWireframe)r.onUpdateWireframe(updated);setContentSavedTs(Date.now());}window.addEventListener("message",onMsg);return function(){window.removeEventListener("message",onMsg);};},[]);
   function injectRecScript(html){
+    // ── Cleanup pass ──────────────────────────────────────────────────────────
+    // Remove any previously injected <style> / <script> elements that may have
+    // been serialised into saved wireframe HTML (e.g. from the old buggy path).
+    html=html.replace(/<style\s[^>]*data-injected[^>]*>[\s\S]*?<\/style>/gi,"");
+    html=html.replace(/<script\s[^>]*data-injected[^>]*>[\s\S]*?<\/script>/gi,"");
+    // Remove leaked CSS text — this happened when the old injector landed inside
+    // an open <style> block.  The leaked chunk begins with "[data-rec]{white-space"
+    // and runs up to the next HTML tag (or end of string).
+    var leakIdx=html.indexOf("[data-rec]{white-space");
+    if(leakIdx>=0){
+      var nextTag=html.indexOf("<",leakIdx);
+      html=html.slice(0,leakIdx)+(nextTag>=0?html.slice(nextTag):"");
+    }
+    // Also strip any leftover bare "[data-eh]" CSS text blocks that leaked in
+    var leakIdx2=html.indexOf("[data-eh]{outline:1px dashed");
+    if(leakIdx2>=0){
+      var nextTag2=html.indexOf("<",leakIdx2);
+      html=html.slice(0,leakIdx2)+(nextTag2>=0?html.slice(nextTag2):"");
+    }
+    // ─────────────────────────────────────────────────────────────────────────
     var style='<style data-injected="1">[data-rec]{white-space:nowrap;transition:background 0.15s ease;}[data-rec] .rec-label{max-width:0;overflow:hidden;transition:max-width 0.25s ease,margin-right 0.25s ease;font-size:11px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;color:white;margin-right:0;display:inline-block;white-space:nowrap;}[data-rec]:hover .rec-label{max-width:130px;margin-right:6px;}<\/style>';
     var clickScript='document.addEventListener("click",function(e){var el=e.target;for(var i=0;i<8;i++){if(!el||el===document.body)break;var r=el.getAttribute("data-rec");if(r){window.parent.postMessage({type:"rec-click",recNum:parseInt(r)},"*");return;}el=el.parentElement;}});';
     var msgScript='window.addEventListener("message",function(e){if(e.data&&e.data.type==="set-rec-states"){var g=e.data.greenRecs||[];document.querySelectorAll("[data-rec]").forEach(function(b){var n=parseInt(b.getAttribute("data-rec"));b.style.background=g.indexOf(n)>=0?"#22C55E":"#FF0077";});}});';
