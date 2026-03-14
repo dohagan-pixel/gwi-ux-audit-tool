@@ -1629,10 +1629,38 @@ function WireframeModal({page,personas,onClose,onSave,rules}){
   useEffect(function(){
     if(hasFetched.current)return;
     hasFetched.current=true;
-    var actionLines=page.actions.map(function(a,i){return(i+1)+". "+a.text+(a.description?" — "+a.description:"");}).join("\n");
     var personaNames=personas.map(function(p){return p.label+" ("+p.tagline+")";}).join(", ");
     var recCount=page.actions.length;
-    var prompt="You are a UX wireframe designer. Create a complete low-fidelity HTML wireframe for the gwi.com "+page.label+" page ("+page.url+").\n\nThis wireframe shows the IMPROVED version of the page. There are "+recCount+" UX recommendations to address:\n"+actionLines+"\n\nCRITICAL — MANDATORY SECTIONS: You MUST create one dedicated wireframe section for EVERY recommendation above. All "+recCount+" recommendations (numbered 1 through "+recCount+") must each have their own visible section in the page. Do NOT skip, merge, or omit any recommendation. If you run out of natural page real estate, keep adding sections — completeness is more important than brevity.\n\nPersonas this page serves: "+personaNames+".\n\nWireframe rules:\n- Use ONLY grey tones: backgrounds #f5f5f5 and #e8e8e8, borders #d0d0d0, text #666 and #333\n- Use Arial/sans-serif fonts only\n- Replace all images with labelled grey rectangles using inline styles\n- Include realistic section structure but use short [PLACEHOLDER] text\n- Add a comment label in the top-left of each section identifying it (e.g. '// REC 1: HERO', '// REC 2: SOCIAL PROOF')\n- RECOMMENDATION BADGES — EVERY section for a recommendation MUST have both: (a) the outermost wrapper div has position:relative AND data-section-rec=\"N\"; (b) a badge span: <span data-rec=\"N\" style=\"position:absolute;top:10px;right:10px;background:#FF0077;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;cursor:pointer\">💡</span>. N is the recommendation number. All "+recCount+" sections must have their badge (data-rec=\"1\" through data-rec=\""+recCount+"\").\n- FOOTER — the very last element on the page MUST be a full footer section with data-section-rec=\"footer\". It must contain: GWI wordmark/logo placeholder on the left, four columns of links (Products, Solutions, Resources, Company — each with 4–5 placeholder link items), a newsletter signup row (email input + Subscribe button), social media icon placeholders, and a bottom bar with copyright © "+new Date().getFullYear()+" GWI. Use a dark background (#2a2a2a) with light text (#ccc/#999).\n- Full self-contained HTML page. Use a <style> tag in <head> for shared styles and media queries; use inline styles for one-off values\n- Max content width 1200px, centred\n- The wireframe must be fully responsive at two breakpoints: desktop (default) and mobile (max-width: 767px)\n- NAVIGATION — desktop: logo far left, nav links Products | Services | Solutions | Resources | Pricing, right: Sign in (border:1px solid #d0d0d0, background:transparent, color:#333) and Book a demo (background:#333, color:#fff, border-radius:4px). Mobile (@media max-width:767px): show ONLY the logo left + static burger icon right (three <span> elements: display:block, width:22px, height:2px, background:#666, margin:4px 0) — hide all nav links and CTA buttons.\n- LAYOUTS — @media (max-width:767px): flex rows → flex-direction:column; CSS grids → grid-template-columns:1fr; section padding → 16px; buttons → width:100%, box-sizing:border-box. Use CSS classes in <style> for media query overrides, not inline styles.\n- No JavaScript\n\nOutput ONLY the raw HTML — no explanation, no markdown fences, nothing else.";
+    // Build an explicit per-recommendation checklist so Claude sees exactly what it must produce
+    var recChecklist=page.actions.map(function(a:any,i:number){
+      return"  ["+(i+1)+"] data-rec=\""+(i+1)+"\" — "+a.text+(a.description?" ("+a.description+")":"");
+    }).join("\n");
+    var prompt=
+"You are a UX wireframe designer. Output a complete low-fidelity HTML wireframe for gwi.com — "+page.label+" ("+page.url+").\n\n"+
+"═══════════════════════════════════════════════════════\n"+
+"REQUIRED OUTPUT — every item below is NON-NEGOTIABLE.\n"+
+"Do NOT stop generating until ALL "+recCount+" recommendation\n"+
+"sections AND the footer are present and complete.\n"+
+"═══════════════════════════════════════════════════════\n\n"+
+"  [NAV]  Navigation bar (see rules below)\n"+
+recChecklist+"\n"+
+"  [FOOTER]  Full dark footer (see rules below)\n\n"+
+"Each item in the list above maps directly to a visible section\n"+
+"in the HTML. There are "+recCount+" recommendations — so there\n"+
+"must be exactly "+recCount+" numbered page sections (plus nav and footer).\n\n"+
+"Page: "+page.label+" · Personas: "+personaNames+"\n\n"+
+"════ WIREFRAME RULES ════\n"+
+"STYLE: grey tones only — #f5f5f5 / #e8e8e8 backgrounds, #d0d0d0 borders, #333 / #666 text. Arial/sans-serif. Grey labelled rectangles for images. Short [PLACEHOLDER] text throughout.\n\n"+
+"SECTION LABELS: top-left comment in each section, e.g. // REC 1: HERO CTA\n\n"+
+"BADGES (mandatory on every recommendation section):\n"+
+"  The section's outermost div must have: style=\"position:relative;...\" data-section-rec=\"N\"\n"+
+"  Inside it place: <span data-rec=\"N\" style=\"position:absolute;top:10px;right:10px;background:#FF0077;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;cursor:pointer\">💡</span>\n"+
+"  Required badge numbers: data-rec=\"1\" through data-rec=\""+recCount+"\". All "+recCount+" must appear.\n\n"+
+"FOOTER: dark bg #2a2a2a, light text #ccc/#999. Contains: GWI logo placeholder left; 4 link columns (Products / Solutions / Resources / Company, 4 links each); newsletter row (email input + Subscribe button); social icon placeholders; bottom bar © "+new Date().getFullYear()+" GWI.\n\n"+
+"NAVIGATION: desktop — logo left · Products Services Solutions Resources Pricing · Sign in (border:1px solid #d0d0d0,bg:transparent,color:#333) · Book a demo (bg:#333,color:#fff,border-radius:4px). Mobile @media(max-width:767px) — logo + burger icon only (3×<span> display:block,width:22px,height:2px,background:#666,margin:4px 0); hide all links and CTAs.\n\n"+
+"RESPONSIVE @media(max-width:767px): flex rows→column; grids→1 col; padding→16px; buttons→width:100%. Use CSS classes in <style> for breakpoint overrides (not inline styles).\n\n"+
+"HTML: fully self-contained. <style> in <head>. Max-width 1200px centred. No JavaScript.\n\n"+
+"Output ONLY the raw HTML — no explanation, no markdown fences.";
     if(rules&&rules.tov){prompt+="\n\nTone of voice — apply these guidelines to ALL copy in this wireframe:\n"+rules.tov;}
     fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:16000})})
       .then(function(r){
