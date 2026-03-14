@@ -2988,8 +2988,8 @@ function LoginScreen({onLogin,onRegister,onGoogleLogin,loginError}:{onLogin:any,
     <div style={_wrap}>
       <iframe srcDoc={_particleBg} title="bg" sandbox="allow-scripts" style={{position:"absolute",top:0,left:0,right:0,bottom:0,width:"100%",height:"100%",border:"none",pointerEvents:"none",zIndex:0}}/>
       <div style={_card}>
-        <div style={{marginBottom:28}}>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 71" fill="none" style={{width:"100%",height:"auto",display:"block"}}>
+        <div style={{marginBottom:28,display:"flex",justifyContent:"center"}}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 71" fill="none" style={{width:"50%",height:"auto",display:"block"}}>
             <path fillRule="evenodd" clipRule="evenodd" d="M230 54.2105C230 43.7102 225.129 38.8339 214.623 38.8339C204.119 38.8339 199.248 43.7102 199.248 54.2105C199.248 64.7107 204.119 69.5871 214.623 69.5871C225.129 69.5871 230 64.7107 230 54.2105Z" fill="#FF0077"/>
             <path fillRule="evenodd" clipRule="evenodd" d="M176.341 69.2236H191.612V1.95935H176.341V69.2236Z" fill="black"/>
             <path fillRule="evenodd" clipRule="evenodd" d="M148.954 69.2236H131.472L118.484 24.3824L105.359 69.2236H88.0286L67.2642 1.95935H84.4376L84.5125 2.23484L96.8212 47.6343L109.642 1.95935H127.359L140.518 47.7687L152.864 1.95935H169.797L148.954 69.2236Z" fill="black"/>
