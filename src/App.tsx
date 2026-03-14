@@ -2359,26 +2359,21 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
       )}
       {tab==="ga"&&(
         <div>
-          <div style={{marginBottom:20}}>
-            {!showNewGaCard&&(
-              <button onClick={function(){setShowNewGaCard(true);}} style={{display:"flex",alignItems:"center",gap:8,background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}><Plus size={14}/>Add Card</button>
-            )}
-            {showNewGaCard&&(
-              <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:20}}>
-                <h3 style={{fontWeight:700,color:C.black,fontSize:15,marginBottom:16}}>New GA Card</h3>
-                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:10,marginBottom:10}}>
-                  <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Title</div><input value={newGaCard.title} onChange={function(e){setNewGaCard(Object.assign({},newGaCard,{title:e.target.value}));}} placeholder="e.g. Homepage Analysis" style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
-                  <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Icon</div><select value={newGaCard.iconKey} onChange={function(e){setNewGaCard(Object.assign({},newGaCard,{iconKey:e.target.value}));}} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,background:C.white}}>{CARD_ICON_KEYS.map(function(k){return <option key={k} value={k}>{k}</option>;})}</select></div>
-                </div>
-                <div style={{marginBottom:10}}><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Description</div><input value={newGaCard.desc} onChange={function(e){setNewGaCard(Object.assign({},newGaCard,{desc:e.target.value}));}} placeholder="Short description of this report" style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
-                <div style={{marginBottom:16}}><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>GA4 URL</div><input value={newGaCard.url} onChange={function(e){setNewGaCard(Object.assign({},newGaCard,{url:e.target.value}));}} placeholder="https://analytics.google.com/analytics/web/..." style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
-                <div style={{display:"flex",gap:8}}>
-                  <button onClick={addGaCard} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add Card</button>
-                  <button onClick={function(){setShowNewGaCard(false);setNewGaCard({iconKey:"BarChart2",title:"",desc:"",url:""}); }} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                </div>
+          {showNewGaCard&&(
+            <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:20,marginBottom:16}}>
+              <h3 style={{fontWeight:700,color:C.black,fontSize:15,marginBottom:16}}>New analytics report</h3>
+              <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:10,marginBottom:10}}>
+                <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Title</div><input value={newGaCard.title} onChange={function(e){setNewGaCard(Object.assign({},newGaCard,{title:e.target.value}));}} placeholder="e.g. Homepage Analysis" style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
+                <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Icon</div><select value={newGaCard.iconKey} onChange={function(e){setNewGaCard(Object.assign({},newGaCard,{iconKey:e.target.value}));}} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,background:C.white}}>{CARD_ICON_KEYS.map(function(k){return <option key={k} value={k}>{k}</option>;})}</select></div>
               </div>
-            )}
-          </div>
+              <div style={{marginBottom:10}}><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Description</div><input value={newGaCard.desc} onChange={function(e){setNewGaCard(Object.assign({},newGaCard,{desc:e.target.value}));}} placeholder="Short description of this report" style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
+              <div style={{marginBottom:16}}><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>GA4 URL</div><input value={newGaCard.url} onChange={function(e){setNewGaCard(Object.assign({},newGaCard,{url:e.target.value}));}} placeholder="https://analytics.google.com/analytics/web/..." style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={addGaCard} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add report</button>
+                <button onClick={function(){setShowNewGaCard(false);setNewGaCard({iconKey:"BarChart2",title:"",desc:"",url:""});}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+              </div>
+            </div>
+          )}
           <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,overflow:"hidden"}}>
             {(gaCards||[]).map(function(card,i,arr){
               var isSaved=gaCardSaved[card.id];
@@ -2403,6 +2398,12 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
                 </div>
               );
             })}
+            {!showNewGaCard&&(
+              <button onClick={function(){setShowNewGaCard(true);}} style={{width:"100%",padding:"14px 16px",border:"none",borderTop:(gaCards||[]).length>0?"1px solid "+C.grey3:"none",background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,color:C.grey6}} onMouseEnter={function(e){e.currentTarget.style.background=C.grey2;e.currentTarget.style.color=C.pink;}} onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.color=C.grey6;}}>
+                <div style={{width:22,height:22,borderRadius:"50%",border:"1.5px dashed currentColor",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Plus size={11}/></div>
+                <span style={{fontSize:13,fontWeight:600}}>Add analytics report</span>
+              </button>
+            )}
           </div>
         </div>
       )}
