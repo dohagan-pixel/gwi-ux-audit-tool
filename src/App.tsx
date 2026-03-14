@@ -64,6 +64,14 @@ const INIT_STAGES = [
   {id:"expansion",label:"Expansion",highlight:false,signupRole:"none",signupNote:"Outside the free sign-up funnel. Owned by sales and CS.",gwi_goal:"New contract with increased value signed and healthy ongoing relationship.",hmw:"How might we show our users that they can stay powerful while reducing the load on them?",push:"Too many people or reasons to use GWI but not enough time to meet that need",pull:"The interface lets colleagues answer their own questions without unhelpful scepticism",habit:"It is easier to be a gatekeeper as it slows the rate of demand on me",anxiety:"Colleagues do not have the experience to use the tool and I do not have time to teach them"},
   {id:"advocacy",label:"Advocacy",highlight:false,signupRole:"none",signupNote:"Outside the free sign-up funnel. Owned by marketing and CS.",gwi_goal:"User is happy to speak publicly about the value they receive from GWI.",hmw:"How might we enable our users to show their skills and the value their organisation brings?",push:"Speaking openly about GWI brings attention and status for them",pull:"GWI worldwide reputation increases their own reputation",habit:"Daily tasks do not include advocacy; GWI not well-known enough as a partner",anxiety:"Worried clients or employers see value as coming from the tool rather than their own skills"},
 ];
+const INIT_VERTICALS = [
+  {id:"media-agency",label:"Media Agency",desc:"Planning and buying media on behalf of brand clients. Typically work at pace across multiple client accounts.",useCase:"Audience segmentation and media planning — using GWI to size audiences, validate channel strategies, and build consumer profiles for briefs.",concern:"Whether GWI covers niche or regional audiences and whether data is fresh enough for fast-moving campaign cycles."},
+  {id:"creative-agency",label:"Creative Agency",desc:"Developing campaigns, creative strategy, and brand positioning for clients. Need cultural and consumer insight quickly.",useCase:"Cultural trends and consumer mindsets to fuel creative briefs, positioning statements, and strategic territories.",concern:"Whether syndicated data is specific enough to replace or supplement primary research — and how citable the findings are in client work."},
+  {id:"brand-corporate",label:"Brand / Corporate",desc:"In-house marketing, strategy, and insights teams at companies. Own a brand and need to understand their consumers and competitive landscape.",useCase:"Consumer behaviour tracking, brand health monitoring, and competitive benchmarking across markets.",concern:"Depth of data for specific product categories, integration with existing tools, and whether the platform can replace expensive custom studies."},
+  {id:"media-owner",label:"Media Owner / Publisher",desc:"Selling audiences to advertisers. Need to prove the quality and scale of their audience with credible third-party data.",useCase:"Third-party audience validation and cross-platform consumer insights to strengthen advertiser pitch decks and rate cards.",concern:"Whether GWI data aligns with their own first-party data and how frequently survey waves are updated."},
+  {id:"consultancy",label:"Consultancy / Research",desc:"Strategy and research consultancies delivering insight-driven recommendations to clients. Often cite sources directly.",useCase:"Rapid consumer landscape analysis and trend substantiation to support client deliverables and thought leadership.",concern:"Methodology transparency, survey sample sizes, and whether findings can be cited confidently in client-facing or published work."},
+  {id:"tech-platform",label:"Technology / Platform",desc:"Tech companies and platforms building products or driving commercial strategy. Need consumer insight to guide decisions.",useCase:"Digital behaviour patterns, platform adoption data, and audience demographics to inform product roadmaps and go-to-market strategy.",concern:"Granularity of technology-specific survey questions and whether the data is updated frequently enough to track a fast-moving space."},
+];
 
 const INIT_PERSONAS = [
   {id:"insight-guru",label:"Insight Guru",tagline:"They won't trust the data until they've tested it themselves",traits:["Obsessive","Rigorous","Accurate","Expert","Validator","Storyteller","Pioneer"],website:"Proof before commitment. They want to validate GWI data quality and methodology rigorously before talking to anyone. Clear, detailed answers on data coverage, sample sizes, and robustness. A way to self-serve the platform trial access without needing a sales call. Technical depth on RLD, API, and data fusions. Case studies from research teams, not just marketing.",who:"Skilled experts working in data, research and insights roles. Obsessed with data accuracy and data value.",what:"Find the so what in data, mining information for meaning. Leverage data to support better business decision-making.",drives:"Understanding how audiences are changing and why. Making absolutely sure the advice they give or conclusions they draw are accurate and reliable.",bugs:"Data partners who do not offer services exactly when, how and where they need them.",grabs:"The sheer accuracy, value, quality, and trustworthiness of GWI data. On-demand insights to highly-specific business questions.",concerns:"Data trustworthiness — if the data is wrong, they are wrong. Balancing depth and useability.",whyUs:"Deep audience research and trend analysis to drive new business, marketing strategy, product development and competitive advantage.",platform:"Creates audiences and charts for colleagues. Uses crosstabs and flips between the audience builder and chart builder to double-check audiences.",entry:"Organic search, methodology checks, data quality reviews, audience analysis tools",colorIndex:0},
@@ -2096,6 +2104,19 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
       p+="\n";
     });
 
+    // Industry verticals
+    if(verticals&&verticals.length){
+      p+="=== INDUSTRY VERTICALS ("+verticals.length+") ===\n";
+      p+="When making recommendations, consider which verticals the page is most relevant to and frame findings accordingly — e.g. 'This particularly affects Media Agency visitors who need to…'\n";
+      verticals.forEach(function(v:any){
+        p+="— "+v.label+"\n";
+        if(v.desc)p+="  Who: "+v.desc+"\n";
+        if(v.useCase)p+="  Primary use case: "+v.useCase+"\n";
+        if(v.concern)p+="  Key concern: "+v.concern+"\n";
+        p+="\n";
+      });
+    }
+
     // Journey steps per persona
     var hasJourneys=personas.some(function(pe){return (journeys[pe.id]||[]).length>0;});
     if(hasJourneys){
@@ -2247,13 +2268,18 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
   );
 }
 
-function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,journeys,setJourneys,gaCards,setGaCards,wireframeRules,setWireframeRules,clientList,setClientList,caseStudies,setCaseStudies}){
+function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,verticals,setVerticals,journeys,setJourneys,gaCards,setGaCards,wireframeRules,setWireframeRules,clientList,setClientList,caseStudies,setCaseStudies}:{pages:any,setPages:any,personas:any,setPersonas:any,stages:any,setStages:any,verticals:any,setVerticals:any,journeys:any,setJourneys:any,gaCards:any,setGaCards:any,wireframeRules:any,setWireframeRules:any,clientList:any,setClientList:any,caseStudies:any,setCaseStudies:any}){
   var [tab,setTab]=useState("home");
   var [newPage,setNewPage]=useState({url:"",label:"",section:"Products"});
   var [editingPersona,setEditingPersona]=useState(null);
   var [personaDraft,setPersonaDraft]=useState({});
   var [editingStage,setEditingStage]=useState(null);
   var [stageDraft,setStageDraft]=useState({});
+  var [editingVertical,setEditingVertical]=useState<string|null>(null);
+  var [verticalDraft,setVerticalDraft]=useState<any>({});
+  var [addingVertical,setAddingVertical]=useState(false);
+  var [newVertical,setNewVertical]=useState<any>({label:"",desc:"",useCase:"",concern:""});
+  var VERTICAL_FIELDS:[string,string][]=[["Description","desc"],["Primary use case","useCase"],["Key concern","concern"]];
   var [editingJourney,setEditingJourney]=useState(null);
   var [editingJourneyStep,setEditingJourneyStep]=useState(null);
   var [stepDraft,setStepDraft]=useState({});
@@ -2295,6 +2321,7 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
           {id:"pages",icon:<FileText size={20}/>,label:"Pages",desc:"Manage the pages included in the audit framework. These drive every audit, recommendation, and analytics card.",stat:pages.length+" page"+(pages.length===1?"":"s")},
           {id:"personas",icon:<Users size={20}/>,label:"Personas",desc:"Define and maintain the personas that shape how each page is evaluated during an audit.",stat:personas.length+" persona"+(personas.length===1?"":"s")},
           {id:"stages",icon:<Layers size={20}/>,label:"Lifecycle Stages",desc:"Configure the stages visitors move through — from first click to sign-up and beyond.",stat:stages.length+" stage"+(stages.length===1?"":"s")},
+          {id:"verticals",icon:<Building2 size={20}/>,label:"Industry Verticals",desc:"Define the industry verticals GWI serves. These are injected into every audit so recommendations are framed by the specific buyer type they affect.",stat:verticals.length+" vertical"+(verticals.length===1?"":"s")},
           {id:"journeys",icon:<Map size={20}/>,label:"Journey Steps",desc:"Map out the steps for each persona across the customer lifecycle.",stat:totalSteps+" step"+(totalSteps===1?"":"s")},
           {id:"ga",icon:<BarChart2 size={20}/>,label:"Google Analytics",desc:"Set up GA4 report links that appear on the Analytics page for quick access.",stat:gaCards.length+" report"+(gaCards.length===1?"":"s")},
           {id:"wireframes",icon:<LayoutGrid size={20}/>,label:"Wireframe Rules",desc:"Define rules that every generated wireframe must follow — including tone of voice and copy guidelines.",stat:(wireframeRules as any).tov?"Tone of voice set":"No rules set"},
@@ -2321,7 +2348,7 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
       })()}
       {tab!=="home"&&(
         <div style={{display:"flex",gap:4,marginBottom:28,background:C.grey4,borderRadius:10,padding:4,width:isMobile?"100%":"fit-content",overflowX:"auto"}}>
-          {[["home","← Overview"],["pages","Pages"],["personas","Personas"],["stages","Lifecycle Stages"],["journeys","Journey Steps"],["ga","Google Analytics"],["wireframes","Wireframe Rules"],["clients","Clients"],["case-studies","Case Studies"]].map(function(x){return(
+          {[["home","← Overview"],["pages","Pages"],["personas","Personas"],["stages","Lifecycle Stages"],["verticals","Verticals"],["journeys","Journey Steps"],["ga","Google Analytics"],["wireframes","Wireframe Rules"],["clients","Clients"],["case-studies","Case Studies"]].map(function(x){return(
             <button key={x[0]} onClick={function(){setTab(x[0]);}} style={{padding:"8px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:tab===x[0]?C.pink:"transparent",color:tab===x[0]?C.white:C.grey7,flexShrink:0,whiteSpace:"nowrap"}}>{x[1]}</button>
           );})}
         </div>
@@ -2409,6 +2436,42 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
               </div>
             );
           })}
+        </div>
+      )}
+      {tab==="verticals"&&(
+        <div>
+          {verticals.map(function(v:any){
+            var isEditing=editingVertical===v.id;
+            return(
+              <div key={v.id} style={{background:C.white,border:"1px solid "+(isEditing?C.pink:C.grey4),borderRadius:12,marginBottom:12,overflow:"hidden"}}>
+                <div style={{padding:"14px 20px",display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{fontWeight:700,fontSize:15,color:C.black,flex:1}}>{v.label}</span>
+                  <button onClick={function(){setVerticals(function(prev:any[]){return prev.filter(function(x:any){return x.id!==v.id;});});}} style={{background:"transparent",color:C.grey6,border:"none",borderRadius:6,padding:"6px 10px",fontSize:12,fontWeight:600,cursor:"pointer",marginRight:4}}>Remove</button>
+                  <button onClick={function(){if(isEditing){setEditingVertical(null);}else{setEditingVertical(v.id);setVerticalDraft(Object.assign({},v));}}} style={{background:isEditing?C.pink:C.grey3,color:isEditing?C.white:C.grey8,border:"none",borderRadius:6,padding:"6px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{isEditing?"Close":"Edit"}</button>
+                </div>
+                {isEditing&&(
+                  <div style={{padding:20}}>
+                    <div style={{marginBottom:12}}><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Label</div><Inp val={verticalDraft.label} onChange={function(val:string){setVerticalDraft(Object.assign({},verticalDraft,{label:val}));}}/></div>
+                    {VERTICAL_FIELDS.map(function(x){return(<div key={x[1]} style={{marginBottom:12}}><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>{x[0]}</div><Inp val={verticalDraft[x[1]]||""} onChange={function(val:string){var d=Object.assign({},verticalDraft);d[x[1]]=val;setVerticalDraft(d);}} multi={true} rows={2}/></div>);})}
+                    <button onClick={function(){setVerticals(function(prev:any[]){return prev.map(function(x:any){return x.id===v.id?Object.assign({},verticalDraft,{id:v.id}):x;});});setEditingVertical(null);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Save Changes</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          <div style={{background:C.white,border:"1px solid "+(addingVertical?C.pink:C.grey4),borderRadius:12,overflow:"hidden",marginTop:8}}>
+            <div style={{padding:"14px 20px",display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontWeight:700,fontSize:15,color:C.black,flex:1}}>{addingVertical?"New vertical":"Add a vertical"}</span>
+              <button onClick={function(){setAddingVertical(!addingVertical);setNewVertical({label:"",desc:"",useCase:"",concern:""});}} style={{background:addingVertical?C.grey3:C.pink,color:addingVertical?C.grey8:C.white,border:"none",borderRadius:6,padding:"6px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{addingVertical?"Cancel":"+ Add"}</button>
+            </div>
+            {addingVertical&&(
+              <div style={{padding:20}}>
+                <div style={{marginBottom:12}}><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Label</div><Inp val={newVertical.label} onChange={function(val:string){setNewVertical(Object.assign({},newVertical,{label:val}));}}/></div>
+                {VERTICAL_FIELDS.map(function(x){return(<div key={x[1]} style={{marginBottom:12}}><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>{x[0]}</div><Inp val={newVertical[x[1]]||""} onChange={function(val:string){var d=Object.assign({},newVertical);d[x[1]]=val;setNewVertical(d);}} multi={true} rows={2}/></div>);})}
+                <button onClick={function(){if(!newVertical.label.trim())return;var id="v-"+Date.now();setVerticals(function(prev:any[]){return prev.concat([Object.assign({},newVertical,{id:id})]);});setAddingVertical(false);setNewVertical({label:"",desc:"",useCase:"",concern:""});}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add Vertical</button>
+              </div>
+            )}
+          </div>
         </div>
       )}
       {tab==="journeys"&&(
@@ -3375,6 +3438,7 @@ export default function App(){
   var [view,setViewRaw]=useState(function(){return hashToView(window.location.hash);});
   function setView(v){window.location.hash="#/"+v;setViewRaw(v);}
   var [stages,setStages]=useState(INIT_STAGES);
+  var [verticals,setVerticals]=useState(INIT_VERTICALS);
   var [personas,setPersonas]=useState(INIT_PERSONAS);
   var [pages,setPages]=useState(INIT_PAGES);
   var [journeys,setJourneys]=useState(INIT_JOURNEYS);
@@ -3399,9 +3463,9 @@ export default function App(){
   var [_user,_setUser]=useState(null);
   var [_authLoading,_setAuthLoading]=useState(true);
   var [_loginError,_setLoginError]=useState(null);
-  useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()){var d=snap.data();if(d.auditData)setAuditData(d.auditData);if(d.stages)setStages(d.stages);if(d.personas)setPersonas(d.personas);if(d.pages)setPages(d.pages);if(d.journeys)setJourneys(d.journeys);if(d.gaCards)setGaCards(d.gaCards);if(d.wireframeRules)setWireframeRules(d.wireframeRules);if(d.clientList)setClientList(d.clientList);if(d.caseStudies)setCaseStudies(d.caseStudies);}});getDocs(collection(_db,"users",u.uid,"generatedAudits")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setGeneratedAudits(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});merged.sort(function(a,b){return a.id<b.id?-1:1;});return merged;});}).catch(function(){});getDocs(collection(_db,"users",u.uid,"wireframes")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setSavedWireframes(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});return merged;});}).catch(function(){});
+  useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()){var d=snap.data();if(d.auditData)setAuditData(d.auditData);if(d.stages)setStages(d.stages);if(d.verticals)setVerticals(d.verticals);if(d.personas)setPersonas(d.personas);if(d.pages)setPages(d.pages);if(d.journeys)setJourneys(d.journeys);if(d.gaCards)setGaCards(d.gaCards);if(d.wireframeRules)setWireframeRules(d.wireframeRules);if(d.clientList)setClientList(d.clientList);if(d.caseStudies)setCaseStudies(d.caseStudies);}});getDocs(collection(_db,"users",u.uid,"generatedAudits")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setGeneratedAudits(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});merged.sort(function(a,b){return a.id<b.id?-1:1;});return merged;});}).catch(function(){});getDocs(collection(_db,"users",u.uid,"wireframes")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setSavedWireframes(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});return merged;});}).catch(function(){});
 getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setFeedback(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});return merged;});}).catch(function(){});}else{_setUser(null);}_setAuthLoading(false);});},[]);
-  useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,stages:stages,personas:personas,pages:pages,journeys:journeys,gaCards:gaCards,wireframeRules:wireframeRules,clientList:clientList,caseStudies:caseStudies,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[ auditData,stages,personas,pages,journeys,gaCards,wireframeRules,clientList,caseStudies,_user]);
+  useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,stages:stages,verticals:verticals,personas:personas,pages:pages,journeys:journeys,gaCards:gaCards,wireframeRules:wireframeRules,clientList:clientList,caseStudies:caseStudies,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[ auditData,stages,verticals,personas,pages,journeys,gaCards,wireframeRules,clientList,caseStudies,_user]);
   useEffect(function(){try{localStorage.setItem("gwi_generated_audits",JSON.stringify(generatedAudits));}catch(e){};},[generatedAudits]);
   useEffect(function(){try{localStorage.setItem("gwi_saved_wireframes",JSON.stringify(savedWireframes));}catch(e){};},[savedWireframes]);
   useEffect(function(){try{localStorage.setItem("gwi_loved_components",JSON.stringify(lovedComponents));}catch(e){};},[lovedComponents]);
@@ -3466,7 +3530,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="analytics"&&<AnalyticsPage gaCards={gaCards} setGaCards={setGaCards}/>}
         {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} clientList={clientList} caseStudies={caseStudies} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit).catch(function(){});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
         {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id)).catch(function(){});}} onUpdateAudit={function(updated){if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",updated.id),updated).catch(function(){});}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
-        {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards} wireframeRules={wireframeRules} setWireframeRules={setWireframeRules} clientList={clientList} setClientList={setClientList} caseStudies={caseStudies} setCaseStudies={setCaseStudies}/>}
+        {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} verticals={verticals} setVerticals={setVerticals} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards} wireframeRules={wireframeRules} setWireframeRules={setWireframeRules} clientList={clientList} setClientList={setClientList} caseStudies={caseStudies} setCaseStudies={setCaseStudies}/>}
         {view==="guide"&&<GuidePage/>}
         {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData} onAddRec={function(action,pageUrl){var pageObj=pages.find(function(p){return p.url===pageUrl;});var newAction=Object.assign({},action,{status:"todo"});var existing=auditData.find(function(p){return p.url===pageUrl;});if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}}} onRemoveRec={function(actionId,pageUrl){setAuditData(function(prev){return prev.map(function(p){return p.url!==pageUrl?p:Object.assign({},p,{actions:(p.actions||[]).filter(function(a:any){return a.id!==actionId;})});});});}} lovedComponents={lovedComponents} onLoveComponent={function(lc){setLovedComponents(function(prev){return (prev as any[]).concat([lc]);});}} onUnloveComponent={function(id){setLovedComponents(function(prev){return (prev as any[]).filter(function(lc:any){return lc.id!==id;});});}} personas={personas} wireframeRules={wireframeRules} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}}/>}
       </div>
