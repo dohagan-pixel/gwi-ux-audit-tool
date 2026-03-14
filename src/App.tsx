@@ -1644,7 +1644,7 @@ function WireframeModal({page,personas,onClose,onSave,rules}){
 "- STYLE: grey tones only — backgrounds #f5f5f5/#e8e8e8, borders #d0d0d0, text #333/#666. Arial/sans-serif. Grey labelled rectangles for images. Short [PLACEHOLDER] text.\n"+
 "- LAYOUTS: use real multi-column layouts — hero with text+image split, 3-column feature grids, side-by-side testimonials, 2-col stats rows, etc. Do NOT stack everything in single full-width blocks.\n"+
 "- SECTION LABELS: small grey comment top-left of each section, e.g. // HERO, // FEATURES, // SOCIAL PROOF.\n"+
-"- FOOTER (mandatory, always last): dark bg #2a2a2a, text #ccc/#999. GWI logo left; 4 link columns (Products/Solutions/Resources/Company, 4 links each); newsletter row (email input + Subscribe button); social icon placeholders; bottom bar © "+new Date().getFullYear()+" GWI.\n"+
+"- FOOTER (mandatory, always last): outermost element MUST have attribute data-gwi-footer=\"1\". Dark bg #2a2a2a, text #ccc/#999. 5-column link grid — Products: Human insights platform, Agent Spark: Human insights analyst, Learn about our data, Pricing · Solutions & Integrations: RLD, Audience activation, Data partnerships, Become a GWI partner · Resources: Blog, Reports, Help center · Company: Our story, Careers, Press, Contact, Trust center · Legal stuff: Website terms and conditions, Website privacy policy, Website cookie policy, Modern slavery statement, See all. Bottom bar: © GWI + social icon placeholders.\n"+
 "- NAVIGATION desktop: logo left | Products Services Solutions Resources Pricing | Sign in (border:1px solid #d0d0d0, bg:transparent, color:#333) Book a demo (bg:#333, color:#fff, border-radius:4px). Mobile @media(max-width:767px): logo + static burger only (3×<span> display:block,width:22px,height:2px,background:#666,margin:4px 0); hide all links and CTAs.\n"+
 "- RESPONSIVE @media(max-width:767px): flex rows→column; grids→1 col; padding→16px; buttons→100% width. Use CSS classes in <style> for media query overrides, not inline styles.\n"+
 "- Full self-contained HTML. <style> in <head>. Max-width 1200px centred. No JavaScript.\n\n"+
@@ -3121,7 +3121,35 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
       // Styles → <head>
       var s1=doc.createElement('style');s1.setAttribute('data-injected','1');s1.textContent=recCss;doc.head.appendChild(s1);
       var s2=doc.createElement('style');s2.setAttribute('data-injected','1');s2.textContent=editCss;doc.head.appendChild(s2);
-      // Scripts → end of <body>
+      // Footer responsive CSS → <head>
+      var s3=doc.createElement('style');s3.setAttribute('data-injected','1');
+      s3.textContent='@media(max-width:767px){.gwi-fc{grid-template-columns:1fr 1fr!important;}.gwi-fb{flex-direction:column!important;gap:16px!important;}}';
+      doc.head.appendChild(s3);
+      // ── Standard GWI footer — injected if absent, persists when wireframe is saved ──
+      if(!doc.querySelector('[data-gwi-footer]')){
+        var yr=new Date().getFullYear();
+        var col=function(title:string,items:string[]){return'<div><div style="font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:16px;">'+title+'</div><ul style="list-style:none;margin:0;padding:0;">'+items.map(function(t){return'<li style="margin-bottom:8px"><a href="#" style="color:#999;font-size:13px;text-decoration:none;">'+t+'</a></li>';}).join('')+'</ul></div>';};
+        var footerEl=doc.createElement('footer');
+        footerEl.setAttribute('data-gwi-footer','1');
+        footerEl.style.cssText='background:#2a2a2a;color:#ccc;padding:56px 0 0;font-family:Arial,sans-serif;margin-top:0;';
+        footerEl.innerHTML=
+          '<div style="max-width:1200px;margin:0 auto;padding:0 40px;">'
+          +'<div style="margin-bottom:40px;"><div style="background:#444;display:inline-block;padding:8px 20px;border-radius:4px;font-size:18px;font-weight:700;color:#fff;letter-spacing:0.05em;">GWI</div></div>'
+          +'<div class="gwi-fc" style="display:grid;grid-template-columns:repeat(5,1fr);gap:32px;margin-bottom:48px;">'
+          +col('Products',['Human insights platform','Agent Spark: Human insights analyst','Learn about our data','Pricing'])
+          +col('Solutions &amp; Integrations',['RLD','Audience activation','Data partnerships','Become a GWI partner'])
+          +col('Resources',['Blog','Reports','Help center'])
+          +col('Company',['Our story','Careers','Press','Contact','Trust center'])
+          +col('Legal stuff',['Website terms and conditions','Website privacy policy','Website cookie policy','Modern slavery statement','See all'])
+          +'</div>'
+          +'<div class="gwi-fb" style="border-top:1px solid #444;padding:20px 0;display:flex;align-items:center;justify-content:space-between;">'
+          +'<div style="font-size:12px;color:#666;">© '+yr+' GWI. All rights reserved.</div>'
+          +'<div style="display:flex;gap:10px;">'
+          +['in','𝕏','ig','yt'].map(function(lbl){return'<div style="width:30px;height:30px;background:#444;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;"><span style="color:#999;font-size:11px;">'+lbl+'</span></div>';}).join('')
+          +'</div></div></div>';
+        doc.body.appendChild(footerEl);
+      }
+      // Scripts → end of <body> (after footer)
       var sc1=doc.createElement('script');sc1.setAttribute('data-injected','1');sc1.textContent=recJs;doc.body.appendChild(sc1);
       var sc2=doc.createElement('script');sc2.setAttribute('data-injected','1');sc2.textContent=editJs;doc.body.appendChild(sc2);
       return'<!DOCTYPE html>'+doc.documentElement.outerHTML;
