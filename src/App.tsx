@@ -5,7 +5,7 @@ import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
-import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, List, LayoutGrid, Folder, FolderOpen, Heart, Building2, BookOpen } from "lucide-react";
+import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, List, LayoutGrid, Folder, FolderOpen, Heart, Building2, BookOpen, ExternalLink } from "lucide-react";
 
 const C = {
   pink:"#FF0077",white:"#FFFFFF",black:"#101720",offBlack:"#2A3447",
@@ -2268,7 +2268,7 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
   );
 }
 
-function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,verticals,setVerticals,journeys,setJourneys,gaCards,setGaCards,wireframeRules,setWireframeRules,clientList,setClientList,caseStudies,setCaseStudies}:{pages:any,setPages:any,personas:any,setPersonas:any,stages:any,setStages:any,verticals:any,setVerticals:any,journeys:any,setJourneys:any,gaCards:any,setGaCards:any,wireframeRules:any,setWireframeRules:any,clientList:any,setClientList:any,caseStudies:any,setCaseStudies:any}){
+function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,verticals,setVerticals,journeys,setJourneys,gaCards,setGaCards,wireframeRules,setWireframeRules,clientList,setClientList,caseStudies,setCaseStudies,setView}:{pages:any,setPages:any,personas:any,setPersonas:any,stages:any,setStages:any,verticals:any,setVerticals:any,journeys:any,setJourneys:any,gaCards:any,setGaCards:any,wireframeRules:any,setWireframeRules:any,clientList:any,setClientList:any,caseStudies:any,setCaseStudies:any,setView:any}){
   var [tab,setTab]=useState("home");
   var [newPage,setNewPage]=useState({url:"",label:"",section:"Products"});
   var [editingPersona,setEditingPersona]=useState(null);
@@ -2329,6 +2329,7 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,vert
           {id:"case-studies",icon:<BookOpen size={20}/>,label:"Case Studies",desc:"Real GWI customer outcomes injected into audit prompts so findings reference specific, credible metrics rather than generic best practice.",stat:(caseStudies as any[]).length+" case stud"+(((caseStudies as any[]).length===1)?"y":"ies")},
         ];
         return(
+          <>
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
             {_sc.map(function(s){return(
               <button key={s.id} onClick={function(){setTab(s.id);}} style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"20px 22px",cursor:"pointer",textAlign:"left",display:"flex",flexDirection:"column",gap:0,transition:"box-shadow 0.15s,border-color 0.15s"}} onMouseEnter={function(e){e.currentTarget.style.borderColor=C.pink;e.currentTarget.style.boxShadow="0 4px 16px rgba(255,0,119,0.1)";}} onMouseLeave={function(e){e.currentTarget.style.borderColor=C.grey4;e.currentTarget.style.boxShadow="none";}}>
@@ -2344,6 +2345,19 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,vert
               </button>
             );})}
           </div>
+          {/* Landing page preview banner */}
+          <div style={{marginTop:16,background:"linear-gradient(135deg,#0a0a14 0%,#1a0a2e 50%,#0d0d22 100%)",border:"1px solid rgba(255,0,119,0.25)",borderRadius:12,padding:"24px 28px",display:"flex",alignItems:"center",gap:20,flexWrap:"wrap"}}>
+            <div style={{flex:1,minWidth:200}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#FF0077",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:6}}>Marketing Preview</div>
+              <div style={{fontSize:16,fontWeight:700,color:"#fff",marginBottom:6}}>GWI UX Audit Tool — Landing Page</div>
+              <div style={{fontSize:13,color:"rgba(255,255,255,0.55)",lineHeight:1.5}}>Preview the white-label marketing 1-pager for this tool. Share the concept with stakeholders or use as a reference for future positioning.</div>
+            </div>
+            <button onClick={function(){setView("landing");}} style={{background:"#FF0077",color:"#fff",border:"none",borderRadius:8,padding:"12px 24px",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:8}}>
+              <ExternalLink size={15}/>
+              Preview landing page
+            </button>
+          </div>
+          </>
         );
       })()}
       {tab!=="home"&&(
@@ -2980,6 +2994,105 @@ function MobileNav({view,setView}){
 }
 
 
+function LandingPage({setView}:{setView:(v:string)=>void}){
+  var _particleBg=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;overflow:hidden;background:#000}canvas{display:block}</style><script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.1/build/three.module.js"}}</`+`script></head><body><script type="x-shader/x-vertex" id="vs">attribute float scale;varying vec3 vColor;void main(){vColor=color;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=scale*(300.0/-mv.z);gl_Position=projectionMatrix*mv;}</`+`script><script type="x-shader/x-fragment" id="fs">varying vec3 vColor;void main(){float d=length(gl_PointCoord-vec2(0.5));float a=pow(1.0-d*d,3.5);if(d>0.5)discard;gl_FragColor=vec4(vColor,a*0.9);}</`+`script><script type="module">import*as T from'three';const SEP=100,AX=50,AY=50,N=AX*AY;let cam,scene,ren,pts,cnt=0;const pos=new Float32Array(N*3),sc=new Float32Array(N),col=new Float32Array(N*3);let i=0,j=0;for(let x=0;x<AX;x++)for(let y=0;y<AY;y++){pos[i]=x*SEP-(AX*SEP)/2;pos[i+1]=0;pos[i+2]=y*SEP-(AY*SEP)/2;const c=new T.Color();c.setHSL((j/N)*0.389+0.556,1,.55);col[i]=c.r;col[i+1]=c.g;col[i+2]=c.b;sc[j]=20;i+=3;j++;}const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(pos,3));geo.setAttribute('scale',new T.BufferAttribute(sc,1));geo.setAttribute('color',new T.BufferAttribute(col,3));cam=new T.PerspectiveCamera(75,innerWidth/innerHeight,1,10000);cam.position.z=1000;scene=new T.Scene();pts=new T.Points(geo,new T.ShaderMaterial({vertexShader:document.getElementById('vs').textContent,fragmentShader:document.getElementById('fs').textContent,blending:T.AdditiveBlending,depthTest:false,transparent:true,vertexColors:true}));scene.add(pts);ren=new T.WebGLRenderer({antialias:true});ren.setPixelRatio(devicePixelRatio);ren.setSize(innerWidth,innerHeight);document.body.appendChild(ren.domElement);window.onresize=function(){cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight);};(function loop(){requestAnimationFrame(loop);cam.position.x=Math.sin(cnt*.005)*1000;cam.position.z=Math.cos(cnt*.005)*1000;cam.position.y=80;cam.lookAt(scene.position);let i=0;for(let x=0;x<AX;x++)for(let y=0;y<AY;y++){pos[i+1]=(Math.sin((x+cnt)*.3)*50)+(Math.sin((y+cnt)*.5)*50);i+=3;}for(let i=0;i<N;i++){const t=20+Math.abs(Math.sin(cnt*.1+i))*20;sc[i]+=(t-sc[i])*.1;const h=((Math.sin(cnt*.05+i)+1)/2)*0.389+0.556,bc=new T.Color();bc.setHSL(h,1,.55);col[i*3]+=(bc.r-col[i*3])*.1;col[i*3+1]+=(bc.g-col[i*3+1])*.1;col[i*3+2]+=(bc.b-col[i*3+2])*.1;}geo.attributes.position.needsUpdate=true;geo.attributes.scale.needsUpdate=true;geo.attributes.color.needsUpdate=true;ren.render(scene,cam);cnt+=.05;})();</`+`script></body></html>`;
+  var ff="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
+  var features=[
+    {icon:<Brain size={22} color={C.pink}/>,title:"AI-Powered Audits",desc:"Generate structured UX recommendations grounded in your personas, lifecycle stages, and industry verticals — in seconds."},
+    {icon:<LayoutGrid size={22} color={C.pink}/>,title:"Wireframe Generation",desc:"Every recommendation becomes a designed wireframe section automatically. Present findings the moment they're generated."},
+    {icon:<Users size={22} color={C.pink}/>,title:"Persona Management",desc:"Define the real people your product serves — their drives, anxieties, entry points and platform behaviours — and let every audit reflect them."},
+    {icon:<RefreshCw size={22} color={C.pink}/>,title:"Lifecycle Mapping",desc:"Frame every recommendation in the context of where a visitor is in the customer journey, from Awareness through to Advocacy."},
+    {icon:<ClipboardList size={22} color={C.pink}/>,title:"Recommendations Tracking",desc:"Every action item tracked by priority, status, and page. See progress across the entire site at a glance."},
+    {icon:<BarChart2 size={22} color={C.pink}/>,title:"Analytics Integration",desc:"Connect your GA4 reports directly in the app so data-driven context is always one click away from your audit."},
+  ];
+  var steps=[
+    {n:"01",title:"Set up pages and personas",desc:"Add the pages you want to audit and define the people who use them — with as much or as little detail as you need."},
+    {n:"02",title:"Run an AI audit",desc:"Claude analyses each page against your full context — personas, lifecycle stages, verticals, clients, and case studies — and returns structured recommendations."},
+    {n:"03",title:"Build wireframes, track progress",desc:"Turn findings into designed wireframes instantly. Mark actions as in progress or done and watch your audit score improve in real time."},
+  ];
+  var GwiLogoWhite=(<svg viewBox="0 0 230 71" fill="none" style={{width:90,height:"auto",display:"block"}}><path fillRule="evenodd" clipRule="evenodd" d="M230 54.2105C230 43.7102 225.129 38.8339 214.623 38.8339C204.119 38.8339 199.248 43.7102 199.248 54.2105C199.248 64.7107 204.119 69.5871 214.623 69.5871C225.129 69.5871 230 64.7107 230 54.2105Z" fill="#FF0077"/><path fillRule="evenodd" clipRule="evenodd" d="M176.341 69.2236H191.612V1.95935H176.341V69.2236Z" fill="white"/><path fillRule="evenodd" clipRule="evenodd" d="M148.954 69.2236H131.472L118.484 24.3824L105.359 69.2236H88.0286L67.2642 1.95935H84.4376L84.5125 2.23484L96.8212 47.6343L109.642 1.95935H127.359L140.518 47.7687L152.864 1.95935H169.797L148.954 69.2236Z" fill="white"/><path fillRule="evenodd" clipRule="evenodd" d="M32.5803 70.6778C22.7079 70.6778 14.7182 67.5206 8.83175 61.2943C2.96903 54.9939 0 46.4408 0 35.8647C0 25.3963 3.20293 16.8049 9.52069 10.3297C15.8664 3.81068 24.2783 0.504883 34.5232 0.504883C47.7936 0.504883 58.3726 6.4687 64.3131 17.2975L64.8781 18.3276L53.5652 27.5345L52.7116 26.2328C48.1861 19.3266 42.0415 15.8248 34.4491 15.8248C28.6982 15.8248 24.0876 17.6396 20.7467 21.2194C17.3287 24.8807 15.6671 29.6421 15.6671 35.774C15.6671 41.8194 17.3002 46.6228 20.5195 50.0522C23.7692 53.5132 28.2291 55.2678 33.7753 55.2678C40.2 55.2678 45.9467 52.1574 50.0281 46.4907H34.8379V31.9933H66.9006V69.3999H54.0525V60.9138C51.5634 63.9329 48.5603 66.2981 45.112 67.9516C41.3416 69.7609 37.1253 70.6778 32.5803 70.6778Z" fill="white"/></svg>);
+  return(
+    <div style={{fontFamily:ff,background:"#fff",minHeight:"100vh"}}>
+      {/* Fixed nav */}
+      <div style={{position:"fixed",top:0,left:0,right:0,zIndex:100,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 48px",height:68,background:"rgba(0,0,0,0.45)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
+        {GwiLogoWhite}
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={function(){setView("settings");}} style={{background:"transparent",border:"none",color:"rgba(255,255,255,0.5)",fontSize:12,fontWeight:600,cursor:"pointer",padding:"6px 12px",borderRadius:6}}>← Exit preview</button>
+          <button style={{background:C.pink,color:"#fff",border:"none",borderRadius:8,padding:"9px 22px",fontSize:13,fontWeight:700,cursor:"default",letterSpacing:"0.01em"}}>Sign In</button>
+        </div>
+      </div>
+
+      {/* Hero */}
+      <div style={{position:"relative",minHeight:"100vh",background:"#000",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
+        <iframe srcDoc={_particleBg} title="bg" sandbox="allow-scripts" style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none",pointerEvents:"none",zIndex:0}}/>
+        <div style={{position:"relative",zIndex:1,textAlign:"center",padding:"100px 24px 80px",maxWidth:760,margin:"0 auto"}}>
+          <div style={{display:"inline-block",background:"rgba(255,0,119,0.15)",border:"1px solid rgba(255,0,119,0.4)",borderRadius:99,padding:"5px 16px",fontSize:11,fontWeight:700,color:C.pink,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:28}}>White-label UX intelligence platform</div>
+          <h1 style={{fontSize:"clamp(32px,5vw,60px)",fontWeight:900,color:"#fff",lineHeight:1.1,margin:"0 0 24px",letterSpacing:"-0.03em"}}>The UX audit platform<br/>built for your team's pace.</h1>
+          <p style={{fontSize:"clamp(15px,2vw,19px)",color:"rgba(255,255,255,0.65)",lineHeight:1.7,margin:"0 0 40px",maxWidth:560,marginLeft:"auto",marginRight:"auto"}}>AI-powered recommendations, wireframe generation, and lifecycle context — all in one place. From first click to completed audit in minutes.</p>
+          <button style={{background:C.pink,color:"#fff",border:"none",borderRadius:10,padding:"16px 36px",fontSize:16,fontWeight:700,cursor:"default",letterSpacing:"0.01em",boxShadow:"0 4px 32px rgba(255,0,119,0.4)"}}>Sign in with Google →</button>
+          <div style={{marginTop:16,fontSize:12,color:"rgba(255,255,255,0.3)"}}>Access restricted to @gwi.com accounts</div>
+        </div>
+      </div>
+
+      {/* Features */}
+      <div style={{background:"#fff",padding:"96px 48px"}}>
+        <div style={{maxWidth:1100,margin:"0 auto"}}>
+          <div style={{textAlign:"center",marginBottom:60}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:12}}>What's inside</div>
+            <h2 style={{fontSize:"clamp(24px,3vw,38px)",fontWeight:900,color:C.black,margin:"0 0 16px",letterSpacing:"-0.02em"}}>Everything your team needs to move faster</h2>
+            <p style={{fontSize:16,color:C.grey7,maxWidth:520,margin:"0 auto",lineHeight:1.7}}>Six integrated modules that take you from a blank slate to a fully audited, wireframed, and tracked UX roadmap.</p>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:24}}>
+            {features.map(function(f,i){return(
+              <div key={i} style={{background:C.grey2,borderRadius:14,padding:"28px 24px",border:"1px solid "+C.grey4}}>
+                <div style={{background:"#FFEEF6",borderRadius:10,width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}>{f.icon}</div>
+                <div style={{fontSize:15,fontWeight:800,color:C.black,marginBottom:8}}>{f.title}</div>
+                <div style={{fontSize:13,color:C.grey7,lineHeight:1.7}}>{f.desc}</div>
+              </div>
+            );})}
+          </div>
+        </div>
+      </div>
+
+      {/* How it works */}
+      <div style={{background:C.grey3,padding:"96px 48px"}}>
+        <div style={{maxWidth:900,margin:"0 auto"}}>
+          <div style={{textAlign:"center",marginBottom:56}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:12}}>The process</div>
+            <h2 style={{fontSize:"clamp(24px,3vw,38px)",fontWeight:900,color:C.black,margin:0,letterSpacing:"-0.02em"}}>From setup to insights in three steps</h2>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:32}}>
+            {steps.map(function(s,i){return(
+              <div key={i} style={{position:"relative"}}>
+                <div style={{fontSize:48,fontWeight:900,color:C.grey4,lineHeight:1,marginBottom:16,letterSpacing:"-0.04em"}}>{s.n}</div>
+                <div style={{fontSize:16,fontWeight:800,color:C.black,marginBottom:10}}>{s.title}</div>
+                <div style={{fontSize:13,color:C.grey7,lineHeight:1.75}}>{s.desc}</div>
+                {i<2&&<div style={{position:"absolute",top:24,right:-16,width:32,height:2,background:C.grey4,display:"block"}}/>}
+              </div>
+            );})}
+          </div>
+        </div>
+      </div>
+
+      {/* CTA banner */}
+      <div style={{background:"#000",padding:"80px 48px",textAlign:"center",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",inset:0,opacity:0.4,pointerEvents:"none"}}><iframe srcDoc={_particleBg} title="bg2" sandbox="allow-scripts" style={{width:"100%",height:"100%",border:"none"}}/></div>
+        <div style={{position:"relative",zIndex:1}}>
+          <h2 style={{fontSize:"clamp(24px,3vw,40px)",fontWeight:900,color:"#fff",margin:"0 0 16px",letterSpacing:"-0.02em"}}>Ready to audit smarter?</h2>
+          <p style={{fontSize:16,color:"rgba(255,255,255,0.6)",margin:"0 0 36px"}}>Sign in with your @gwi.com Google account to get started.</p>
+          <button style={{background:C.pink,color:"#fff",border:"none",borderRadius:10,padding:"16px 40px",fontSize:16,fontWeight:700,cursor:"default",boxShadow:"0 4px 32px rgba(255,0,119,0.5)"}}>Sign in with Google →</button>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{background:"#111",padding:"32px 48px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
+        {GwiLogoWhite}
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.3)"}}>Internal UX platform · Access restricted to @gwi.com accounts</div>
+        <button onClick={function(){setView("settings");}} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.15)",color:"rgba(255,255,255,0.4)",borderRadius:6,padding:"6px 14px",fontSize:11,fontWeight:600,cursor:"pointer"}}>← Exit preview</button>
+      </div>
+    </div>
+  );
+}
 function LoginScreen({onLogin,onRegister,onGoogleLogin,loginError}:{onLogin:any,onRegister:any,onGoogleLogin:any,loginError:any}){
   var _wrap={position:"relative" as const,display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#000",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",overflow:"hidden" as const};
   var _card={position:"relative" as const,zIndex:1,background:"rgba(255,255,255,0.92)",borderRadius:16,boxShadow:"0 8px 56px rgba(0,0,0,0.55)",padding:"40px 36px",maxWidth:380,width:"100%",boxSizing:"border-box" as const,textAlign:"center" as const};
@@ -3436,7 +3549,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
 
 export default function App(){
 
-  var VALID_VIEWS=["dashboard","audit","generated-audits","summary","personas","persona-detail","mapping","journey","lifecycle","affinity","flows","analytics","settings","wireframes","feedback","guide"];
+  var VALID_VIEWS=["dashboard","audit","generated-audits","summary","personas","persona-detail","mapping","journey","lifecycle","affinity","flows","analytics","settings","wireframes","feedback","guide","landing"];
   function hashToView(h){var v=(h||"").replace(/^#\//,"").split("/")[0];return VALID_VIEWS.indexOf(v)>=0?v:"dashboard";}
   function hashToSubId(h){var parts=(h||"").replace(/^#\//,"").split("/");return parts.length>1?decodeURIComponent(parts[1]):null;}
   var [view,setViewRaw]=useState(function(){return hashToView(window.location.hash);});
@@ -3534,7 +3647,8 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="analytics"&&<AnalyticsPage gaCards={gaCards} setGaCards={setGaCards}/>}
         {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} clientList={clientList} caseStudies={caseStudies} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit).catch(function(){});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
         {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id)).catch(function(){});}} onUpdateAudit={function(updated){if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",updated.id),updated).catch(function(){});}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
-        {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} verticals={verticals} setVerticals={setVerticals} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards} wireframeRules={wireframeRules} setWireframeRules={setWireframeRules} clientList={clientList} setClientList={setClientList} caseStudies={caseStudies} setCaseStudies={setCaseStudies}/>}
+        {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} verticals={verticals} setVerticals={setVerticals} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards} wireframeRules={wireframeRules} setWireframeRules={setWireframeRules} clientList={clientList} setClientList={setClientList} caseStudies={caseStudies} setCaseStudies={setCaseStudies} setView={setView}/>}
+        {view==="landing"&&<LandingPage setView={setView}/>}
         {view==="guide"&&<GuidePage/>}
         {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData} onAddRec={function(action,pageUrl){var pageObj=pages.find(function(p){return p.url===pageUrl;});var newAction=Object.assign({},action,{status:"todo"});var existing=auditData.find(function(p){return p.url===pageUrl;});if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}}} onRemoveRec={function(actionId,pageUrl){setAuditData(function(prev){return prev.map(function(p){return p.url!==pageUrl?p:Object.assign({},p,{actions:(p.actions||[]).filter(function(a:any){return a.id!==actionId;})});});});}} lovedComponents={lovedComponents} onLoveComponent={function(lc){setLovedComponents(function(prev){return (prev as any[]).concat([lc]);});}} onUnloveComponent={function(id){setLovedComponents(function(prev){return (prev as any[]).filter(function(lc:any){return lc.id!==id;});});}} personas={personas} wireframeRules={wireframeRules} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}}/>}
       </div>
