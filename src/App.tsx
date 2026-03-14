@@ -1642,9 +1642,24 @@ function FeedbackPage({feedback,onDeleteFeedback,onSubmit,onEditFeedback}){
     setFormName("");setFormText("");setFormRating(0);setShowForm(false);
   }
   var inputStyle={width:"100%",border:"1.5px solid "+C.grey4,borderRadius:8,padding:"9px 12px",fontSize:13,color:C.offBlack,background:C.white,outline:"none",boxSizing:"border-box" as const,fontFamily:"inherit"};
+  var ratingItems=(feedback as any[]).filter(function(fb:any){return fb.rating>0;});
+  var avgRating=ratingItems.length>0?ratingItems.reduce(function(s:number,fb:any){return s+fb.rating;},0)/ratingItems.length:0;
   return(
     <PageWrap isMobile={isMobile}>
-      <BlackHero eyebrow="Team input" title="Feedback" desc="Ratings and notes from the team — everything submitted through the feedback form lives here."/>
+      <BlackHero eyebrow="Team input" title="Feedback" desc="Ratings and notes from the team — everything submitted through the feedback form lives here.">{ratingItems.length>0&&(
+        <div style={{display:"flex",alignItems:"center",gap:20,paddingTop:16,borderTop:"1px solid rgba(255,255,255,0.08)"}}>
+          <div style={{display:"flex",alignItems:"baseline",gap:6}}>
+            <span style={{fontSize:36,fontWeight:800,color:C.white,lineHeight:1}}>{avgRating.toFixed(1)}</span>
+            <span style={{fontSize:13,color:"rgba(255,255,255,0.35)"}}>/ 5</span>
+          </div>
+          <div>
+            <div style={{display:"flex",gap:3,marginBottom:5}}>
+              {[1,2,3,4,5].map(function(n){var filled=n<=Math.round(avgRating);return(<Star key={n} size={18} fill={filled?C.pink:"none"} stroke={filled?C.pink:"rgba(255,255,255,0.2)"} strokeWidth={1.5}/>);})}
+            </div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",fontWeight:500}}>from {ratingItems.length} rating{ratingItems.length===1?"":"s"}</div>
+          </div>
+        </div>
+      )}</BlackHero>
       <div style={{marginBottom:20}}>
         {!showForm?(
           <button onClick={function(){setShowForm(true);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><Plus size={15}/>Add feedback</button>
