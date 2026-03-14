@@ -5,7 +5,7 @@ import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
-import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, List, LayoutGrid, Folder, FolderOpen, Heart } from "lucide-react";
+import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, List, LayoutGrid, Folder, FolderOpen, Heart, Building2, BookOpen } from "lucide-react";
 
 const C = {
   pink:"#FF0077",white:"#FFFFFF",black:"#101720",offBlack:"#2A3447",
@@ -225,6 +225,69 @@ const INIT_GA_CARDS=[
 ];
 const CARD_ICON_KEYS=["LayoutDashboard","Home","Puzzle","DollarSign","FileText","Bot","MousePointerClick","GitMerge","BarChart2","Layers","Zap","Brain"];
 const INIT_WIREFRAME_RULES={tov:""};
+
+const INIT_CLIENTS=[
+  {id:"cl-1",name:"20ten",type:"Agency",sector:"Agency - Independent",hasCase:true,notes:""},
+  {id:"cl-2",name:"Advanced Sponsorship Insights",type:"Corporate",sector:"Consulting",hasCase:true,notes:""},
+  {id:"cl-3",name:"Avery Dennison",type:"Corporate",sector:"Retail",hasCase:true,notes:""},
+  {id:"cl-4",name:"Barefoot Proximity",type:"Agency",sector:"Agency - Networked",hasCase:true,notes:""},
+  {id:"cl-5",name:"BBDO (New York)",type:"Agency",sector:"Agency - Networked",hasCase:true,notes:""},
+  {id:"cl-6",name:"BCM Group",type:"Agency",sector:"Agency - Independent",hasCase:true,notes:""},
+  {id:"cl-7",name:"BIGEYE",type:"Agency",sector:"Agency - Independent",hasCase:true,notes:""},
+  {id:"cl-8",name:"Blis",type:"Agency",sector:"Agency - Networked",hasCase:true,notes:""},
+  {id:"cl-9",name:"Blizzard Entertainment",type:"Corporate",sector:"Gaming",hasCase:true,notes:""},
+  {id:"cl-10",name:"Bright Shift",type:"Agency",sector:"Agency - Independent",hasCase:true,notes:""},
+  {id:"cl-11",name:"Brilliant Noise",type:"Agency",sector:"Agency - Independent",hasCase:true,notes:"No longer a client"},
+  {id:"cl-12",name:"City Football Group",type:"Corporate",sector:"Sports",hasCase:true,notes:""},
+  {id:"cl-13",name:"City Pantry",type:"Corporate",sector:"Consumer Packaged Goods",hasCase:true,notes:""},
+  {id:"cl-14",name:"Dentsu",type:"Agency",sector:"Agency - Networked",hasCase:false,notes:""},
+  {id:"cl-15",name:"Eurosport",type:"Agency",sector:"Agency - Networked",hasCase:true,notes:""},
+  {id:"cl-16",name:"EA",type:"Corporate",sector:"Gaming",hasCase:false,notes:""},
+  {id:"cl-17",name:"Edelman",type:"Agency",sector:"Agency - Independent",hasCase:false,notes:""},
+  {id:"cl-18",name:"First and First Consulting",type:"Agency",sector:"Agency - Independent",hasCase:true,notes:""},
+  {id:"cl-19",name:"Flipboard",type:"Media",sector:"Platforms",hasCase:true,notes:""},
+  {id:"cl-20",name:"Fnatic",type:"Media",sector:"Gaming",hasCase:true,notes:""},
+  {id:"cl-21",name:"Google",type:"Media",sector:"Platforms",hasCase:false,notes:""},
+  {id:"cl-22",name:"GroupM",type:"Agency",sector:"Agency - Networked",hasCase:false,notes:""},
+  {id:"cl-23",name:"HAVAS",type:"Agency",sector:"Agency - Networked",hasCase:false,notes:""},
+  {id:"cl-24",name:"IAAF Athletics",type:"Corporate",sector:"Sports",hasCase:false,notes:""},
+  {id:"cl-25",name:"Imille",type:"Agency",sector:"Agency - Independent",hasCase:true,notes:""},
+  {id:"cl-26",name:"IPG Media Brands",type:"Agency",sector:"Agency - Networked",hasCase:false,notes:""},
+  {id:"cl-27",name:"Kiwi Digital",type:"Agency",sector:"Agency - Independent",hasCase:true,notes:""},
+  {id:"cl-28",name:"LinkedIn",type:"Media",sector:"Platforms",hasCase:false,notes:""},
+  {id:"cl-29",name:"Match Media Group",type:"Media",sector:"Ad-Tech",hasCase:true,notes:""},
+  {id:"cl-30",name:"MediaCom",type:"Agency",sector:"Agency - Networked",hasCase:false,notes:""},
+  {id:"cl-31",name:"Microsoft",type:"Media",sector:"Platforms",hasCase:false,notes:""},
+  {id:"cl-32",name:"Mobily",type:"Agency",sector:"Agency - Independent",hasCase:true,notes:""},
+  {id:"cl-33",name:"Ogilvy",type:"Agency",sector:"Agency - Networked",hasCase:false,notes:""},
+  {id:"cl-34",name:"OMD",type:"Agency",sector:"Agency - Networked",hasCase:false,notes:""},
+  {id:"cl-35",name:"OmnicomGroup",type:"Agency",sector:"Agency - Networked",hasCase:false,notes:""},
+  {id:"cl-36",name:"Passion Digital",type:"Agency",sector:"Agency - Independent",hasCase:true,notes:""},
+  {id:"cl-37",name:"Pernod Ricard",type:"Corporate",sector:"Consumer Packaged Goods",hasCase:true,notes:""},
+  {id:"cl-38",name:"Publicis Group",type:"Agency",sector:"Agency - Networked",hasCase:false,notes:""},
+  {id:"cl-39",name:"Snapchat",type:"Media",sector:"Platforms",hasCase:false,notes:""},
+  {id:"cl-40",name:"Sony Pictures Television",type:"Media",sector:"Media & Entertainment",hasCase:true,notes:""},
+  {id:"cl-41",name:"Spotify",type:"Media",sector:"Platforms",hasCase:false,notes:""},
+  {id:"cl-42",name:"The Guardian",type:"Media",sector:"Publishing",hasCase:false,notes:""},
+  {id:"cl-43",name:"TMW Unlimited",type:"Agency",sector:"Agency - Independent",hasCase:false,notes:""},
+  {id:"cl-44",name:"X (Twitter)",type:"Media",sector:"Platforms",hasCase:false,notes:""},
+  {id:"cl-45",name:"VaynerMedia",type:"Agency",sector:"Agency - Independent",hasCase:false,notes:""},
+  {id:"cl-46",name:"VERB Brands",type:"Agency",sector:"Agency - Independent",hasCase:true,notes:""},
+  {id:"cl-47",name:"We Are Social",type:"Agency",sector:"Agency - Independent",hasCase:false,notes:""},
+  {id:"cl-48",name:"WPP",type:"Agency",sector:"Agency - Networked",hasCase:false,notes:""},
+  {id:"cl-49",name:"YouthWorks (Turkey)",type:"Agency",sector:"Agency - Independent",hasCase:true,notes:""},
+  {id:"cl-50",name:"Zenith",type:"Agency",sector:"Agency - Networked",hasCase:false,notes:""},
+  {id:"cl-51",name:"Zenith (London)",type:"Agency",sector:"Agency - Networked",hasCase:true,notes:""},
+];
+
+const INIT_CASE_STUDIES=[
+  {id:"case-1",company:"Barefoot Proximity",sector:"Agency - Networked",outcome:"Reduced research turnaround by 35%, cut team size from 5 people to 1-2 per project. Needed the why behind audience behaviour, not just what and where.",metric:"35% turnaround improvement",quote:"What we were missing was the why. With GWI, we can get smarter, quicker. We can do more in less time, with fewer resources."},
+  {id:"case-2",company:"Kiwi Digital",sector:"Agency - Independent",outcome:"Cut project turnaround from 5 days to 2 days using GWI to build 360-degree consumer views combining demographics, attitudes, lifestyles and emotional drivers.",metric:"3 days saved per project",quote:"GWI has totally changed our strategy — we're now totally oriented towards our target audiences."},
+  {id:"case-3",company:"Brilliant Noise",sector:"Agency - Independent",outcome:"Won new business using GWI as the proof point and core of the pitch. Augmented existing personas without paying for primary research.",metric:"New business won on pitch",quote:"Being able to augment existing personas without paying for primary research is amazing. GWI has a better UX and is better at modelling personas than any other tool."},
+  {id:"case-4",company:"VERB Brands",sector:"Agency - Independent",outcome:"Commissioned GWI custom research on 1,000+ affluent consumers, turned it into a free 'State of Luxe' report that became a lead generation engine.",metric:"36% inbound leads increase · 221% YoY lead growth · 53% website traffic lift · 27% email list growth",quote:"GWI elevates our business offering, providing additional insight for client strategies."},
+  {id:"case-5",company:"Nextdoor",sector:"Platforms",outcome:"Built a public Insights Hub combining first-party neighbour data with GWI consumer research to educate advertisers and prove audience value.",metric:"197% increase in year-on-year web page views",quote:"GWI's data helps support and validate our internal first-party data."},
+  {id:"case-6",company:"City Football Group",sector:"Sports",outcome:"Gave all 8 clubs equal access to consistent market research, transforming sponsorship pitch narratives with granular, market-specific data previously out of reach for smaller clubs.",metric:"Sponsorship growth across all markets",quote:"GWI provides equality of data across all markets — it's transformed the way we talk about our sponsorship offering for clubs that previously had no research budget."},
+];
 
 function getPersonaColor(p){return DEFAULT_PERSONA_COLORS[p.colorIndex%DEFAULT_PERSONA_COLORS.length];}
 
@@ -2061,7 +2124,7 @@ function DataAccordion({personas,stages,journeys,isMobile}){
   );
 }
 
-function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGenerated}){
+function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGenerated,clientList,caseStudies}){
   var [copied,setCopied]=useState(false);
   var [editingPrompt,setEditingPrompt]=useState(false);
   var [promptInstruction,setPromptInstruction]=useState("You are a UX strategist. Using the persona, lifecycle, and journey context below, generate a structured UX audit report for the specified page. Format each recommendation EXACTLY like this:\n\n1. Title of recommendation\nOne paragraph description grounded in the persona data.\n\nNo bold, no markdown, no bullet points. Just a number, a title, and a paragraph.");
@@ -2112,18 +2175,16 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
 
     p+="PERSONAS: "+personas.map(function(pe){return pe.label+" ("+pe.tagline+")";}).join("; ")+".\n\n";
 
-    p+="REAL GWI CUSTOMER PROOF POINTS — use these when relevant in SHOWS and CHANGE fields to ground recommendations in specific, credible outcomes rather than generic best practice:\n\n";
-    p+="Speed to insight / agency pitching:\n";
-    p+="- Barefoot Proximity reduced research turnaround by 35% and cut team size from 5 people to 1-2 per project using GWI. They needed the 'why' behind audience behaviour, not just the what and where.\n";
-    p+="- Kiwi Digital cut project turnaround from 5 days to 2 days by using GWI to build 360-degree consumer views combining demographics with attitudes, lifestyles and emotional drivers.\n";
-    p+="- Brilliant Noise win pitches using GWI as 'the proof point and core of the pitch'. Quote: 'Being able to augment existing personas without paying for primary research is amazing.' and 'GWI has a better UX and is better at modelling personas than any other tool.'\n\n";
-    p+="Lead generation & content marketing:\n";
-    p+="- VERB Brands used GWI to commission custom research on 1,000+ affluent consumers, turned the findings into a free 'State of Luxe' report, and achieved: 36% increase in inbound leads, 221% YoY inbound lead growth, 53% increase in website traffic, 27% email list growth.\n\n";
-    p+="Ad sales & first-party data validation:\n";
-    p+="- Nextdoor built a public Insights Hub combining their own first-party data with GWI consumer research, achieving a 197% increase in year-on-year web page views and becoming an ANA Genius Award finalist. Quote: 'GWI's data helps support and validate our internal first-party data.'\n\n";
-    p+="Enterprise democratisation / multi-market:\n";
-    p+="- City Football Group gave all 8 clubs equal access to consistent market research using GWI, transforming how they pitch sponsorships. Quote: 'GWI provides equality of data across all markets — it's transformed the way we talk about our sponsorship offering for clubs that previously had no research budget.'\n\n";
-    p+="When a finding touches social proof, CTAs, use-case framing, speed-to-value, pitch-winning, or data credibility — reference the relevant proof point with the actual number. Prefer specific metrics over vague claims.\n\n";
+    if((caseStudies as any[]).length>0){
+      p+="REAL GWI CUSTOMER PROOF POINTS — use these when relevant in SHOWS and CHANGE fields to ground recommendations in specific, credible outcomes rather than generic best practice:\n\n";
+      (caseStudies as any[]).forEach(function(cs){
+        p+="- "+cs.company+" ("+cs.sector+"): "+cs.outcome;
+        if(cs.metric)p+=" Key metric: "+cs.metric+".";
+        if(cs.quote)p+=" Quote: \""+cs.quote+"\"";
+        p+="\n";
+      });
+      p+="\nWhen a finding touches social proof, CTAs, use-case framing, speed-to-value, pitch-winning, or data credibility — reference the relevant proof point with the actual number. Prefer specific metrics over vague claims.\n\n";
+    }
 
     p+="Produce exactly 12 UX findings for this page. Output ONLY the findings — no intro, no summary, no other sections.\n\n";
     p+="Use this EXACT format for every finding (all 4 fields required):\n\n";
@@ -2232,7 +2293,7 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
   );
 }
 
-function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,journeys,setJourneys,gaCards,setGaCards,wireframeRules,setWireframeRules}){
+function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,journeys,setJourneys,gaCards,setGaCards,wireframeRules,setWireframeRules,clientList,setClientList,caseStudies,setCaseStudies}){
   var [tab,setTab]=useState("home");
   var [newPage,setNewPage]=useState({url:"",label:"",section:"Products"});
   var [editingPersona,setEditingPersona]=useState(null);
@@ -2249,6 +2310,13 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
   var [newGaCard,setNewGaCard]=useState({iconKey:"BarChart2",title:"",desc:"",url:""});
   var [gaDragIdx,setGaDragIdx]=useState(null);
   var [gaOverIdx,setGaOverIdx]=useState(null);
+  var [clientSearch,setClientSearch]=useState("");
+  var [showAddClient,setShowAddClient]=useState(false);
+  var [newClient,setNewClient]=useState({name:"",type:"Agency",sector:"",hasCase:false,notes:""});
+  var [editingCase,setEditingCase]=useState<string|null>(null);
+  var [caseDraft,setCaseDraft]=useState<any>({});
+  var [showAddCase,setShowAddCase]=useState(false);
+  var [newCase,setNewCase]=useState({company:"",sector:"",outcome:"",metric:"",quote:""});
   var isMobile=useWidth()<768;
   var sectionSet={};pages.forEach(function(p){sectionSet[p.section]=true;});var sections=Object.keys(sectionSet);
   var MULTI=["who","what","drives","bugs","grabs","concerns","whyUs","platform","website","gwi_goal","hmw","signupNote","push","pull","habit","anxiety"];
@@ -2276,6 +2344,8 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
           {id:"journeys",icon:<Map size={20}/>,label:"Journey Steps",desc:"Map out the steps for each persona across the customer lifecycle.",stat:totalSteps+" step"+(totalSteps===1?"":"s")},
           {id:"ga",icon:<BarChart2 size={20}/>,label:"Google Analytics",desc:"Set up GA4 report links that appear on the Analytics page for quick access.",stat:gaCards.length+" report"+(gaCards.length===1?"":"s")},
           {id:"wireframes",icon:<LayoutGrid size={20}/>,label:"Wireframe Rules",desc:"Define rules that every generated wireframe must follow — including tone of voice and copy guidelines.",stat:(wireframeRules as any).tov?"Tone of voice set":"No rules set"},
+          {id:"clients",icon:<Building2 size={20}/>,label:"Clients",desc:"The companies that use GWI — used in audit recommendations to suggest logo walls, social proof, and industry-specific use cases.",stat:(clientList as any[]).filter(function(c){return !c.notes.toLowerCase().includes("no longer");}).length+" active clients"},
+          {id:"case-studies",icon:<BookOpen size={20}/>,label:"Case Studies",desc:"Real GWI customer outcomes injected into audit prompts so findings reference specific, credible metrics rather than generic best practice.",stat:(caseStudies as any[]).length+" case stud"+(((caseStudies as any[]).length===1)?"y":"ies")},
         ];
         return(
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
@@ -2297,7 +2367,7 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
       })()}
       {tab!=="home"&&(
         <div style={{display:"flex",gap:4,marginBottom:28,background:C.grey4,borderRadius:10,padding:4,width:isMobile?"100%":"fit-content",overflowX:"auto"}}>
-          {[["home","← Overview"],["pages","Pages"],["personas","Personas"],["stages","Lifecycle Stages"],["journeys","Journey Steps"],["ga","Google Analytics"],["wireframes","Wireframe Rules"]].map(function(x){return(
+          {[["home","← Overview"],["pages","Pages"],["personas","Personas"],["stages","Lifecycle Stages"],["journeys","Journey Steps"],["ga","Google Analytics"],["wireframes","Wireframe Rules"],["clients","Clients"],["case-studies","Case Studies"]].map(function(x){return(
             <button key={x[0]} onClick={function(){setTab(x[0]);}} style={{padding:"8px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:tab===x[0]?C.pink:"transparent",color:tab===x[0]?C.white:C.grey7,flexShrink:0,whiteSpace:"nowrap"}}>{x[1]}</button>
           );})}
         </div>
@@ -2502,6 +2572,137 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,jour
             <div style={{background:"#E6F9F2",border:"1px solid #A3E6C8",borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:8}}>
               <Check size={14} color="#00A86B"/>
               <span style={{fontSize:13,color:"#005C3B",fontWeight:600}}>Tone of voice is active. All new wireframes will follow these guidelines when generating copy.</span>
+            </div>
+          )}
+        </div>
+      )}
+      {tab==="clients"&&(
+        <div>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+            <input value={clientSearch} onChange={function(e){setClientSearch(e.target.value);}} placeholder="Search clients…" style={{flex:1,padding:"8px 12px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:13,outline:"none",background:C.white}}/>
+            <button onClick={function(){setShowAddClient(!showAddClient);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",gap:6}}><Plus size={14}/>{showAddClient?"Cancel":"Add client"}</button>
+          </div>
+          {showAddClient&&(
+            <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:20,marginBottom:16}}>
+              <h3 style={{fontWeight:700,color:C.black,fontSize:15,marginBottom:16}}>New Client</h3>
+              <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:10,marginBottom:10}}>
+                <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Company name</div><input value={newClient.name} onChange={function(e){setNewClient(Object.assign({},newClient,{name:e.target.value}));}} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
+                <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Type</div><select value={newClient.type} onChange={function(e){setNewClient(Object.assign({},newClient,{type:e.target.value}));}} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,background:C.white}}><option>Agency</option><option>Corporate</option><option>Media</option><option>Platform</option><option>Sports</option></select></div>
+                <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Sector</div><input value={newClient.sector} onChange={function(e){setNewClient(Object.assign({},newClient,{sector:e.target.value}));}} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
+                <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Notes</div><input value={newClient.notes} onChange={function(e){setNewClient(Object.assign({},newClient,{notes:e.target.value}));}} placeholder="e.g. No longer a client" style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/></div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
+                <input type="checkbox" id="hasCase" checked={newClient.hasCase} onChange={function(e){setNewClient(Object.assign({},newClient,{hasCase:e.target.checked}));}}/>
+                <label htmlFor="hasCase" style={{fontSize:13,color:C.offBlack,fontWeight:600}}>Has a published case study</label>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={function(){if(!newClient.name)return;setClientList(function(prev){return (prev as any[]).concat([Object.assign({},newClient,{id:"cl-"+Date.now()})]);});setNewClient({name:"",type:"Agency",sector:"",hasCase:false,notes:""});setShowAddClient(false);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add client</button>
+                <button onClick={function(){setShowAddClient(false);setNewClient({name:"",type:"Agency",sector:"",hasCase:false,notes:""});}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+              </div>
+            </div>
+          )}
+          {(function(){
+            var filtered=(clientList as any[]).filter(function(c){return !clientSearch||c.name.toLowerCase().includes(clientSearch.toLowerCase())||c.sector.toLowerCase().includes(clientSearch.toLowerCase());});
+            var active=filtered.filter(function(c){return !c.notes.toLowerCase().includes("no longer");});
+            var inactive=filtered.filter(function(c){return c.notes.toLowerCase().includes("no longer");});
+            function row(c:any){return(
+              <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",borderBottom:"1px solid "+C.grey3}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:600,fontSize:13,color:C.offBlack}}>{c.name}</div>
+                  <div style={{fontSize:11,color:C.grey7}}>{c.sector}</div>
+                </div>
+                <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:99,background:c.type==="Agency"?"#F0F0FF":c.type==="Corporate"?"#F0FFF8":"#FFF8F0",color:c.type==="Agency"?C.violet:c.type==="Corporate"?C.teal:C.grey8,flexShrink:0}}>{c.type}</span>
+                {c.hasCase&&<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,background:"#E6F9F2",color:"#005C3B",flexShrink:0}}>Case Study</span>}
+                {c.notes&&<span style={{fontSize:10,color:C.grey7,flexShrink:0,maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.notes}</span>}
+                <button onClick={function(){setClientList(function(prev){return (prev as any[]).filter(function(x){return x.id!==c.id;});});}} style={{background:"#FFF0F0",color:"#CC0000",border:"1px solid #FFAAAA",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer",flexShrink:0}}>Remove</button>
+              </div>
+            );}
+            return(
+              <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,overflow:"hidden"}}>
+                {active.length>0&&(
+                  <div>
+                    <div style={{padding:"10px 16px",background:C.grey3,fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em"}}>{active.length} active client{active.length===1?"":"s"}</div>
+                    {active.map(row)}
+                  </div>
+                )}
+                {inactive.length>0&&(
+                  <div>
+                    <div style={{padding:"10px 16px",background:"#FFF8F8",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em"}}>{inactive.length} former client{inactive.length===1?"":"s"}</div>
+                    {inactive.map(row)}
+                  </div>
+                )}
+                {active.length===0&&inactive.length===0&&(
+                  <div style={{padding:24,textAlign:"center",color:C.grey6,fontSize:13}}>No clients match your search.</div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+      {tab==="case-studies"&&(
+        <div>
+          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
+            <button onClick={function(){setShowAddCase(!showAddCase);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><Plus size={14}/>{showAddCase?"Cancel":"Add case study"}</button>
+          </div>
+          {showAddCase&&(
+            <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:20,marginBottom:16}}>
+              <h3 style={{fontWeight:700,color:C.black,fontSize:15,marginBottom:16}}>New Case Study</h3>
+              {[["Company","company"],["Sector","sector"],["Outcome (what happened)","outcome"],["Key metric","metric"],["Pull quote","quote"]].map(function(x){return(
+                <div key={x[1]} style={{marginBottom:10}}>
+                  <div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>{x[0]}</div>
+                  {(x[1]==="outcome"||x[1]==="quote")
+                    ?<textarea value={(newCase as any)[x[1]]||""} onChange={function(e){var u=Object.assign({},newCase);(u as any)[x[1]]=e.target.value;setNewCase(u);}} rows={2} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,resize:"vertical",fontFamily:"inherit",boxSizing:"border-box"}}/>
+                    :<input value={(newCase as any)[x[1]]||""} onChange={function(e){var u=Object.assign({},newCase);(u as any)[x[1]]=e.target.value;setNewCase(u);}} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/>
+                  }
+                </div>
+              );})}
+              <div style={{display:"flex",gap:8,marginTop:8}}>
+                <button onClick={function(){if(!(newCase as any).company)return;setCaseStudies(function(prev){return (prev as any[]).concat([Object.assign({},newCase,{id:"case-"+Date.now()})]);});setNewCase({company:"",sector:"",outcome:"",metric:"",quote:""});setShowAddCase(false);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Save case study</button>
+                <button onClick={function(){setShowAddCase(false);}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+              </div>
+            </div>
+          )}
+          {(caseStudies as any[]).map(function(cs){
+            var isEditing=editingCase===cs.id;
+            return(
+              <div key={cs.id} style={{background:C.white,border:"1px solid "+(isEditing?C.pink:C.grey4),borderRadius:12,marginBottom:12,overflow:"hidden"}}>
+                <div style={{padding:"16px 20px",display:"flex",alignItems:"flex-start",gap:12}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:700,fontSize:15,color:C.black,marginBottom:2}}>{cs.company}</div>
+                    <div style={{fontSize:12,color:C.grey7,marginBottom:6}}>{cs.sector}</div>
+                    {!isEditing&&(
+                      <div>
+                        <div style={{fontSize:13,color:C.offBlack,lineHeight:1.6,marginBottom:6}}>{cs.outcome}</div>
+                        {cs.metric&&<div style={{display:"inline-flex",alignItems:"center",gap:4,background:"#E6F9F2",border:"1px solid #A3E6C8",borderRadius:8,padding:"3px 10px",fontSize:11,fontWeight:700,color:"#005C3B",marginBottom:6}}>{cs.metric}</div>}
+                        {cs.quote&&<div style={{fontSize:12,color:C.grey7,fontStyle:"italic",borderLeft:"3px solid "+C.pink,paddingLeft:10,marginTop:8}}>"{cs.quote}"</div>}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{display:"flex",gap:6,flexShrink:0}}>
+                    <button onClick={function(){if(isEditing){setEditingCase(null);}else{setEditingCase(cs.id);setCaseDraft(Object.assign({},cs));}}} style={{background:isEditing?C.pink:C.grey3,color:isEditing?C.white:C.grey8,border:"none",borderRadius:6,padding:"6px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{isEditing?"Close":"Edit"}</button>
+                    <button onClick={function(){setCaseStudies(function(prev){return (prev as any[]).filter(function(x){return x.id!==cs.id;});});}} style={{background:"#FFF0F0",color:"#CC0000",border:"1px solid #FFAAAA",borderRadius:6,padding:"6px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Delete</button>
+                  </div>
+                </div>
+                {isEditing&&(
+                  <div style={{padding:"0 20px 20px",borderTop:"1px solid "+C.grey4}}>
+                    {[["Company","company"],["Sector","sector"],["Outcome","outcome"],["Key metric","metric"],["Pull quote","quote"]].map(function(x){return(
+                      <div key={x[1]} style={{marginBottom:10,marginTop:10}}>
+                        <div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>{x[0]}</div>
+                        {(x[1]==="outcome"||x[1]==="quote")
+                          ?<textarea value={caseDraft[x[1]]||""} onChange={function(e){var u=Object.assign({},caseDraft);u[x[1]]=e.target.value;setCaseDraft(u);}} rows={2} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,resize:"vertical",fontFamily:"inherit",boxSizing:"border-box"}}/>
+                          :<input value={caseDraft[x[1]]||""} onChange={function(e){var u=Object.assign({},caseDraft);u[x[1]]=e.target.value;setCaseDraft(u);}} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,boxSizing:"border-box"}}/>
+                        }
+                      </div>
+                    );})}
+                    <button onClick={function(){setCaseStudies(function(prev){return (prev as any[]).map(function(x){return x.id===cs.id?Object.assign({},caseDraft,{id:cs.id}):x;});});setEditingCase(null);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer",marginTop:4}}>Save Changes</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {(caseStudies as any[]).length===0&&(
+            <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:32,textAlign:"center"}}>
+              <div style={{fontSize:13,color:C.grey6,lineHeight:1.7}}>No case studies yet. Add your first one to start injecting real proof points into your audit prompts.</div>
             </div>
           )}
         </div>
@@ -3189,6 +3390,8 @@ export default function App(){
   var [journeys,setJourneys]=useState(INIT_JOURNEYS);
   var [gaCards,setGaCards]=useState(INIT_GA_CARDS);
   var [wireframeRules,setWireframeRules]=useState(INIT_WIREFRAME_RULES);
+  var [clientList,setClientList]=useState(INIT_CLIENTS);
+  var [caseStudies,setCaseStudies]=useState(INIT_CASE_STUDIES);
   var [auditData,setAuditData]=useState(INIT_AUDIT);
   var [activePersonaId,setActivePersonaId]=useState(function(){var v=hashToView(window.location.hash);return v==="persona-detail"?hashToSubId(window.location.hash):null;});
   var [activePersonaForJourney,setActivePersonaForJourney]=useState(function(){var v=hashToView(window.location.hash);return v==="journey"?hashToSubId(window.location.hash):null;});
@@ -3206,9 +3409,9 @@ export default function App(){
   var [_user,_setUser]=useState(null);
   var [_authLoading,_setAuthLoading]=useState(true);
   var [_loginError,_setLoginError]=useState(null);
-  useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()){var d=snap.data();if(d.auditData)setAuditData(d.auditData);if(d.stages)setStages(d.stages);if(d.personas)setPersonas(d.personas);if(d.pages)setPages(d.pages);if(d.journeys)setJourneys(d.journeys);if(d.gaCards)setGaCards(d.gaCards);if(d.wireframeRules)setWireframeRules(d.wireframeRules);}});getDocs(collection(_db,"users",u.uid,"generatedAudits")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setGeneratedAudits(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});merged.sort(function(a,b){return a.id<b.id?-1:1;});return merged;});}).catch(function(){});getDocs(collection(_db,"users",u.uid,"wireframes")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setSavedWireframes(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});return merged;});}).catch(function(){});
+  useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()){var d=snap.data();if(d.auditData)setAuditData(d.auditData);if(d.stages)setStages(d.stages);if(d.personas)setPersonas(d.personas);if(d.pages)setPages(d.pages);if(d.journeys)setJourneys(d.journeys);if(d.gaCards)setGaCards(d.gaCards);if(d.wireframeRules)setWireframeRules(d.wireframeRules);if(d.clientList)setClientList(d.clientList);if(d.caseStudies)setCaseStudies(d.caseStudies);}});getDocs(collection(_db,"users",u.uid,"generatedAudits")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setGeneratedAudits(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});merged.sort(function(a,b){return a.id<b.id?-1:1;});return merged;});}).catch(function(){});getDocs(collection(_db,"users",u.uid,"wireframes")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setSavedWireframes(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});return merged;});}).catch(function(){});
 getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setFeedback(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});return merged;});}).catch(function(){});}else{_setUser(null);}_setAuthLoading(false);});},[]);
-  useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,stages:stages,personas:personas,pages:pages,journeys:journeys,gaCards:gaCards,wireframeRules:wireframeRules,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[ auditData,stages,personas,pages,journeys,gaCards,wireframeRules,_user]);
+  useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,stages:stages,personas:personas,pages:pages,journeys:journeys,gaCards:gaCards,wireframeRules:wireframeRules,clientList:clientList,caseStudies:caseStudies,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[ auditData,stages,personas,pages,journeys,gaCards,wireframeRules,clientList,caseStudies,_user]);
   useEffect(function(){try{localStorage.setItem("gwi_generated_audits",JSON.stringify(generatedAudits));}catch(e){};},[generatedAudits]);
   useEffect(function(){try{localStorage.setItem("gwi_saved_wireframes",JSON.stringify(savedWireframes));}catch(e){};},[savedWireframes]);
   useEffect(function(){try{localStorage.setItem("gwi_loved_components",JSON.stringify(lovedComponents));}catch(e){};},[lovedComponents]);
@@ -3271,9 +3474,9 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="flows"&&<UserFlowsPage setView={setView}/>}
         {view==="audit"&&<AuditPage personas={personas} pages={pages} auditData={auditData} setAuditData={setAuditData} onAddAction={function(){setShowAddAction(true);}} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} setView={setView} wireframeRules={wireframeRules}/>}
         {view==="analytics"&&<AnalyticsPage gaCards={gaCards} setGaCards={setGaCards}/>}
-        {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit).catch(function(){});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
+        {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} clientList={clientList} caseStudies={caseStudies} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit).catch(function(){});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
         {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id)).catch(function(){});}} onUpdateAudit={function(updated){if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",updated.id),updated).catch(function(){});}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
-        {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards} wireframeRules={wireframeRules} setWireframeRules={setWireframeRules}/>}
+        {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards} wireframeRules={wireframeRules} setWireframeRules={setWireframeRules} clientList={clientList} setClientList={setClientList} caseStudies={caseStudies} setCaseStudies={setCaseStudies}/>}
         {view==="guide"&&<GuidePage/>}
         {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData} onAddRec={function(action,pageUrl){var pageObj=pages.find(function(p){return p.url===pageUrl;});var newAction=Object.assign({},action,{status:"todo"});var existing=auditData.find(function(p){return p.url===pageUrl;});if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}}} onRemoveRec={function(actionId,pageUrl){setAuditData(function(prev){return prev.map(function(p){return p.url!==pageUrl?p:Object.assign({},p,{actions:(p.actions||[]).filter(function(a:any){return a.id!==actionId;})});});});}} lovedComponents={lovedComponents} onLoveComponent={function(lc){setLovedComponents(function(prev){return (prev as any[]).concat([lc]);});}} onUnloveComponent={function(id){setLovedComponents(function(prev){return (prev as any[]).filter(function(lc:any){return lc.id!==id;});});}} personas={personas} wireframeRules={wireframeRules} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}}/>}
       </div>
