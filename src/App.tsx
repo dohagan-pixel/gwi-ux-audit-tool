@@ -2910,7 +2910,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
     }catch(e){return null;}
   }
   function extractSharedCss(html:string){var matches=html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi)||[];return matches.map(function(m){return m.replace(/<\/?style[^>]*>/gi,"");}).join("\n");}
-  function wrapSection(sectionHtml:string,sharedCss:string){return'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{box-sizing:border-box}html,body{margin:0;padding:0;overflow:hidden;}body{background:#f5f5f5;font-family:Arial,sans-serif;}'+sharedCss+'</style></head><body>'+sectionHtml+'</body></html>';}
+  function wrapSection(sectionHtml:string,sharedCss:string){return'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{box-sizing:border-box}html,body{margin:0;padding:0;overflow:visible;}body{background:#f5f5f5;font-family:Arial,sans-serif;}'+sharedCss+'</style></head><body>'+sectionHtml+'</body></html>';}
   var isMobile=useWidth()<768;
   var active=wireframes.find(function(w){return w.id===activeId;});
   var starredWireframes=wireframes.filter(function(w){return w.starred;});
@@ -3011,7 +3011,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
           <div style={{flex:1,padding:isMobile?"16px":"24px 28px 28px",overflow:"auto",display:"flex",flexDirection:"column",gap:20}}>
             {(lovedComponents||[]).filter(function(lc:any){return lc.pageUrl===lovedView.pageUrl;}).map(function(lc:any){
               return(
-                <div key={lc.id} style={{background:C.white,borderRadius:16,overflow:"hidden",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+                <div key={lc.id} style={{background:C.white,borderRadius:16,overflow:"hidden",boxShadow:"0 2px 8px rgba(0,0,0,0.06)",flexShrink:0}}>
                   <div style={{padding:"18px 24px",borderBottom:"1px solid "+C.grey4,display:"flex",alignItems:"flex-start",gap:12}}>
                     <span style={{background:"#FFF0F7",color:C.pink,width:28,height:28,borderRadius:7,flexShrink:0,display:"inline-flex",alignItems:"center",justifyContent:"center"}}><Heart size={13} fill={C.pink}/></span>
                     <div style={{flex:1,minWidth:0}}>
@@ -3050,7 +3050,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                           try{
                             var doc=f.contentDocument;
                             if(!doc)return;
-                            var sh=doc.documentElement.scrollHeight||doc.body.scrollHeight||400;
+                            var sh=Math.max(doc.documentElement.scrollHeight||0,doc.body.scrollHeight||0,doc.documentElement.offsetHeight||0,doc.body.offsetHeight||0)||400;
                             setLcHeights(function(prev){var n=Object.assign({},prev);n[id]=Math.max(200,sh);return n;});
                           }catch(ex){}
                         }}
