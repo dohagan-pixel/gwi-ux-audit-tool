@@ -1629,40 +1629,28 @@ function WireframeModal({page,personas,onClose,onSave,rules}){
   useEffect(function(){
     if(hasFetched.current)return;
     hasFetched.current=true;
+    var actionLines=page.actions.map(function(a:any,i:number){return(i+1)+". "+a.text+(a.description?" — "+a.description:"");}).join("\n");
     var personaNames=personas.map(function(p){return p.label+" ("+p.tagline+")";}).join(", ");
     var recCount=page.actions.length;
-    // Build an explicit per-recommendation checklist so Claude sees exactly what it must produce
-    var recChecklist=page.actions.map(function(a:any,i:number){
-      return"  ["+(i+1)+"] data-rec=\""+(i+1)+"\" — "+a.text+(a.description?" ("+a.description+")":"");
-    }).join("\n");
+    var badgeList=page.actions.map(function(_:any,i:number){return"data-rec=\""+(i+1)+"\"";}).join(", ");
     var prompt=
-"You are a UX wireframe designer. Output a complete low-fidelity HTML wireframe for gwi.com — "+page.label+" ("+page.url+").\n\n"+
-"═══════════════════════════════════════════════════════\n"+
-"REQUIRED OUTPUT — every item below is NON-NEGOTIABLE.\n"+
-"Do NOT stop generating until ALL "+recCount+" recommendation\n"+
-"sections AND the footer are present and complete.\n"+
-"═══════════════════════════════════════════════════════\n\n"+
-"  [NAV]  Navigation bar (see rules below)\n"+
-recChecklist+"\n"+
-"  [FOOTER]  Full dark footer (see rules below)\n\n"+
-"Each item in the list above maps directly to a visible section\n"+
-"in the HTML. There are "+recCount+" recommendations — so there\n"+
-"must be exactly "+recCount+" numbered page sections (plus nav and footer).\n\n"+
-"Page: "+page.label+" · Personas: "+personaNames+"\n\n"+
-"════ WIREFRAME RULES ════\n"+
-"STYLE: grey tones only — #f5f5f5 / #e8e8e8 backgrounds, #d0d0d0 borders, #333 / #666 text. Arial/sans-serif. Grey labelled rectangles for images. Short [PLACEHOLDER] text throughout.\n\n"+
-"SECTION LABELS: top-left comment in each section, e.g. // REC 1: HERO CTA\n\n"+
-"BADGES (mandatory on every recommendation section):\n"+
-"  The section's outermost div must have: style=\"position:relative;...\" data-section-rec=\"N\"\n"+
-"  Inside it place: <span data-rec=\"N\" style=\"position:absolute;top:10px;right:10px;background:#FF0077;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;cursor:pointer\">💡</span>\n"+
-"  Required badge numbers: data-rec=\"1\" through data-rec=\""+recCount+"\". All "+recCount+" must appear.\n\n"+
-"FOOTER: dark bg #2a2a2a, light text #ccc/#999. Contains: GWI logo placeholder left; 4 link columns (Products / Solutions / Resources / Company, 4 links each); newsletter row (email input + Subscribe button); social icon placeholders; bottom bar © "+new Date().getFullYear()+" GWI.\n\n"+
-"NAVIGATION: desktop — logo left · Products Services Solutions Resources Pricing · Sign in (border:1px solid #d0d0d0,bg:transparent,color:#333) · Book a demo (bg:#333,color:#fff,border-radius:4px). Mobile @media(max-width:767px) — logo + burger icon only (3×<span> display:block,width:22px,height:2px,background:#666,margin:4px 0); hide all links and CTAs.\n\n"+
-"RESPONSIVE @media(max-width:767px): flex rows→column; grids→1 col; padding→16px; buttons→width:100%. Use CSS classes in <style> for breakpoint overrides (not inline styles).\n\n"+
-"HTML: fully self-contained. <style> in <head>. Max-width 1200px centred. No JavaScript.\n\n"+
-"Output ONLY the raw HTML — no explanation, no markdown fences.";
+"You are a UX wireframe designer. Create a complete, well-laid-out low-fidelity HTML wireframe for the gwi.com "+page.label+" page ("+page.url+").\n\n"+
+"This wireframe shows the IMPROVED page addressing these "+recCount+" UX recommendations:\n"+actionLines+"\n\n"+
+"Personas: "+personaNames+".\n\n"+
+"BADGE RULE (highest priority):\n"+
+"Every recommendation must have a 💡 badge placed in the most contextually relevant section. Related recommendations may share a section — give each its own badge. All "+recCount+" badge numbers MUST appear in the HTML: "+badgeList+". A missing badge is a critical error.\n"+
+"Badge markup — section outermost div: position:relative + data-section-rec=\"N\". Badge inside: <span data-rec=\"N\" style=\"position:absolute;top:10px;right:10px;background:#FF0077;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;cursor:pointer\">💡</span>\n\n"+
+"WIREFRAME RULES:\n"+
+"- STYLE: grey tones only — backgrounds #f5f5f5/#e8e8e8, borders #d0d0d0, text #333/#666. Arial/sans-serif. Grey labelled rectangles for images. Short [PLACEHOLDER] text.\n"+
+"- LAYOUTS: use real multi-column layouts — hero with text+image split, 3-column feature grids, side-by-side testimonials, 2-col stats rows, etc. Do NOT stack everything in single full-width blocks.\n"+
+"- SECTION LABELS: small grey comment top-left of each section, e.g. // HERO, // FEATURES, // SOCIAL PROOF.\n"+
+"- FOOTER (mandatory, always last): dark bg #2a2a2a, text #ccc/#999. GWI logo left; 4 link columns (Products/Solutions/Resources/Company, 4 links each); newsletter row (email input + Subscribe button); social icon placeholders; bottom bar © "+new Date().getFullYear()+" GWI.\n"+
+"- NAVIGATION desktop: logo left | Products Services Solutions Resources Pricing | Sign in (border:1px solid #d0d0d0, bg:transparent, color:#333) Book a demo (bg:#333, color:#fff, border-radius:4px). Mobile @media(max-width:767px): logo + static burger only (3×<span> display:block,width:22px,height:2px,background:#666,margin:4px 0); hide all links and CTAs.\n"+
+"- RESPONSIVE @media(max-width:767px): flex rows→column; grids→1 col; padding→16px; buttons→100% width. Use CSS classes in <style> for media query overrides, not inline styles.\n"+
+"- Full self-contained HTML. <style> in <head>. Max-width 1200px centred. No JavaScript.\n\n"+
+"Output ONLY the raw HTML — no explanation, no markdown fences, nothing else.";
     if(rules&&rules.tov){prompt+="\n\nTone of voice — apply these guidelines to ALL copy in this wireframe:\n"+rules.tov;}
-    fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:16000})})
+    fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:10000})})
       .then(function(r){
         var ct=r.headers.get("content-type")||"";
         if(!ct.includes("text/event-stream")){return r.text().then(function(raw){try{var d=JSON.parse(raw);setErrorMsg(d.error||"Unknown error");}catch(e){setErrorMsg("Server error: "+raw.slice(0,300));}setStatus("error");});}
