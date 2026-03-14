@@ -3290,6 +3290,27 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
             </div>
             </div>
           </div>
+          {(activeActions as any[]).length>0&&(
+            <div style={{padding:isMobile?"8px 16px":"8px 28px",flexShrink:0,borderBottom:"1px solid rgba(255,255,255,0.07)",background:C.black}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,overflowX:"auto",paddingBottom:8}}>
+                <span style={{fontSize:10,fontWeight:700,color:C.grey6,textTransform:"uppercase",letterSpacing:"0.08em",flexShrink:0,marginRight:4}}>Recs</span>
+                {(activeActions as any[]).map(function(a:any,i:number){
+                  var n=i+1;
+                  var isActive=activeRec===n;
+                  var isGreen=greenRecs.indexOf(n)>=0;
+                  var bg=isActive?C.pink:isGreen?"#166534":"rgba(255,255,255,0.08)";
+                  var fg=isActive?C.white:isGreen?"#86EFAC":C.grey5;
+                  var border=isActive?C.pink:isGreen?"#166534":"rgba(255,255,255,0.12)";
+                  return(
+                    <button key={n} onClick={function(){setActiveRec(n);}} title={a.text||("Recommendation "+n)} style={{flexShrink:0,display:"inline-flex",alignItems:"center",gap:5,background:bg,color:fg,border:"1px solid "+border,borderRadius:99,padding:"3px 10px 3px 4px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",transition:"background 0.15s"}}>
+                      <span style={{background:"rgba(255,255,255,0.18)",width:16,height:16,borderRadius:"50%",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,flexShrink:0}}>{n}</span>
+                      <span style={{maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.text||("Rec "+n)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div style={{flex:1,padding:isMobile?"16px":"24px 28px 28px",minHeight:0,display:"flex",flexDirection:"column",alignItems:viewport==="mobile"?"center":"stretch"}}>
             <iframe ref={iframeRef} srcDoc={injectRecScript(active.html)} title="Wireframe" sandbox="allow-same-origin allow-scripts" onLoad={function(){if(iframeRef.current&&iframeRef.current.contentWindow){iframeRef.current.contentWindow.postMessage({type:"set-rec-states",greenRecs:greenRecs},"*");}}} style={viewport==="mobile"?{flex:1,width:390,maxWidth:"calc(100% - 32px)",border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}:{flex:1,border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}}/>
           </div>
