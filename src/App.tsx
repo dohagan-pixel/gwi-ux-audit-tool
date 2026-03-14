@@ -2910,7 +2910,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
     }catch(e){return null;}
   }
   function extractSharedCss(html:string){var matches=html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi)||[];return matches.map(function(m){return m.replace(/<\/?style[^>]*>/gi,"");}).join("\n");}
-  function wrapSection(sectionHtml:string,sharedCss:string){return'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{box-sizing:border-box}html,body{margin:0;padding:0;overflow:visible;}body{background:#f5f5f5;font-family:Arial,sans-serif;}'+sharedCss+'</style></head><body>'+sectionHtml+'</body></html>';}
+  function wrapSection(sectionHtml:string,sharedCss:string){return'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{box-sizing:border-box}html,body{margin:0;padding:0;overflow:visible;}body{background:#f5f5f5;font-family:Arial,sans-serif;}[data-rec]{display:none!important;}'+sharedCss+'</style></head><body>'+sectionHtml+'</body></html>';}
   var isMobile=useWidth()<768;
   var active=wireframes.find(function(w){return w.id===activeId;});
   var starredWireframes=wireframes.filter(function(w){return w.starred;});
