@@ -2917,45 +2917,10 @@ function MobileNav({view,setView}){
 }
 
 
-function LoginScreen({onLogin,onRegister,onGoogleLogin,loginError}){
-  var [_em,_setEm]=useState('');
-  var [_pw,_setPw]=useState('');
-  var [_isReg,_setIsReg]=useState(false);
-  var [_forgotMode,_setForgotMode]=useState(false);
-  var [_resetMsg,_setResetMsg]=useState('');
-  var _inputStyle={padding:"10px 14px",background:C.white,border:"1px solid "+C.grey5,borderRadius:8,color:C.black,fontSize:14,outline:"none",boxSizing:"border-box" as const,width:"100%",fontFamily:"inherit"};
-  var _primaryBtn={background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"11px 0",fontSize:14,fontWeight:700,cursor:"pointer",marginTop:4,width:"100%",letterSpacing:"0.01em"};
+function LoginScreen({onLogin,onRegister,onGoogleLogin,loginError}:{onLogin:any,onRegister:any,onGoogleLogin:any,loginError:any}){
   var _wrap={position:"relative" as const,display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#000",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",overflow:"hidden" as const};
   var _card={position:"relative" as const,zIndex:1,background:C.white,borderRadius:16,boxShadow:"0 8px 56px rgba(0,0,0,0.55)",padding:"40px 36px",maxWidth:380,width:"100%",boxSizing:"border-box" as const};
-  var _particleBg=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;overflow:hidden;background:#000}canvas{display:block}</style><script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.1/build/three.module.js"}}</`+`script></head><body><script type="x-shader/x-vertex" id="vs">attribute float scale;varying vec3 vColor;void main(){vColor=color;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=scale*(300.0/-mv.z);gl_Position=projectionMatrix*mv;}</`+`script><script type="x-shader/x-fragment" id="fs">varying vec3 vColor;void main(){float d=length(gl_PointCoord-vec2(0.5));float a=pow(1.0-d*d,5.0);if(d>0.5)discard;gl_FragColor=vec4(vColor,a);}</`+`script><script type="module">import*as T from'three';const SEP=100,AX=50,AY=50,N=AX*AY;let cam,scene,ren,pts,cnt=0;const pos=new Float32Array(N*3),sc=new Float32Array(N),col=new Float32Array(N*3);let i=0,j=0;for(let x=0;x<AX;x++)for(let y=0;y<AY;y++){pos[i]=x*SEP-(AX*SEP)/2;pos[i+1]=0;pos[i+2]=y*SEP-(AY*SEP)/2;const c=new T.Color();c.setHSL(j/N,1,.5);col[i]=c.r;col[i+1]=c.g;col[i+2]=c.b;sc[j]=20;i+=3;j++;}const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(pos,3));geo.setAttribute('scale',new T.BufferAttribute(sc,1));geo.setAttribute('color',new T.BufferAttribute(col,3));cam=new T.PerspectiveCamera(75,innerWidth/innerHeight,1,10000);cam.position.z=1000;scene=new T.Scene();pts=new T.Points(geo,new T.ShaderMaterial({vertexShader:document.getElementById('vs').textContent,fragmentShader:document.getElementById('fs').textContent,blending:T.AdditiveBlending,depthTest:false,transparent:true,vertexColors:true}));scene.add(pts);ren=new T.WebGLRenderer({antialias:true});ren.setPixelRatio(devicePixelRatio);ren.setSize(innerWidth,innerHeight);document.body.appendChild(ren.domElement);window.onresize=function(){cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight);};(function loop(){requestAnimationFrame(loop);cam.position.x=Math.sin(cnt*.005)*1000;cam.position.z=Math.cos(cnt*.005)*1000;cam.position.y=80;cam.lookAt(scene.position);let i=0;for(let x=0;x<AX;x++)for(let y=0;y<AY;y++){pos[i+1]=(Math.sin((x+cnt)*.3)*50)+(Math.sin((y+cnt)*.5)*50);i+=3;}for(let i=0;i<N;i++){const t=20+Math.abs(Math.sin(cnt*.1+i))*20;sc[i]+=(t-sc[i])*.1;const h=(Math.sin(cnt*.05+i)+1)/2,bc=new T.Color();bc.setHSL(h,1,.5);col[i*3]+=(bc.r-col[i*3])*.1;col[i*3+1]+=(bc.g-col[i*3+1])*.1;col[i*3+2]+=(bc.b-col[i*3+2])*.1;}geo.attributes.position.needsUpdate=true;geo.attributes.scale.needsUpdate=true;geo.attributes.color.needsUpdate=true;ren.render(scene,cam);cnt+=.1;})();</`+`script></body></html>`;
-  function _submit(e){e.preventDefault();_isReg?onRegister(_em,_pw):onLogin(_em,_pw);}
-  function _handleReset(e){
-    e.preventDefault();
-    if(!_em.endsWith('@gwi.com')){_setResetMsg('Enter your @gwi.com email above.');return;}
-    _setResetMsg('Sending…');
-    sendPasswordResetEmail(_auth,_em)
-      .then(function(){_setResetMsg('Check your inbox (and spam folder) — a reset link has been sent.');})
-      .catch(function(err:any){_setResetMsg('Error: '+(err.code||err.message||'unknown'));});
-  }
-  if(_forgotMode)return(
-    <div style={_wrap}>
-      <iframe srcDoc={_particleBg} title="bg" sandbox="allow-scripts" style={{position:"absolute",top:0,left:0,right:0,bottom:0,width:"100%",height:"100%",border:"none",pointerEvents:"none",zIndex:0}}/>
-      <div style={_card}>
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:28}}>
-          <div style={{width:32,height:32,borderRadius:8,background:C.pink,display:"flex",alignItems:"center",justifyContent:"center"}}><Sparkles size={16} color={C.white}/></div>
-          <span style={{fontWeight:800,fontSize:20,color:C.black,letterSpacing:"-0.02em"}}>GWI UX Audit</span>
-        </div>
-        <div style={{fontSize:18,fontWeight:700,color:C.black,marginBottom:4}}>Reset password</div>
-        <div style={{fontSize:14,color:C.grey7,marginBottom:28}}>Enter your email and we'll send a reset link.</div>
-        <form onSubmit={_handleReset} style={{display:"flex",flexDirection:"column",gap:12}}>
-          <input type="email" placeholder="your@gwi.com" value={_em} onChange={function(e){_setEm(e.target.value);}} required style={_inputStyle}/>
-          <button type="submit" style={_primaryBtn}>Send reset email</button>
-        </form>
-        {_resetMsg&&<div style={{color:_resetMsg.startsWith('Check')?'#00875A':C.pink,fontSize:13,marginTop:12,textAlign:"left",lineHeight:1.5}}>{_resetMsg}</div>}
-        <button type="button" onClick={function(){_setForgotMode(false);_setResetMsg('');}} style={{background:"transparent",border:"none",color:C.grey7,fontSize:13,cursor:"pointer",marginTop:20,padding:0,display:"flex",alignItems:"center",gap:4}}>← Back to sign in</button>
-      </div>
-    </div>
-  );
+  var _particleBg=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;overflow:hidden;background:#000}canvas{display:block}</style><script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.1/build/three.module.js"}}</`+`script></head><body><script type="x-shader/x-vertex" id="vs">attribute float scale;varying vec3 vColor;void main(){vColor=color;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=scale*(300.0/-mv.z);gl_Position=projectionMatrix*mv;}</`+`script><script type="x-shader/x-fragment" id="fs">varying vec3 vColor;void main(){float d=length(gl_PointCoord-vec2(0.5));float a=pow(1.0-d*d,5.0);if(d>0.5)discard;gl_FragColor=vec4(vColor,a);}</`+`script><script type="module">import*as T from'three';const SEP=100,AX=50,AY=50,N=AX*AY;let cam,scene,ren,pts,cnt=0;const pos=new Float32Array(N*3),sc=new Float32Array(N),col=new Float32Array(N*3);let i=0,j=0;for(let x=0;x<AX;x++)for(let y=0;y<AY;y++){pos[i]=x*SEP-(AX*SEP)/2;pos[i+1]=0;pos[i+2]=y*SEP-(AY*SEP)/2;const c=new T.Color();c.setHSL((j/N)*0.389+0.556,1,.55);col[i]=c.r;col[i+1]=c.g;col[i+2]=c.b;sc[j]=20;i+=3;j++;}const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(pos,3));geo.setAttribute('scale',new T.BufferAttribute(sc,1));geo.setAttribute('color',new T.BufferAttribute(col,3));cam=new T.PerspectiveCamera(75,innerWidth/innerHeight,1,10000);cam.position.z=1000;scene=new T.Scene();pts=new T.Points(geo,new T.ShaderMaterial({vertexShader:document.getElementById('vs').textContent,fragmentShader:document.getElementById('fs').textContent,blending:T.AdditiveBlending,depthTest:false,transparent:true,vertexColors:true}));scene.add(pts);ren=new T.WebGLRenderer({antialias:true});ren.setPixelRatio(devicePixelRatio);ren.setSize(innerWidth,innerHeight);document.body.appendChild(ren.domElement);window.onresize=function(){cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight);};(function loop(){requestAnimationFrame(loop);cam.position.x=Math.sin(cnt*.005)*1000;cam.position.z=Math.cos(cnt*.005)*1000;cam.position.y=80;cam.lookAt(scene.position);let i=0;for(let x=0;x<AX;x++)for(let y=0;y<AY;y++){pos[i+1]=(Math.sin((x+cnt)*.3)*50)+(Math.sin((y+cnt)*.5)*50);i+=3;}for(let i=0;i<N;i++){const t=20+Math.abs(Math.sin(cnt*.1+i))*20;sc[i]+=(t-sc[i])*.1;const h=((Math.sin(cnt*.05+i)+1)/2)*0.389+0.556,bc=new T.Color();bc.setHSL(h,1,.55);col[i*3]+=(bc.r-col[i*3])*.1;col[i*3+1]+=(bc.g-col[i*3+1])*.1;col[i*3+2]+=(bc.b-col[i*3+2])*.1;}geo.attributes.position.needsUpdate=true;geo.attributes.scale.needsUpdate=true;geo.attributes.color.needsUpdate=true;ren.render(scene,cam);cnt+=.05;})();</`+`script></body></html>`;
   return(
     <div style={_wrap}>
       <iframe srcDoc={_particleBg} title="bg" sandbox="allow-scripts" style={{position:"absolute",top:0,left:0,right:0,bottom:0,width:"100%",height:"100%",border:"none",pointerEvents:"none",zIndex:0}}/>
@@ -2964,27 +2929,14 @@ function LoginScreen({onLogin,onRegister,onGoogleLogin,loginError}){
           <div style={{width:32,height:32,borderRadius:8,background:C.pink,display:"flex",alignItems:"center",justifyContent:"center"}}><Sparkles size={16} color={C.white}/></div>
           <span style={{fontWeight:800,fontSize:20,color:C.black,letterSpacing:"-0.02em"}}>GWI UX Audit</span>
         </div>
-        <div style={{fontSize:18,fontWeight:700,color:C.black,marginBottom:2}}>{_isReg?"Create account":"Welcome back"}</div>
-        <div style={{fontSize:14,color:C.grey7,marginBottom:24}}>{_isReg?"Sign up with your @gwi.com account":"Sign in to your GWI UX Audit workspace"}</div>
-        <button type="button" onClick={onGoogleLogin} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:C.white,color:C.black,border:"1px solid "+C.grey5,borderRadius:8,padding:"10px 0",fontSize:14,fontWeight:600,cursor:"pointer",width:"100%",marginBottom:16}}>
+        <div style={{fontSize:18,fontWeight:700,color:C.black,marginBottom:4}}>Welcome back</div>
+        <div style={{fontSize:14,color:C.grey7,marginBottom:24}}>Sign in to your GWI UX Audit workspace</div>
+        <button type="button" onClick={onGoogleLogin} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:C.white,color:C.black,border:"1px solid "+C.grey5,borderRadius:8,padding:"12px 0",fontSize:14,fontWeight:600,cursor:"pointer",width:"100%"}}>
           <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
           Continue with Google
         </button>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
-          <div style={{flex:1,height:1,background:C.grey4}}/>
-          <span style={{color:C.grey6,fontSize:12}}>or</span>
-          <div style={{flex:1,height:1,background:C.grey4}}/>
-        </div>
-        <form onSubmit={_submit} style={{display:"flex",flexDirection:"column",gap:10}}>
-          <input type="email" placeholder="your@gwi.com" value={_em} onChange={function(e){_setEm(e.target.value);}} required style={_inputStyle}/>
-          <input type="password" placeholder="Password" value={_pw} onChange={function(e){_setPw(e.target.value);}} required style={_inputStyle}/>
-          {!_isReg&&<button type="button" onClick={function(){_setForgotMode(true);_setResetMsg('');}} style={{background:"transparent",border:"none",color:C.grey7,fontSize:12,cursor:"pointer",textAlign:"right" as const,padding:0,marginTop:-2}}>Forgot password?</button>}
-          <button type="submit" style={_primaryBtn}>{_isReg?"Create Account":"Sign In"}</button>
-        </form>
-        {loginError&&<div style={{color:C.pink,fontSize:13,marginTop:12,textAlign:"left",lineHeight:1.5}}>{loginError}</div>}
-        <div style={{height:1,background:C.grey3,margin:"20px 0"}}/>
-        <button type="button" onClick={function(){_setIsReg(!_isReg);}} style={{background:"transparent",border:"none",color:C.grey7,fontSize:13,cursor:"pointer",padding:0,width:"100%",textAlign:"center" as const}}>{_isReg?"Already have an account? Sign in":"No account yet? Create one"}</button>
-        <div style={{fontSize:11,color:C.grey6,marginTop:12,textAlign:"center" as const}}>Access restricted to @gwi.com accounts</div>
+        {loginError&&<div style={{color:C.pink,fontSize:13,marginTop:12,textAlign:"left" as const,lineHeight:1.5}}>{loginError}</div>}
+        <div style={{fontSize:11,color:C.grey6,marginTop:16,textAlign:"center" as const}}>Access restricted to @gwi.com accounts</div>
       </div>
     </div>
   );
