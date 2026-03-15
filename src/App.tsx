@@ -3168,6 +3168,8 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   var [editing,setEditing]=useState(false);
   var [editLabel,setEditLabel]=useState("");
   var [activeRec,setActiveRec]=useState(null);
+  var [openAccordions,setOpenAccordions]=useState<string[]>(["Change"]);
+  useEffect(function(){setOpenAccordions(["Change"]);},[activeRec]);
   var [addedRecs,setAddedRecs]=useState({});
   var [viewport,setViewport]=useState("desktop");
   var [openFolders,setOpenFolders]=useState<{[key:string]:boolean}>(function(){try{var v=localStorage.getItem("gwiWireframeFolders");return v?JSON.parse(v):{};}catch(e){return {};}});
@@ -3488,17 +3490,24 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                       <p style={{fontSize:15,fontWeight:800,color:C.black,margin:"0 0 16px",lineHeight:1.45}}>{activeRecAction.text}</p>
                     )}
                     {activeRecAction&&(activeRecAction.change||activeRecAction.why||activeRecAction.shows)&&(
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
+                      <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:20}}>
                         {[
                           {label:"Change",value:activeRecAction.change,labelColor:C.pink,textColor:C.offBlack},
-                          {label:"Why it matters",value:activeRecAction.why,labelColor:C.grey8,textColor:C.grey8},
-                          {label:"Data",value:activeRecAction.shows,labelColor:C.grey8,textColor:C.grey8},
-                        ].map(function(col){return col.value?(
-                          <div key={col.label} style={{background:C.grey2,borderRadius:8,padding:"10px 12px"}}>
-                            <div style={{fontSize:10,fontWeight:700,color:col.labelColor,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:5}}>{col.label}</div>
-                            <div style={{fontSize:12,color:col.textColor,lineHeight:1.6}}>{col.value}</div>
-                          </div>
-                        ):null;})}
+                          {label:"Why it matters",value:activeRecAction.why,labelColor:C.grey7,textColor:C.grey8},
+                          {label:"Data",value:activeRecAction.shows,labelColor:C.grey7,textColor:C.grey8},
+                        ].map(function(col){
+                          if(!col.value)return null;
+                          var isOpen=openAccordions.indexOf(col.label)>=0;
+                          return(
+                            <div key={col.label} style={{background:C.grey2,borderRadius:8,overflow:"hidden"}}>
+                              <button onClick={function(){setOpenAccordions(function(prev){return isOpen?prev.filter(function(x){return x!==col.label;}):prev.concat(col.label);});}} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",background:"none",border:"none",cursor:"pointer",textAlign:"left"}}>
+                                <span style={{fontSize:10,fontWeight:700,color:col.labelColor,textTransform:"uppercase",letterSpacing:"0.07em"}}>{col.label}</span>
+                                {isOpen?<ChevronDown size={13} color={C.grey6}/>:<ChevronRight size={13} color={C.grey6}/>}
+                              </button>
+                              {isOpen&&<div style={{padding:"0 12px 12px",fontSize:13,color:col.textColor,lineHeight:1.65}}>{col.value}</div>}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                     {(function(){var lcId=(active?active.id:"")+"-rec-"+activeRec;var isLoved=(lovedComponents||[]).some(function(lc:any){return lc.id===lcId;});var sHtml=active?extractSection(active.html,activeRec as number):null;return(<button onClick={function(){if(isLoved){if(onUnloveComponent)onUnloveComponent(lcId);}else{if(!onLoveComponent||!sHtml)return;onLoveComponent({id:lcId,wireframeId:active.id,pageUrl:active.pageUrl,pageLabel:active.pageLabel,recNum:activeRec,title:activeRecAction?activeRecAction.text:"Recommendation #"+activeRec,change:activeRecAction?activeRecAction.change||"":"",why:activeRecAction?activeRecAction.why||"":"",shows:activeRecAction?activeRecAction.shows||"":"",sectionHtml:sHtml,sharedCss:extractSharedCss(active.html),date:new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})});}}} style={{width:"100%",background:isLoved?"#FFF0F7":C.grey2,color:isLoved?C.pink:C.grey7,border:"1px solid "+(isLoved?C.pink:C.grey4),borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:sHtml||isLoved?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10,opacity:sHtml||isLoved?1:0.5}}><Heart size={14} fill={isLoved?C.pink:"none"} color={isLoved?C.pink:C.grey7}/>{isLoved?"Saved to Loved components":"Save to Loved components"}</button>);})()}
