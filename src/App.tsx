@@ -2333,9 +2333,9 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,vert
         );
       })()}
       {tab!=="home"&&(
-        <div style={{display:"flex",gap:4,marginBottom:28,background:C.grey4,borderRadius:10,padding:4,width:isMobile?"100%":"fit-content",overflowX:"auto"}}>
+        <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:28,background:C.grey4,borderRadius:10,padding:4}}>
           {[["home","← Overview"],["pages","Pages"],["personas","Personas"],["stages","Lifecycle Stages"],["verticals","Verticals"],["journeys","Journey Steps"],["ga","Google Analytics"],["wireframes","Wireframe Rules"],["clients","Clients"],["case-studies","Case Studies"]].map(function(x){return(
-            <button key={x[0]} onClick={function(){setTab(x[0]);}} style={{padding:"8px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:tab===x[0]?C.pink:"transparent",color:tab===x[0]?C.white:C.grey7,flexShrink:0,whiteSpace:"nowrap"}}>{x[1]}</button>
+            <button key={x[0]} onClick={function(){setTab(x[0]);}} style={{padding:"8px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:tab===x[0]?C.pink:"transparent",color:tab===x[0]?C.white:C.grey7,whiteSpace:"nowrap"}}>{x[1]}</button>
           );})}
         </div>
       )}
