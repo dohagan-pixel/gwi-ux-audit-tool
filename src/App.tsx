@@ -706,12 +706,12 @@ function Dashboard({personas,auditData,setView,onFeedback}){
                 {[
                   {label:"React + TypeScript",desc:"Frontend framework"},
                   {label:"Firebase Auth + Firestore",desc:"Authentication and live data sync"},
+                  {label:"Google OAuth",desc:"Sign-in provider via Firebase"},
                   {label:"Claude API",desc:"AI audit and wireframe generation"},
                   {label:"Claude Code",desc:"Autonomous development environment"},
                   {label:"Vercel",desc:"Hosting and edge functions"},
                   {label:"Vite",desc:"Build tool"},
                   {label:"GitHub",desc:"Version control and source repository"},
-                  {label:"StackBlitz",desc:"Browser-based development environment"},
                   {label:"Lucide React",desc:"Icons"},
                 ].map(function(item){return(
                   <div key={item.label} style={{display:"flex",alignItems:"baseline",gap:12,padding:"10px 0",borderBottom:"1px solid "+C.grey3}}>
