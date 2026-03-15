@@ -3472,8 +3472,9 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
             <iframe ref={iframeRef} srcDoc={injectRecScript(active.html,activeActions)} title="Wireframe" sandbox="allow-same-origin allow-scripts" onLoad={function(){if(iframeRef.current&&iframeRef.current.contentWindow){iframeRef.current.contentWindow.postMessage({type:"set-rec-states",greenRecs:greenRecs},"*");}}} style={viewport==="mobile"?{flex:1,width:390,maxWidth:"calc(100% - 32px)",border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}:{flex:1,border:"none",borderRadius:12,background:"#fff",boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}}/>
           </div>
           {activeRec!==null&&(
-            <div onClick={function(){setActiveRec(null);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:1100,overflowY:"auto",padding:"40px 24px"}}>
-              <div onClick={function(e){e.stopPropagation();}} style={{background:C.white,borderRadius:16,padding:"28px 32px",maxWidth:520,width:"100%",boxShadow:"0 8px 48px rgba(0,0,0,0.3)",flexShrink:0}}>
+            <div onClick={function(){setActiveRec(null);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",overflowY:"auto",zIndex:1100}}>
+              <div style={{minHeight:"100%",display:"flex",alignItems:"center",justifyContent:"center",padding:"40px 24px"}}>
+              <div onClick={function(e){e.stopPropagation();}} style={{background:C.white,borderRadius:16,padding:"28px 32px",maxWidth:520,width:"100%",boxShadow:"0 8px 48px rgba(0,0,0,0.3)"}}>
                 {(function(){
                   var recKey=(active?active.id:"")+"-"+activeRec;
                   var sessionActionId=(addedRecs as any)[recKey];
@@ -3524,6 +3525,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                     </div>
                   </>);
                 })()}
+              </div>
               </div>
             </div>
           )}
