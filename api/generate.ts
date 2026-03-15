@@ -29,8 +29,8 @@ export default async function handler(req: Request) {
   }
 
   const hasImages = Array.isArray(images) && images.length > 0;
-  // claude-sonnet-4-5 for high-quality HTML wireframe generation
-  const model = 'claude-sonnet-4-5-20251001';
+  // claude-3-7-sonnet: high-quality model with up to 64k output tokens — ideal for wireframes
+  const model = 'claude-3-7-sonnet-20250219';
   const effectiveMaxTokens = Math.min(max_tokens || 16000, 16000);
 
   const messageContent = hasImages
