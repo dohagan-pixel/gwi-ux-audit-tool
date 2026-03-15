@@ -1640,13 +1640,12 @@ function WireframeModal({page,personas,onClose,onSave,rules}){
     var actionLines=page.actions.map(function(a:any,i:number){return(i+1)+". "+a.text+(a.description?" — "+a.description:"");}).join("\n");
     var personaNames=personas.map(function(p){return p.label+" ("+p.tagline+")";}).join(", ");
     var recCount=page.actions.length;
-    var badgeList=page.actions.map(function(_:any,i:number){return"data-rec=\""+(i+1)+"\"";}).join(", ");
     var prompt=
 "You are a UX wireframe designer. Create a complete, well-laid-out low-fidelity HTML wireframe for the gwi.com "+page.label+" page ("+page.url+").\n\n"+
 "This wireframe shows the IMPROVED page addressing these "+recCount+" UX recommendations:\n"+actionLines+"\n\n"+
 "Personas: "+personaNames+".\n\n"+
 "BADGE RULE (highest priority):\n"+
-"Every recommendation must have a 💡 badge placed in the most contextually relevant section. Related recommendations may share a section — give each its own badge. All "+recCount+" badge numbers MUST appear in the HTML: "+badgeList+". A missing badge is a critical error.\n"+
+"Each recommendation gets one 💡 badge placed on the section of the wireframe where the UX change is most visible. Place at most ONE badge per section — if a section is relevant to multiple recommendations, pick the single most impactful one for that section and skip the others. Only place a badge where it makes clear visual sense; omit a badge entirely rather than forcing it into an unrelated section.\n"+
 "Badge markup — section outermost div: position:relative + data-section-rec=\"N\". Badge inside: <span data-rec=\"N\" style=\"position:absolute;top:10px;right:10px;background:#FF0077;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;cursor:pointer\">💡</span>\n\n"+
 "WIREFRAME RULES:\n"+
 "- STYLE: grey tones only — backgrounds #f5f5f5/#e8e8e8, borders #d0d0d0, text #333/#666. Arial/sans-serif. Grey labelled rectangles for images. Short [PLACEHOLDER] text.\n"+
@@ -3283,26 +3282,6 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
           +['in','𝕏','ig','yt'].map(function(lbl){return'<div style="width:30px;height:30px;background:#444;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;"><span style="color:#999;font-size:11px;">'+lbl+'</span></div>';}).join('')
           +'</div></div></div>';
         doc.body.appendChild(footerEl);
-      }
-      // ── Guarantee every recommendation has a section — inject missing ones ──
-      if(actions&&actions.length){
-        var presentRecs=new Set(Array.from(doc.querySelectorAll('[data-rec]')).map(function(el){return parseInt(el.getAttribute('data-rec')||'0');}).filter(function(n){return n>0;}));
-        var footerNode=doc.querySelector('[data-gwi-footer]');
-        actions.forEach(function(action:any,idx:number){
-          var num=idx+1;
-          if(presentRecs.has(num))return;
-          var rawTitle=action.text||('Recommendation '+num);
-          var title=rawTitle.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-          var isEven=idx%2===0;
-          var bg=isEven?'#f4f4f6':'#eeeef2';
-          var imgBlock='<div style="background:#ddd;border-radius:8px;height:260px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:13px;font-weight:600;font-family:Arial,sans-serif;">Image / Mockup</div>';
-          var textBlock='<div style="position:relative;"><span data-rec="'+num+'" style="position:absolute;top:0;right:0;background:#FF0077;color:#fff;display:inline-flex;align-items:center;padding:0 10px;height:28px;border-radius:6px;font-size:11px;font-weight:700;font-family:Arial,sans-serif;cursor:pointer;">💡</span><div style="font-size:10px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">// REC '+num+': RECOMMENDATION</div><h2 style="font-size:22px;font-weight:800;color:#1a1a1a;margin:0 0 14px;line-height:1.35;padding-right:48px;">'+title+'</h2><p style="font-size:14px;color:#666;line-height:1.75;margin:0 0 22px;">Implementing this recommendation will improve the user experience and address the identified UX friction on this page.</p><div style="display:flex;gap:10px;"><a href="#" style="background:#FF0077;color:#fff;padding:11px 22px;border-radius:6px;font-weight:700;font-size:13px;text-decoration:none;display:inline-block;">Apply change</a><a href="#" style="background:transparent;color:#FF0077;padding:11px 22px;border-radius:6px;font-weight:700;font-size:13px;text-decoration:none;border:2px solid #FF0077;display:inline-block;">Learn more</a></div></div>';
-          var secEl=doc.createElement('section');
-          secEl.setAttribute('data-section-rec',String(num));
-          secEl.style.cssText='background:'+bg+';padding:60px 0;font-family:Arial,sans-serif;';
-          secEl.innerHTML='<div style="max-width:1200px;margin:0 auto;padding:0 40px;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;">'+(isEven?imgBlock+textBlock:textBlock+imgBlock)+'</div></div>';
-          if(footerNode){doc.body.insertBefore(secEl,footerNode);}else{doc.body.appendChild(secEl);}
-        });
       }
       // Scripts → end of <body> (after footer)
       var sc1=doc.createElement('script');sc1.setAttribute('data-injected','1');sc1.textContent=recJs;doc.body.appendChild(sc1);
