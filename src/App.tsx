@@ -3617,7 +3617,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
       {_showLoginModal&&(
         <div style={{position:"fixed",inset:0,zIndex:999,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF}} onClick={function(e){if(e.target===e.currentTarget){_setShowLoginModal(false);_setLoginError(null);}}}>
           <div style={{position:"relative",width:"100%",maxWidth:420,margin:"0 24px"}}>
-            <button onClick={function(){_setShowLoginModal(false);_setLoginError(null);}} style={{position:"absolute",top:-14,right:-14,zIndex:1,background:C.white,border:"none",borderRadius:"50%",width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:"0 2px 12px rgba(0,0,0,0.3)",fontSize:18,color:C.grey7,lineHeight:1}}>×</button>
+            <button onClick={function(){_setShowLoginModal(false);_setLoginError(null);}} style={{position:"absolute",top:-12,right:-12,zIndex:1,background:C.pink,border:"none",borderRadius:"50%",width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.25)",fontSize:16,color:"#fff",lineHeight:1,fontWeight:700}}>×</button>
             <LoginScreen onLogin={_handleLogin} onRegister={_handleRegister} onGoogleLogin={_handleGoogleLogin} loginError={_loginError} inModal={true}/>
           </div>
         </div>
