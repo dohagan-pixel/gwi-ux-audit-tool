@@ -6,9 +6,9 @@
 // Test output thoroughly before committing a new version.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const WIREFRAME_PROMPT_VERSION = "v1 · March 2026";
+export const WIREFRAME_PROMPT_VERSION = "v2 · March 2026";
 export const WIREFRAME_PROMPT_DESCRIPTION =
-  "High-fidelity stakeholder design concept · GWI brand colours · Real copy · Multi-column layouts · Rec badges";
+  "High-fidelity stakeholder design concept · GWI brand colours · Real copy · Multi-column layouts · Rec badges · Dead links · Dual nav CTAs";
 
 export function buildWireframePrompt(
   page: { label: string; url: string; actions: any[] },
@@ -60,15 +60,17 @@ export function buildWireframePrompt(
     "Badge markup — section outermost div: position:relative + data-section-rec=\"N\". " +
     "Badge: <span data-rec=\"N\" style=\"position:absolute;top:10px;right:10px;background:#FF0077;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;cursor:pointer\">💡</span>\n\n" +
 
-    "NAVIGATION (desktop): Logo left | Products  Services  Solutions  Resources  Pricing | Sign in free (bg:#FF0077, color:#fff, border-radius:6px, padding:8px 18px). Mobile @media(max-width:767px): logo + burger icon only.\n" +
+    "LINKS (critical): Every single <a> tag in the entire document MUST use href=\"#\" — no real URLs anywhere. This is a wireframe; all links must be visually present but non-navigating.\n\n" +
 
-    "FOOTER (mandatory, always last): data-gwi-footer=\"1\". Dark bg #2a2a2a, text #ccc/#999. " +
+    "NAVIGATION (desktop): bg #101720. Logo left | nav links (href=\"#\"): Products · Services · Solutions · Resources · Pricing | right side: TWO CTAs always present — (1) 'Book a demo' (border:1px solid rgba(255,255,255,0.4), color:#fff, border-radius:6px, padding:8px 18px, href=\"#\") and (2) 'Sign in' (bg:#FF0077, color:#fff, border-radius:6px, padding:8px 18px, href=\"#\"). You may adapt the CTA copy to match the page context but both buttons must always appear. Mobile @media(max-width:767px): logo + burger icon only.\n" +
+
+    "FOOTER (mandatory, always last): data-gwi-footer=\"1\". Dark bg #2a2a2a, text #ccc/#999. All footer links use href=\"#\". " +
     "5-column link grid — Products: Human insights platform, Agent Spark, Learn about our data, Pricing · " +
     "Solutions & Integrations: RLD, Audience activation, Data partnerships, Become a GWI partner · " +
     "Resources: Blog, Reports, Help center · " +
     "Company: Our story, Careers, Press, Contact, Trust center · " +
     "Legal: Terms, Privacy, Cookies, Modern slavery, See all. " +
-    "Bottom bar: © GWI + social icon placeholders.\n" +
+    "Bottom bar: © GWI + social icon placeholders (href=\"#\").\n" +
 
     "RESPONSIVE: @media(max-width:767px) flex rows→column; grids→1 col; padding→16px; buttons→100% width. Use CSS classes in <style> for overrides.\n" +
     "Full self-contained HTML. <style> in <head>. Max-width 1200px centred. No JavaScript.\n\n" +
