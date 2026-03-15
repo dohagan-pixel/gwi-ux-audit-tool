@@ -1646,7 +1646,7 @@ function WireframeModal({page,personas,onClose,onSave,rules}){
 "This wireframe shows the IMPROVED page addressing these "+recCount+" UX recommendations:\n"+actionLines+"\n\n"+
 "Personas: "+personaNames+".\n\n"+
 "BADGE RULE (highest priority):\n"+
-"Each recommendation gets one 💡 badge placed on the section of the wireframe where the UX change is most visible. Place at most ONE badge per section — if a section is relevant to multiple recommendations, pick the single most impactful one for that section and skip the others. Only place a badge where it makes clear visual sense; omit a badge entirely rather than forcing it into an unrelated section.\n"+
+"Every recommendation MUST have exactly one 💡 badge — no exceptions. Place each badge on the section where that recommendation's UX change is most visible. Each section may contain at most ONE badge. If multiple recommendations apply to the same section, split them across distinct sub-sections or adjacent areas so every badge has its own home. All "+recCount+" badge numbers MUST appear somewhere in the HTML — a missing badge is a critical error.\n"+
 "Badge markup — section outermost div: position:relative + data-section-rec=\"N\". Badge inside: <span data-rec=\"N\" style=\"position:absolute;top:10px;right:10px;background:#FF0077;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;cursor:pointer\">💡</span>\n\n"+
 "WIREFRAME RULES:\n"+
 "- STYLE: grey tones only — backgrounds #f5f5f5/#e8e8e8, borders #d0d0d0, text #333/#666. Font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif. Grey labelled rectangles for images. Short [PLACEHOLDER] text.\n"+
