@@ -2,6 +2,13 @@
 // bypassing the 10-second serverless timeout entirely.
 export const config = { runtime: 'edge' };
 
+// Models tried in descending quality order — first one that doesn't 404 wins
+const MODEL_PRIORITY = [
+  'claude-opus-4-5-20251001',        // Best: Opus 4.5
+  'claude-3-5-sonnet-20241022',      // Fallback: 3.5 Sonnet (known reliable)
+  'claude-haiku-4-5-20251001',       // Last resort: Haiku 4.5 (confirmed available)
+];
+
 export default async function handler(req: Request) {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
@@ -29,8 +36,6 @@ export default async function handler(req: Request) {
   }
 
   const hasImages = Array.isArray(images) && images.length > 0;
-  // claude-3-7-sonnet: high-quality model with up to 64k output tokens — ideal for wireframes
-  const model = 'claude-3-7-sonnet-20250219';
   const effectiveMaxTokens = Math.min(max_tokens || 16000, 16000);
 
   const messageContent = hasImages
@@ -46,26 +51,44 @@ export default async function handler(req: Request) {
       ]
     : prompt;
 
-  const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: effectiveMaxTokens,
-      stream: true,
-      messages: [{ role: 'user', content: messageContent }]
-    })
-  });
+  // Try each model in priority order — skip on 404, stop on first success or non-404 error
+  let anthropicRes: Response | null = null;
+  let lastErr = '';
+  for (const model of MODEL_PRIORITY) {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: effectiveMaxTokens,
+        stream: true,
+        messages: [{ role: 'user', content: messageContent }]
+      })
+    });
 
-  // If Anthropic returns an error, forward it as JSON (not a stream)
-  if (!anthropicRes.ok) {
-    const errData = await anthropicRes.json() as any;
-    const errMsg = `HTTP ${anthropicRes.status} — ${errData?.error?.message || errData?.error?.type || JSON.stringify(errData)}`;
-    return new Response(JSON.stringify({ error: errMsg }), {
+    if (res.ok) {
+      anthropicRes = res;
+      break;
+    }
+
+    const errData = await res.json() as any;
+    lastErr = `HTTP ${res.status} — ${errData?.error?.message || errData?.error?.type || JSON.stringify(errData)}`;
+
+    // 404 = model not available for this key — try the next one
+    if (res.status === 404) continue;
+
+    // Any other error (auth, rate limit, bad request) — stop immediately
+    return new Response(JSON.stringify({ error: lastErr }), {
+      status: 500, headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  if (!anthropicRes) {
+    return new Response(JSON.stringify({ error: lastErr || 'No available model found' }), {
       status: 500, headers: { 'Content-Type': 'application/json' }
     });
   }
@@ -76,7 +99,7 @@ export default async function handler(req: Request) {
   const writer = writable.getWriter();
 
   (async () => {
-    const reader = anthropicRes.body!.getReader();
+    const reader = anthropicRes!.body!.getReader();
     const decoder = new TextDecoder();
     let buf = '';
     try {
