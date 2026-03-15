@@ -29,9 +29,9 @@ export default async function handler(req: Request) {
   }
 
   const hasImages = Array.isArray(images) && images.length > 0;
-  // claude-haiku-4-5 is fast — use claude-sonnet-4-6 for higher quality if latency allows
-  const model = 'claude-haiku-4-5-20251001';
-  const effectiveMaxTokens = Math.min(max_tokens || 8192, 8192);
+  // claude-sonnet-4-5 for high-quality HTML wireframe generation
+  const model = 'claude-sonnet-4-5-20251001';
+  const effectiveMaxTokens = Math.min(max_tokens || 16000, 16000);
 
   const messageContent = hasImages
     ? [

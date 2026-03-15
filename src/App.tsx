@@ -1671,7 +1671,7 @@ function WireframeModal({page,personas,onClose,onSave,rules}){
 "Full self-contained HTML. <style> in <head>. Max-width 1200px centred. No JavaScript.\n\n"+
 "Output ONLY the raw HTML — no explanation, no markdown fences, nothing else.";
     if(rules&&rules.tov){prompt+="\n\nTone of voice — apply these guidelines to ALL copy in this wireframe:\n"+rules.tov;}
-    fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:10000})})
+    fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,max_tokens:16000})})
       .then(function(r){
         var ct=r.headers.get("content-type")||"";
         if(!ct.includes("text/event-stream")){return r.text().then(function(raw){try{var d=JSON.parse(raw);setErrorMsg(d.error||"Unknown error");}catch(e){setErrorMsg("Server error: "+raw.slice(0,300));}setStatus("error");});}
