@@ -7,6 +7,7 @@ const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-a
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
 import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, List, LayoutGrid, Folder, FolderOpen, Heart, Building2, BookOpen, ExternalLink } from "lucide-react";
 
+const FF="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
 const C = {
   pink:"#FF0077",white:"#FFFFFF",black:"#101720",offBlack:"#2A3447",
   grey8:"#526482",grey7:"#7989A6",grey6:"#ABB8CF",grey5:"#CED9EB",
@@ -650,7 +651,7 @@ function Dashboard({personas,auditData,setView,onFeedback}){
       <div style={{maxWidth:920,margin:"0 auto",paddingBottom:80}}>
         <div style={{background:C.black,borderRadius:20,padding:isMobile?"24px":"36px 40px",marginBottom:28}}>
           <div style={{fontSize:12,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>GWI Website — UX Audit</div>
-          <h1 style={{color:C.white,fontSize:isMobile?24:32,fontWeight:800,margin:"0 0 12px",lineHeight:1.15}}>Optimize for free sign-ups using real behavioral data.</h1>
+          <h1 style={{color:C.white,fontSize:isMobile?24:32,fontWeight:900,margin:"0 0 12px",lineHeight:1.15,letterSpacing:"-0.02em"}}>Optimize for free sign-ups using real behavioral data.</h1>
           <p style={{color:C.grey6,fontSize:15,lineHeight:1.7,margin:"0 0 24px",maxWidth:600}}>This program combines user research, behaviour analytics, and AI-assisted auditing to pinpoint what is blocking conversion and exactly how to fix it.</p>
           <div style={{background:"rgba(255,255,255,0.06)",borderRadius:12,padding:"16px 20px"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
@@ -677,7 +678,7 @@ function Dashboard({personas,auditData,setView,onFeedback}){
                 <div style={{background:"#FFEEF6",borderRadius:10,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                   <div style={{color:C.pink}}>{card.icon}</div>
                 </div>
-                <div style={{fontSize:17,fontWeight:800,color:C.offBlack}}>{card.label}</div>
+                <div style={{fontSize:17,fontWeight:900,color:C.offBlack,letterSpacing:"-0.02em"}}>{card.label}</div>
               </div>
               <p style={{fontSize:15,color:C.grey7,lineHeight:1.65,margin:0}}>{card.desc}</p>
               <div style={{display:"flex",alignItems:"center",gap:16}}>
@@ -1648,7 +1649,7 @@ function WireframeModal({page,personas,onClose,onSave,rules}){
 "Each recommendation gets one 💡 badge placed on the section of the wireframe where the UX change is most visible. Place at most ONE badge per section — if a section is relevant to multiple recommendations, pick the single most impactful one for that section and skip the others. Only place a badge where it makes clear visual sense; omit a badge entirely rather than forcing it into an unrelated section.\n"+
 "Badge markup — section outermost div: position:relative + data-section-rec=\"N\". Badge inside: <span data-rec=\"N\" style=\"position:absolute;top:10px;right:10px;background:#FF0077;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;cursor:pointer\">💡</span>\n\n"+
 "WIREFRAME RULES:\n"+
-"- STYLE: grey tones only — backgrounds #f5f5f5/#e8e8e8, borders #d0d0d0, text #333/#666. Arial/sans-serif. Grey labelled rectangles for images. Short [PLACEHOLDER] text.\n"+
+"- STYLE: grey tones only — backgrounds #f5f5f5/#e8e8e8, borders #d0d0d0, text #333/#666. Font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif. Grey labelled rectangles for images. Short [PLACEHOLDER] text.\n"+
 "- LAYOUTS: use real multi-column layouts — hero with text+image split, 3-column feature grids, side-by-side testimonials, 2-col stats rows, etc. Do NOT stack everything in single full-width blocks.\n"+
 "- SECTION LABELS: small grey comment top-left of each section, e.g. // HERO, // FEATURES, // SOCIAL PROOF.\n"+
 "- FOOTER (mandatory, always last): outermost element MUST have attribute data-gwi-footer=\"1\". Dark bg #2a2a2a, text #ccc/#999. 5-column link grid — Products: Human insights platform, Agent Spark: Human insights analyst, Learn about our data, Pricing · Solutions & Integrations: RLD, Audience activation, Data partnerships, Become a GWI partner · Resources: Blog, Reports, Help center · Company: Our story, Careers, Press, Contact, Trust center · Legal stuff: Website terms and conditions, Website privacy policy, Website cookie policy, Modern slavery statement, See all. Bottom bar: © GWI + social icon placeholders.\n"+
@@ -2335,7 +2336,7 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,vert
                 <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
                   <div style={{background:"#FFEEF6",borderRadius:10,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:C.pink}}>{s.icon}</div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:15,fontWeight:700,color:C.black,marginBottom:2}}>{s.label}</div>
+                    <div style={{fontSize:15,fontWeight:900,color:C.black,marginBottom:2,letterSpacing:"-0.02em"}}>{s.label}</div>
                     <div style={{fontSize:12,color:C.grey6,fontWeight:500}}>{s.stat}</div>
                   </div>
                   <ArrowRight size={15} color={C.grey5} style={{flexShrink:0}}/>
@@ -2993,9 +2994,9 @@ function MobileNav({view,setView}){
 }
 
 
-function LandingPage({setView}:{setView:(v:string)=>void}){
+function LandingPage({setView,onSignIn,isPreview}:{setView?:(v:string)=>void,onSignIn?:()=>void,isPreview?:boolean}){
+  var _isPreview=isPreview!==false; // default true when used from Settings
   var _particleBg=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;overflow:hidden;background:#000}canvas{display:block}</style><script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.1/build/three.module.js"}}</`+`script></head><body><script type="x-shader/x-vertex" id="vs">attribute float scale;varying vec3 vColor;void main(){vColor=color;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=scale*(300.0/-mv.z);gl_Position=projectionMatrix*mv;}</`+`script><script type="x-shader/x-fragment" id="fs">varying vec3 vColor;void main(){float d=length(gl_PointCoord-vec2(0.5));float a=pow(1.0-d*d,3.5);if(d>0.5)discard;gl_FragColor=vec4(vColor,a*0.9);}</`+`script><script type="module">import*as T from'three';const SEP=100,AX=50,AY=50,N=AX*AY;let cam,scene,ren,pts,cnt=0;const pos=new Float32Array(N*3),sc=new Float32Array(N),col=new Float32Array(N*3);let i=0,j=0;for(let x=0;x<AX;x++)for(let y=0;y<AY;y++){pos[i]=x*SEP-(AX*SEP)/2;pos[i+1]=0;pos[i+2]=y*SEP-(AY*SEP)/2;const c=new T.Color();c.setHSL((j/N)*0.389+0.556,1,.55);col[i]=c.r;col[i+1]=c.g;col[i+2]=c.b;sc[j]=20;i+=3;j++;}const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(pos,3));geo.setAttribute('scale',new T.BufferAttribute(sc,1));geo.setAttribute('color',new T.BufferAttribute(col,3));cam=new T.PerspectiveCamera(75,innerWidth/innerHeight,1,10000);cam.position.z=1000;scene=new T.Scene();pts=new T.Points(geo,new T.ShaderMaterial({vertexShader:document.getElementById('vs').textContent,fragmentShader:document.getElementById('fs').textContent,blending:T.AdditiveBlending,depthTest:false,transparent:true,vertexColors:true}));scene.add(pts);ren=new T.WebGLRenderer({antialias:true});ren.setPixelRatio(devicePixelRatio);ren.setSize(innerWidth,innerHeight);document.body.appendChild(ren.domElement);window.onresize=function(){cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight);};(function loop(){requestAnimationFrame(loop);cam.position.x=Math.sin(cnt*.005)*1000;cam.position.z=Math.cos(cnt*.005)*1000;cam.position.y=80;cam.lookAt(scene.position);let i=0;for(let x=0;x<AX;x++)for(let y=0;y<AY;y++){pos[i+1]=(Math.sin((x+cnt)*.3)*50)+(Math.sin((y+cnt)*.5)*50);i+=3;}for(let i=0;i<N;i++){const t=20+Math.abs(Math.sin(cnt*.1+i))*20;sc[i]+=(t-sc[i])*.1;const h=((Math.sin(cnt*.05+i)+1)/2)*0.389+0.556,bc=new T.Color();bc.setHSL(h,1,.55);col[i*3]+=(bc.r-col[i*3])*.1;col[i*3+1]+=(bc.g-col[i*3+1])*.1;col[i*3+2]+=(bc.b-col[i*3+2])*.1;}geo.attributes.position.needsUpdate=true;geo.attributes.scale.needsUpdate=true;geo.attributes.color.needsUpdate=true;ren.render(scene,cam);cnt+=.05;})();</`+`script></body></html>`;
-  var ff="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
   var features=[
     {icon:<Brain size={22} color={C.pink}/>,title:"AI-Powered Audits",desc:"Generate structured UX recommendations grounded in your personas, lifecycle stages, and industry verticals — in seconds."},
     {icon:<LayoutGrid size={22} color={C.pink}/>,title:"Wireframe Generation",desc:"Every recommendation becomes a designed wireframe section automatically. Present findings the moment they're generated."},
@@ -3011,13 +3012,13 @@ function LandingPage({setView}:{setView:(v:string)=>void}){
   ];
   var GwiLogoWhite=(<svg viewBox="0 0 230 71" fill="none" style={{width:90,height:"auto",display:"block"}}><path fillRule="evenodd" clipRule="evenodd" d="M230 54.2105C230 43.7102 225.129 38.8339 214.623 38.8339C204.119 38.8339 199.248 43.7102 199.248 54.2105C199.248 64.7107 204.119 69.5871 214.623 69.5871C225.129 69.5871 230 64.7107 230 54.2105Z" fill="#FF0077"/><path fillRule="evenodd" clipRule="evenodd" d="M176.341 69.2236H191.612V1.95935H176.341V69.2236Z" fill="white"/><path fillRule="evenodd" clipRule="evenodd" d="M148.954 69.2236H131.472L118.484 24.3824L105.359 69.2236H88.0286L67.2642 1.95935H84.4376L84.5125 2.23484L96.8212 47.6343L109.642 1.95935H127.359L140.518 47.7687L152.864 1.95935H169.797L148.954 69.2236Z" fill="white"/><path fillRule="evenodd" clipRule="evenodd" d="M32.5803 70.6778C22.7079 70.6778 14.7182 67.5206 8.83175 61.2943C2.96903 54.9939 0 46.4408 0 35.8647C0 25.3963 3.20293 16.8049 9.52069 10.3297C15.8664 3.81068 24.2783 0.504883 34.5232 0.504883C47.7936 0.504883 58.3726 6.4687 64.3131 17.2975L64.8781 18.3276L53.5652 27.5345L52.7116 26.2328C48.1861 19.3266 42.0415 15.8248 34.4491 15.8248C28.6982 15.8248 24.0876 17.6396 20.7467 21.2194C17.3287 24.8807 15.6671 29.6421 15.6671 35.774C15.6671 41.8194 17.3002 46.6228 20.5195 50.0522C23.7692 53.5132 28.2291 55.2678 33.7753 55.2678C40.2 55.2678 45.9467 52.1574 50.0281 46.4907H34.8379V31.9933H66.9006V69.3999H54.0525V60.9138C51.5634 63.9329 48.5603 66.2981 45.112 67.9516C41.3416 69.7609 37.1253 70.6778 32.5803 70.6778Z" fill="white"/></svg>);
   return(
-    <div style={{fontFamily:ff,background:"#fff",minHeight:"100vh"}}>
+    <div style={{fontFamily:FF,background:"#fff",minHeight:"100vh"}}>
       {/* Fixed nav */}
-      <div style={{position:"fixed",top:0,left:0,right:0,zIndex:100,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 48px",height:68,background:"rgba(0,0,0,0.45)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
+      <div style={{position:"fixed",top:0,left:0,right:0,zIndex:100,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 48px",height:68,background:"transparent"}}>
         {GwiLogoWhite}
         <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <button onClick={function(){setView("settings");}} style={{background:"transparent",border:"none",color:"rgba(255,255,255,0.5)",fontSize:12,fontWeight:600,cursor:"pointer",padding:"6px 12px",borderRadius:6}}>← Exit preview</button>
-          <button style={{background:C.pink,color:"#fff",border:"none",borderRadius:8,padding:"9px 22px",fontSize:13,fontWeight:700,cursor:"default",letterSpacing:"0.01em"}}>Sign In</button>
+          {_isPreview&&<button onClick={function(){setView&&setView("settings");}} style={{background:"transparent",border:"none",color:"rgba(255,255,255,0.5)",fontSize:12,fontWeight:600,cursor:"pointer",padding:"6px 12px",borderRadius:6}}>← Exit preview</button>}
+          <button onClick={function(){if(!_isPreview&&onSignIn)onSignIn();}} style={{background:C.pink,color:"#fff",border:"none",borderRadius:8,padding:"9px 22px",fontSize:13,fontWeight:700,cursor:_isPreview?"default":"pointer",letterSpacing:"0.01em"}}>Sign In</button>
         </div>
       </div>
 
@@ -3028,7 +3029,7 @@ function LandingPage({setView}:{setView:(v:string)=>void}){
           <div style={{display:"inline-block",background:"rgba(255,0,119,0.15)",border:"1px solid rgba(255,0,119,0.4)",borderRadius:99,padding:"5px 16px",fontSize:11,fontWeight:700,color:C.pink,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:28}}>White-label UX intelligence platform</div>
           <h1 style={{fontSize:"clamp(32px,5vw,60px)",fontWeight:900,color:"#fff",lineHeight:1.1,margin:"0 0 24px",letterSpacing:"-0.03em"}}>The UX audit platform<br/>built for your team's pace.</h1>
           <p style={{fontSize:"clamp(15px,2vw,19px)",color:"rgba(255,255,255,0.65)",lineHeight:1.7,margin:"0 0 40px",maxWidth:560,marginLeft:"auto",marginRight:"auto"}}>AI-powered recommendations, wireframe generation, and lifecycle context — all in one place. From first click to completed audit in minutes.</p>
-          <button style={{background:C.pink,color:"#fff",border:"none",borderRadius:10,padding:"16px 36px",fontSize:16,fontWeight:700,cursor:"default",letterSpacing:"0.01em",boxShadow:"0 4px 32px rgba(255,0,119,0.4)"}}>Sign in with Google →</button>
+          <button onClick={function(){if(!_isPreview&&onSignIn)onSignIn();}} style={{background:C.pink,color:"#fff",border:"none",borderRadius:10,padding:"16px 36px",fontSize:16,fontWeight:700,cursor:_isPreview?"default":"pointer",letterSpacing:"0.01em",boxShadow:"0 4px 32px rgba(255,0,119,0.4)"}}>Sign in with Google →</button>
           <div style={{marginTop:16,fontSize:12,color:"rgba(255,255,255,0.3)"}}>Access restricted to @gwi.com accounts</div>
         </div>
       </div>
@@ -3079,7 +3080,7 @@ function LandingPage({setView}:{setView:(v:string)=>void}){
         <div style={{position:"relative",zIndex:1}}>
           <h2 style={{fontSize:"clamp(24px,3vw,40px)",fontWeight:900,color:"#fff",margin:"0 0 16px",letterSpacing:"-0.02em"}}>Ready to audit smarter?</h2>
           <p style={{fontSize:16,color:"rgba(255,255,255,0.6)",margin:"0 0 36px"}}>Sign in with your @gwi.com Google account to get started.</p>
-          <button style={{background:C.pink,color:"#fff",border:"none",borderRadius:10,padding:"16px 40px",fontSize:16,fontWeight:700,cursor:"default",boxShadow:"0 4px 32px rgba(255,0,119,0.5)"}}>Sign in with Google →</button>
+          <button onClick={function(){if(!_isPreview&&onSignIn)onSignIn();}} style={{background:C.pink,color:"#fff",border:"none",borderRadius:10,padding:"16px 40px",fontSize:16,fontWeight:700,cursor:_isPreview?"default":"pointer",boxShadow:"0 4px 32px rgba(255,0,119,0.5)"}}>Sign in with Google →</button>
         </div>
       </div>
 
@@ -3087,15 +3088,33 @@ function LandingPage({setView}:{setView:(v:string)=>void}){
       <div style={{background:"#111",padding:"32px 48px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
         {GwiLogoWhite}
         <div style={{fontSize:12,color:"rgba(255,255,255,0.3)"}}>Internal UX platform · Access restricted to @gwi.com accounts</div>
-        <button onClick={function(){setView("settings");}} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.15)",color:"rgba(255,255,255,0.4)",borderRadius:6,padding:"6px 14px",fontSize:11,fontWeight:600,cursor:"pointer"}}>← Exit preview</button>
+        {_isPreview&&<button onClick={function(){setView&&setView("settings");}} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.15)",color:"rgba(255,255,255,0.4)",borderRadius:6,padding:"6px 14px",fontSize:11,fontWeight:600,cursor:"pointer"}}>← Exit preview</button>}
       </div>
     </div>
   );
 }
-function LoginScreen({onLogin,onRegister,onGoogleLogin,loginError}:{onLogin:any,onRegister:any,onGoogleLogin:any,loginError:any}){
-  var _wrap={position:"relative" as const,display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#000",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",overflow:"hidden" as const};
-  var _card={position:"relative" as const,zIndex:1,background:"rgba(255,255,255,0.92)",borderRadius:16,boxShadow:"0 8px 56px rgba(0,0,0,0.55)",padding:"40px 36px",maxWidth:380,width:"100%",boxSizing:"border-box" as const,textAlign:"center" as const};
+function LoginScreen({onLogin,onRegister,onGoogleLogin,loginError,inModal}:{onLogin:any,onRegister:any,onGoogleLogin:any,loginError:any,inModal?:boolean}){
+  var _wrap={position:"relative" as const,display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#000",fontFamily:FF,overflow:"hidden" as const};
+  var _card={position:"relative" as const,zIndex:1,background:inModal?"#fff":"rgba(255,255,255,0.92)",borderRadius:16,boxShadow:"0 8px 56px rgba(0,0,0,0.55)",padding:"40px 36px",maxWidth:380,width:"100%",boxSizing:"border-box" as const,textAlign:"center" as const,fontFamily:FF};
   var _particleBg=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;overflow:hidden;background:#000}canvas{display:block}</style><script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.1/build/three.module.js"}}</`+`script></head><body><script type="x-shader/x-vertex" id="vs">attribute float scale;varying vec3 vColor;void main(){vColor=color;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=scale*(300.0/-mv.z);gl_Position=projectionMatrix*mv;}</`+`script><script type="x-shader/x-fragment" id="fs">varying vec3 vColor;void main(){float d=length(gl_PointCoord-vec2(0.5));float a=pow(1.0-d*d,3.5);if(d>0.5)discard;gl_FragColor=vec4(vColor,a*0.9);}</`+`script><script type="module">import*as T from'three';const SEP=100,AX=50,AY=50,N=AX*AY;let cam,scene,ren,pts,cnt=0;const pos=new Float32Array(N*3),sc=new Float32Array(N),col=new Float32Array(N*3);let i=0,j=0;for(let x=0;x<AX;x++)for(let y=0;y<AY;y++){pos[i]=x*SEP-(AX*SEP)/2;pos[i+1]=0;pos[i+2]=y*SEP-(AY*SEP)/2;const c=new T.Color();c.setHSL((j/N)*0.389+0.556,1,.55);col[i]=c.r;col[i+1]=c.g;col[i+2]=c.b;sc[j]=20;i+=3;j++;}const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(pos,3));geo.setAttribute('scale',new T.BufferAttribute(sc,1));geo.setAttribute('color',new T.BufferAttribute(col,3));cam=new T.PerspectiveCamera(75,innerWidth/innerHeight,1,10000);cam.position.z=1000;scene=new T.Scene();pts=new T.Points(geo,new T.ShaderMaterial({vertexShader:document.getElementById('vs').textContent,fragmentShader:document.getElementById('fs').textContent,blending:T.AdditiveBlending,depthTest:false,transparent:true,vertexColors:true}));scene.add(pts);ren=new T.WebGLRenderer({antialias:true});ren.setPixelRatio(devicePixelRatio);ren.setSize(innerWidth,innerHeight);document.body.appendChild(ren.domElement);window.onresize=function(){cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight);};(function loop(){requestAnimationFrame(loop);cam.position.x=Math.sin(cnt*.005)*1000;cam.position.z=Math.cos(cnt*.005)*1000;cam.position.y=80;cam.lookAt(scene.position);let i=0;for(let x=0;x<AX;x++)for(let y=0;y<AY;y++){pos[i+1]=(Math.sin((x+cnt)*.3)*50)+(Math.sin((y+cnt)*.5)*50);i+=3;}for(let i=0;i<N;i++){const t=20+Math.abs(Math.sin(cnt*.1+i))*20;sc[i]+=(t-sc[i])*.1;const h=((Math.sin(cnt*.05+i)+1)/2)*0.389+0.556,bc=new T.Color();bc.setHSL(h,1,.55);col[i*3]+=(bc.r-col[i*3])*.1;col[i*3+1]+=(bc.g-col[i*3+1])*.1;col[i*3+2]+=(bc.b-col[i*3+2])*.1;}geo.attributes.position.needsUpdate=true;geo.attributes.scale.needsUpdate=true;geo.attributes.color.needsUpdate=true;ren.render(scene,cam);cnt+=.05;})();</`+`script></body></html>`;
+  if(inModal)return(<div style={_card}>
+        <div style={{marginBottom:28,display:"flex",justifyContent:"center"}}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 71" fill="none" style={{width:"50%",height:"auto",display:"block"}}>
+            <path fillRule="evenodd" clipRule="evenodd" d="M230 54.2105C230 43.7102 225.129 38.8339 214.623 38.8339C204.119 38.8339 199.248 43.7102 199.248 54.2105C199.248 64.7107 204.119 69.5871 214.623 69.5871C225.129 69.5871 230 64.7107 230 54.2105Z" fill="#FF0077"/>
+            <path fillRule="evenodd" clipRule="evenodd" d="M176.341 69.2236H191.612V1.95935H176.341V69.2236Z" fill="black"/>
+            <path fillRule="evenodd" clipRule="evenodd" d="M148.954 69.2236H131.472L118.484 24.3824L105.359 69.2236H88.0286L67.2642 1.95935H84.4376L84.5125 2.23484L96.8212 47.6343L109.642 1.95935H127.359L140.518 47.7687L152.864 1.95935H169.797L148.954 69.2236Z" fill="black"/>
+            <path fillRule="evenodd" clipRule="evenodd" d="M32.5803 70.6778C22.7079 70.6778 14.7182 67.5206 8.83175 61.2943C2.96903 54.9939 0 46.4408 0 35.8647C0 25.3963 3.20293 16.8049 9.52069 10.3297C15.8664 3.81068 24.2783 0.504883 34.5232 0.504883C47.7936 0.504883 58.3726 6.4687 64.3131 17.2975L64.8781 18.3276L53.5652 27.5345L52.7116 26.2328C48.1861 19.3266 42.0415 15.8248 34.4491 15.8248C28.6982 15.8248 24.0876 17.6396 20.7467 21.2194C17.3287 24.8807 15.6671 29.6421 15.6671 35.774C15.6671 41.8194 17.3002 46.6228 20.5195 50.0522C23.7692 53.5132 28.2291 55.2678 33.7753 55.2678C40.2 55.2678 45.9467 52.1574 50.0281 46.4907H34.8379V31.9933H66.9006V69.3999H54.0525V60.9138C51.5634 63.9329 48.5603 66.2981 45.112 67.9516C41.3416 69.7609 37.1253 70.6778 32.5803 70.6778Z" fill="black"/>
+          </svg>
+        </div>
+        <div style={{fontSize:18,fontWeight:700,color:C.black,marginBottom:4}}>Welcome back</div>
+        <div style={{fontSize:14,color:C.grey7,marginBottom:24}}>Sign in to your GWI UX Audit workspace</div>
+        <button type="button" onClick={onGoogleLogin} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:C.white,color:C.black,border:"1px solid "+C.grey5,borderRadius:8,padding:"12px 0",fontSize:14,fontWeight:600,cursor:"pointer",width:"100%"}}>
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Continue with Google
+        </button>
+        {loginError&&<div style={{color:C.pink,fontSize:13,marginTop:12,textAlign:"center" as const,lineHeight:1.5}}>{loginError}</div>}
+        <div style={{fontSize:11,color:C.grey6,marginTop:16,textAlign:"center" as const}}>Access restricted to @gwi.com accounts</div>
+      </div>);
   return(
     <div style={_wrap}>
       <iframe srcDoc={_particleBg} title="bg" sandbox="allow-scripts" style={{position:"absolute",top:0,left:0,right:0,bottom:0,width:"100%",height:"100%",border:"none",pointerEvents:"none",zIndex:0}}/>
@@ -3215,7 +3234,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
     }catch(e){return null;}
   }
   function extractSharedCss(html:string){var matches=html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi)||[];return matches.map(function(m){return m.replace(/<\/?style[^>]*>/gi,"");}).join("\n");}
-  function wrapSection(sectionHtml:string,sharedCss:string){return'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{box-sizing:border-box}html,body{margin:0;padding:0;overflow:visible;}body{background:#f5f5f5;font-family:Arial,sans-serif;}[data-rec]{display:none!important;}'+sharedCss+'</style></head><body>'+sectionHtml+'</body></html>';}
+  function wrapSection(sectionHtml:string,sharedCss:string){return'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{box-sizing:border-box}html,body{margin:0;padding:0;overflow:visible;}body{background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}[data-rec]{display:none!important;}'+sharedCss+'</style></head><body>'+sectionHtml+'</body></html>';}
   var isMobile=useWidth()<768;
   var active=wireframes.find(function(w){return w.id===activeId;});
   var starredWireframes=wireframes.filter(function(w){return w.starred;});
@@ -3242,7 +3261,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
     var leakIdx2=html.indexOf("[data-eh]{outline:1px dashed");
     if(leakIdx2>=0){var nt2=html.indexOf("<",leakIdx2);html=html.slice(0,leakIdx2)+(nt2>=0?html.slice(nt2):"");}
     // ── Content strings ───────────────────────────────────────────────────────
-    var recCss='[data-rec]{white-space:nowrap;transition:background 0.15s ease;}[data-rec] .rec-label{max-width:0;overflow:hidden;transition:max-width 0.25s ease,margin-right 0.25s ease;font-size:11px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;color:white;margin-right:0;display:inline-block;white-space:nowrap;}[data-rec]:hover .rec-label{max-width:130px;margin-right:6px;}';
+    var recCss='[data-rec]{white-space:nowrap;transition:background 0.15s ease;}[data-rec] .rec-label{max-width:0;overflow:hidden;transition:max-width 0.25s ease,margin-right 0.25s ease;font-size:11px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:white;margin-right:0;display:inline-block;white-space:nowrap;}[data-rec]:hover .rec-label{max-width:130px;margin-right:6px;}';
     var editCss='[data-eh]{outline:1px dashed rgba(0,0,0,0.22)!important;cursor:text!important;}[contenteditable="true"]{outline:1.5px solid #FF0077!important;border-radius:2px;}';
     var recJs='document.addEventListener("click",function(e){var el=e.target;for(var i=0;i<8;i++){if(!el||el===document.body)break;var r=el.getAttribute("data-rec");if(r){window.parent.postMessage({type:"rec-click",recNum:parseInt(r)},"*");return;}el=el.parentElement;}});window.addEventListener("message",function(e){if(e.data&&e.data.type==="set-rec-states"){var g=e.data.greenRecs||[];document.querySelectorAll("[data-rec]").forEach(function(b){var n=parseInt(b.getAttribute("data-rec"));b.style.background=g.indexOf(n)>=0?"#22C55E":"#FF0077";});}});function initBadges(){document.querySelectorAll("[data-rec]").forEach(function(b){var label=document.createElement("span");label.className="rec-label";label.textContent="Recommendation";var s=document.createElementNS("http://www.w3.org/2000/svg","svg");s.setAttribute("width","14");s.setAttribute("height","14");s.setAttribute("viewBox","0 0 24 24");s.setAttribute("fill","none");s.setAttribute("stroke","white");s.setAttribute("stroke-width","2.5");s.setAttribute("stroke-linecap","round");s.setAttribute("stroke-linejoin","round");var p1=document.createElementNS("http://www.w3.org/2000/svg","path");p1.setAttribute("d","M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5");s.appendChild(p1);var p2=document.createElementNS("http://www.w3.org/2000/svg","path");p2.setAttribute("d","M9 18h6");s.appendChild(p2);var p3=document.createElementNS("http://www.w3.org/2000/svg","path");p3.setAttribute("d","M10 22h4");s.appendChild(p3);b.innerHTML="";b.appendChild(label);b.appendChild(s);b.style.display="inline-flex";b.style.alignItems="center";b.style.justifyContent="flex-end";b.style.padding="0 7px";b.style.height="28px";b.style.width="";b.style.borderRadius="6px";})}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",initBadges);}else{initBadges();}';
     var editJs='(function(){if(window.__ei)return;window.__ei=1;var T=["H1","H2","H3","H4","H5","H6","P","A","BUTTON","LABEL","SPAN","STRONG","EM","LI","TD","TH"];var ed=null,or=null;function ge(el){while(el&&el!==document.body){if(T.indexOf(el.tagName)>=0&&!el.closest("[data-rec]"))return el;el=el.parentElement;}return null;}document.addEventListener("mouseover",function(e){var el=ge(e.target);if(el&&el!==ed)el.setAttribute("data-eh","1");});document.addEventListener("mouseout",function(e){var el=ge(e.target);if(el&&el!==ed)el.removeAttribute("data-eh");});document.addEventListener("dblclick",function(e){var el=ge(e.target);if(!el)return;e.preventDefault();e.stopPropagation();if(ed&&ed!==el){ed.contentEditable="false";ed=null;}el.removeAttribute("data-eh");or=el.innerHTML;el.contentEditable="true";el.focus();ed=el;},true);document.addEventListener("keydown",function(e){if(!ed)return;if(e.key==="Escape"){ed.innerHTML=or;ed.contentEditable="false";ed.removeAttribute("data-eh");ed=null;e.preventDefault();}if(e.key==="Enter"&&!e.shiftKey&&["H1","H2","H3","H4","H5","H6","BUTTON","LABEL"].indexOf(ed.tagName)>=0){ed.blur();e.preventDefault();}});document.addEventListener("paste",function(e){if(!ed)return;e.preventDefault();var t=(e.clipboardData||window.clipboardData).getData("text/plain");document.execCommand("insertText",false,t);});document.addEventListener("focusout",function(e){if(ed&&e.target===ed){ed.contentEditable="false";ed.removeAttribute("data-eh");ed=null;sv();}});function sv(){var inj=Array.from(document.querySelectorAll("[data-injected=\\"1\\"]"));inj.forEach(function(el){el.parentNode&&el.parentNode.removeChild(el);});document.querySelectorAll("[data-eh]").forEach(function(el){el.removeAttribute("data-eh");});document.querySelectorAll("[contenteditable]").forEach(function(el){el.removeAttribute("contenteditable");});var h="<!DOCTYPE html>"+document.documentElement.outerHTML;inj.forEach(function(el){try{document.body.appendChild(el);}catch(x){}});window.parent.postMessage({type:"wireframe-content-saved",html:h},"*");}})();';
@@ -3265,7 +3284,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
         var col=function(title:string,items:string[]){return'<div><div style="font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:16px;">'+title+'</div><ul style="list-style:none;margin:0;padding:0;">'+items.map(function(t){return'<li style="margin-bottom:8px"><a href="#" style="color:#999;font-size:13px;text-decoration:none;">'+t+'</a></li>';}).join('')+'</ul></div>';};
         var footerEl=doc.createElement('footer');
         footerEl.setAttribute('data-gwi-footer','1');
-        footerEl.style.cssText='background:#2a2a2a;color:#ccc;padding:56px 0 0;font-family:Arial,sans-serif;margin-top:0;';
+        footerEl.style.cssText='background:#2a2a2a;color:#ccc;padding:56px 0 0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-top:0;';
         footerEl.innerHTML=
           '<div style="max-width:1200px;margin:0 auto;padding:0 40px;">'
           +'<div style="margin-bottom:40px;"><div style="background:#444;display:inline-block;padding:8px 20px;border-radius:4px;font-size:18px;font-weight:700;color:#fff;letter-spacing:0.05em;">GWI</div></div>'
@@ -3559,6 +3578,7 @@ export default function App(){
   var [_user,_setUser]=useState(null);
   var [_authLoading,_setAuthLoading]=useState(true);
   var [_loginError,_setLoginError]=useState(null);
+  var [_showLoginModal,_setShowLoginModal]=useState(false);
   useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()){var d=snap.data();if(d.auditData)setAuditData(d.auditData);if(d.stages)setStages(d.stages);if(d.verticals)setVerticals(d.verticals);if(d.personas)setPersonas(d.personas);if(d.pages)setPages(d.pages);if(d.journeys)setJourneys(d.journeys);if(d.gaCards)setGaCards(d.gaCards);if(d.wireframeRules)setWireframeRules(d.wireframeRules);if(d.clientList)setClientList(d.clientList);if(d.caseStudies)setCaseStudies(d.caseStudies);}});getDocs(collection(_db,"users",u.uid,"generatedAudits")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setGeneratedAudits(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});merged.sort(function(a,b){return a.id<b.id?-1:1;});return merged;});}).catch(function(){});getDocs(collection(_db,"users",u.uid,"wireframes")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setSavedWireframes(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});return merged;});}).catch(function(){});
 getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setFeedback(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});return merged;});}).catch(function(){});}else{_setUser(null);}_setAuthLoading(false);});},[]);
   useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,stages:stages,verticals:verticals,personas:personas,pages:pages,journeys:journeys,gaCards:gaCards,wireframeRules:wireframeRules,clientList:clientList,caseStudies:caseStudies,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[ auditData,stages,verticals,personas,pages,journeys,gaCards,wireframeRules,clientList,caseStudies,_user]);
@@ -3591,7 +3611,19 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
   var _qp=new URLSearchParams(window.location.search);
   if(_qp.get('mode')==='resetPassword'&&_qp.get('oobCode'))return(<ConfirmResetScreen oobCode={_qp.get('oobCode')!}/>);
   if(_authLoading)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:C.grey2,color:C.grey7,fontSize:14,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>Loading…</div>);
-  if(!_user)return(<LoginScreen onLogin={_handleLogin} onRegister={_handleRegister} onGoogleLogin={_handleGoogleLogin} loginError={_loginError}/>);
+  if(!_user)return(
+    <div style={{position:"relative"}}>
+      <LandingPage isPreview={false} onSignIn={function(){_setShowLoginModal(true);_setLoginError(null);}}/>
+      {_showLoginModal&&(
+        <div style={{position:"fixed",inset:0,zIndex:999,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF}} onClick={function(e){if(e.target===e.currentTarget){_setShowLoginModal(false);_setLoginError(null);}}}>
+          <div style={{position:"relative",width:"100%",maxWidth:420,margin:"0 24px"}}>
+            <button onClick={function(){_setShowLoginModal(false);_setLoginError(null);}} style={{position:"absolute",top:-14,right:-14,zIndex:1,background:C.white,border:"none",borderRadius:"50%",width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:"0 2px 12px rgba(0,0,0,0.3)",fontSize:18,color:C.grey7,lineHeight:1}}>×</button>
+            <LoginScreen onLogin={_handleLogin} onRegister={_handleRegister} onGoogleLogin={_handleGoogleLogin} loginError={_loginError} inModal={true}/>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
 
   return(
