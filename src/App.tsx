@@ -710,6 +710,8 @@ function Dashboard({personas,auditData,setView,onFeedback}){
                   {label:"Claude Code",desc:"Autonomous development environment"},
                   {label:"Vercel",desc:"Hosting and edge functions"},
                   {label:"Vite",desc:"Build tool"},
+                  {label:"GitHub",desc:"Version control and source repository"},
+                  {label:"StackBlitz",desc:"Browser-based development environment"},
                   {label:"Lucide React",desc:"Icons"},
                 ].map(function(item){return(
                   <div key={item.label} style={{display:"flex",alignItems:"baseline",gap:12,padding:"10px 0",borderBottom:"1px solid "+C.grey3}}>
