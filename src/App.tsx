@@ -3018,7 +3018,7 @@ function LandingPage({setView,onSignIn,isPreview}:{setView?:(v:string)=>void,onS
         {GwiLogoWhite}
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           {_isPreview&&<button onClick={function(){setView&&setView("settings");}} style={{background:"transparent",border:"none",color:"rgba(255,255,255,0.5)",fontSize:12,fontWeight:600,cursor:"pointer",padding:"6px 12px",borderRadius:6}}>← Exit preview</button>}
-          <button onClick={function(){if(!_isPreview&&onSignIn)onSignIn();}} style={{background:C.pink,color:"#fff",border:"none",borderRadius:8,padding:"9px 22px",fontSize:13,fontWeight:700,cursor:_isPreview?"default":"pointer",letterSpacing:"0.01em"}}>Sign In</button>
+          {_isPreview&&<button style={{background:C.pink,color:"#fff",border:"none",borderRadius:8,padding:"9px 22px",fontSize:13,fontWeight:700,cursor:"default",letterSpacing:"0.01em"}}>Sign In</button>}
         </div>
       </div>
 
@@ -3026,7 +3026,7 @@ function LandingPage({setView,onSignIn,isPreview}:{setView?:(v:string)=>void,onS
       <div style={{position:"relative",minHeight:"100vh",background:"#000",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
         <iframe srcDoc={_particleBg} title="bg" sandbox="allow-scripts" style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none",pointerEvents:"none",zIndex:0}}/>
         <div style={{position:"relative",zIndex:1,textAlign:"center",padding:"100px 24px 80px",maxWidth:760,margin:"0 auto"}}>
-          <div style={{display:"inline-block",background:"rgba(255,0,119,0.15)",border:"1px solid rgba(255,0,119,0.4)",borderRadius:99,padding:"5px 16px",fontSize:11,fontWeight:700,color:C.pink,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:28}}>White-label UX intelligence platform</div>
+          <div style={{display:"inline-block",background:"rgba(255,0,119,0.15)",border:"1px solid rgba(255,0,119,0.4)",borderRadius:99,padding:"5px 16px",fontSize:11,fontWeight:700,color:C.pink,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:28}}>UX intelligence platform</div>
           <h1 style={{fontSize:"clamp(32px,5vw,60px)",fontWeight:900,color:"#fff",lineHeight:1.1,margin:"0 0 24px",letterSpacing:"-0.03em"}}>The UX audit platform<br/>built for your team's pace.</h1>
           <p style={{fontSize:"clamp(15px,2vw,19px)",color:"rgba(255,255,255,0.65)",lineHeight:1.7,margin:"0 0 40px",maxWidth:560,marginLeft:"auto",marginRight:"auto"}}>AI-powered recommendations, wireframe generation, and lifecycle context — all in one place. From first click to completed audit in minutes.</p>
           <button onClick={function(){if(!_isPreview&&onSignIn)onSignIn();}} style={{background:C.pink,color:"#fff",border:"none",borderRadius:10,padding:"16px 36px",fontSize:16,fontWeight:700,cursor:_isPreview?"default":"pointer",letterSpacing:"0.01em",boxShadow:"0 4px 32px rgba(255,0,119,0.4)"}}>Sign in with Google →</button>
