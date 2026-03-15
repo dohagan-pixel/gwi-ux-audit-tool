@@ -634,6 +634,7 @@ function FileDropZone({onFile,files,onRemove}){
 
 function Dashboard({personas,auditData,setView,onFeedback}){
   var isMobile=useWidth()<768;
+  var [showStack,setShowStack]=useState(false);
   var totalActions=auditData.reduce(function(s,p){return s+p.actions.length;},0);
   var doneActions=auditData.reduce(function(s,p){return s+p.actions.filter(function(a){return a.status==="done";}).length;},0);
   var pct=totalActions?Math.round(doneActions/totalActions*100):0;
@@ -690,44 +691,36 @@ function Dashboard({personas,auditData,setView,onFeedback}){
           );})}
         </div>
         {/* Footer */}
-        <div style={{marginTop:40,paddingTop:24,borderTop:"1px solid "+C.grey4}}>
-          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:20,marginBottom:20}}>
-            <div>
-              <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>Changelog</div>
-              {[
-                {v:"v0.6",date:"Mar 2025",note:"Priority matrix, clickable stat cards, persistent feedback button"},
-                {v:"v0.5",date:"Feb 2025",note:"Wireframes sidebar with Starred/Drafts/Loved sections"},
-                {v:"v0.4",date:"Jan 2025",note:"GA4 analytics cards, Hotjar heatmap links"},
-                {v:"v0.3",date:"Dec 2024",note:"UX Audit generation with Claude AI"},
-                {v:"v0.2",date:"Nov 2024",note:"Persona profiles, journey maps, lifecycle stages"},
-                {v:"v0.1",date:"Oct 2024",note:"Initial audit tracker, recommendations, Firebase sync"},
-              ].map(function(item){return(
-                <div key={item.v} style={{display:"flex",gap:10,marginBottom:6,alignItems:"flex-start"}}>
-                  <span style={{fontFamily:"monospace",fontSize:11,fontWeight:700,color:C.pink,minWidth:32,paddingTop:1}}>{item.v}</span>
-                  <span style={{fontSize:11,color:C.grey6,minWidth:60,paddingTop:1}}>{item.date}</span>
-                  <span style={{fontSize:12,color:C.grey7,lineHeight:1.5}}>{item.note}</span>
+        <div style={{marginTop:40,paddingTop:20,borderTop:"1px solid "+C.grey4,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,paddingBottom:8}}>
+          <div style={{fontSize:11,color:C.grey6}}>GWI UX Audit Tool · Internal use only · Built by Darragh O'Hagan</div>
+          <button onClick={function(){setShowStack(true);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:C.grey6,textDecoration:"underline",textUnderlineOffset:2,padding:0}} onMouseEnter={function(e){e.currentTarget.style.color=C.pink;}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey6;}}>Build stack</button>
+        </div>
+        {showStack&&(
+          <div onClick={function(){setShowStack(false);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:1100,overflowY:"auto"}}>
+            <div style={{minHeight:"100%",display:"flex",alignItems:"center",justifyContent:"center",padding:"40px 24px"}}>
+              <div onClick={function(e){e.stopPropagation();}} style={{background:C.white,borderRadius:16,padding:"28px 32px",maxWidth:480,width:"100%",boxShadow:"0 8px 48px rgba(0,0,0,0.3)"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+                  <h3 style={{fontSize:16,fontWeight:800,color:C.black,margin:0}}>Build stack</h3>
+                  <button onClick={function(){setShowStack(false);}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey6,fontSize:22,lineHeight:1,padding:0}}>×</button>
                 </div>
-              );})}
-            </div>
-            <div>
-              <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>Built with</div>
-              {[
-                {label:"React + TypeScript",desc:"Frontend framework"},
-                {label:"Firebase (Auth + Firestore)",desc:"Auth and live sync"},
-                {label:"Claude API (claude-opus-4-5)",desc:"AI audit generation"},
-                {label:"Claude Code",desc:"Autonomous development"},
-                {label:"Vite",desc:"Build tool"},
-                {label:"Lucide React",desc:"Icons"},
-              ].map(function(item){return(
-                <div key={item.label} style={{display:"flex",gap:10,marginBottom:6,alignItems:"baseline"}}>
-                  <span style={{fontSize:12,fontWeight:700,color:C.offBlack,minWidth:isMobile?120:180}}>{item.label}</span>
-                  <span style={{fontSize:12,color:C.grey7}}>{item.desc}</span>
-                </div>
-              );})}
+                {[
+                  {label:"React + TypeScript",desc:"Frontend framework"},
+                  {label:"Firebase Auth + Firestore",desc:"Authentication and live data sync"},
+                  {label:"Claude API",desc:"AI audit and wireframe generation"},
+                  {label:"Claude Code",desc:"Autonomous development environment"},
+                  {label:"Vercel",desc:"Hosting and edge functions"},
+                  {label:"Vite",desc:"Build tool"},
+                  {label:"Lucide React",desc:"Icons"},
+                ].map(function(item){return(
+                  <div key={item.label} style={{display:"flex",alignItems:"baseline",gap:12,padding:"10px 0",borderBottom:"1px solid "+C.grey3}}>
+                    <span style={{fontSize:13,fontWeight:700,color:C.offBlack,minWidth:200}}>{item.label}</span>
+                    <span style={{fontSize:13,color:C.grey7}}>{item.desc}</span>
+                  </div>
+                );})}
+              </div>
             </div>
           </div>
-          <div style={{fontSize:11,color:C.grey6,textAlign:"center",paddingBottom:8}}>GWI UX Audit Tool · Internal use only · Built by the UX team</div>
-        </div>
+        )}
       </div>
     </div>
   );
