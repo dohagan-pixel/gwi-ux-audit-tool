@@ -2329,7 +2329,6 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,vert
           {id:"case-studies",icon:<BookOpen size={20}/>,label:"Case Studies",desc:"Real GWI customer outcomes injected into audit prompts so findings reference specific, credible metrics rather than generic best practice.",stat:(caseStudies as any[]).length+" case stud"+(((caseStudies as any[]).length===1)?"y":"ies")},
         ];
         return(
-          <>
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
             {_sc.map(function(s){return(
               <button key={s.id} onClick={function(){setTab(s.id);}} style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"20px 22px",cursor:"pointer",textAlign:"left",display:"flex",flexDirection:"column",gap:0,transition:"box-shadow 0.15s,border-color 0.15s"}} onMouseEnter={function(e){e.currentTarget.style.borderColor=C.pink;e.currentTarget.style.boxShadow="0 4px 16px rgba(255,0,119,0.1)";}} onMouseLeave={function(e){e.currentTarget.style.borderColor=C.grey4;e.currentTarget.style.boxShadow="none";}}>
@@ -2345,19 +2344,6 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,vert
               </button>
             );})}
           </div>
-          {/* Landing page preview banner */}
-          <div style={{marginTop:16,background:"linear-gradient(135deg,#0a0a14 0%,#1a0a2e 50%,#0d0d22 100%)",border:"1px solid rgba(255,0,119,0.25)",borderRadius:12,padding:"24px 28px",display:"flex",alignItems:"center",gap:20,flexWrap:"wrap"}}>
-            <div style={{flex:1,minWidth:200}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#FF0077",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:6}}>Marketing Preview</div>
-              <div style={{fontSize:16,fontWeight:700,color:"#fff",marginBottom:6}}>GWI UX Audit Tool — Landing Page</div>
-              <div style={{fontSize:13,color:"rgba(255,255,255,0.55)",lineHeight:1.5}}>Preview the white-label marketing 1-pager for this tool. Share the concept with stakeholders or use as a reference for future positioning.</div>
-            </div>
-            <button onClick={function(){setView("landing");}} style={{background:"#FF0077",color:"#fff",border:"none",borderRadius:8,padding:"12px 24px",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:8}}>
-              <ExternalLink size={15}/>
-              Preview landing page
-            </button>
-          </div>
-          </>
         );
       })()}
       {tab!=="home"&&(
