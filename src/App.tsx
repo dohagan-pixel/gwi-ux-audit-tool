@@ -692,8 +692,8 @@ function Dashboard({personas,auditData,setView,onFeedback}){
         </div>
         {/* Footer */}
         <div style={{marginTop:40,paddingTop:20,borderTop:"1px solid "+C.grey4,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,paddingBottom:8}}>
-          <div style={{fontSize:11,color:C.grey6}}>GWI UX Audit Tool · Internal use only · Built by Darragh O'Hagan</div>
-          <button onClick={function(){setShowStack(true);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:C.grey6,textDecoration:"underline",textUnderlineOffset:2,padding:0}} onMouseEnter={function(e){e.currentTarget.style.color=C.pink;}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey6;}}>Build stack</button>
+          <div style={{fontSize:11,color:C.grey6}}>GWI UX Audit Tool · Internal use only</div>
+          <div style={{fontSize:11,color:C.grey6,display:"flex",alignItems:"center"}}>· Built by Darragh O'Hagan · <button onClick={function(){setShowStack(true);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:C.grey6,textDecoration:"underline",textUnderlineOffset:2,padding:"0 0 0 4px"}} onMouseEnter={function(e){e.currentTarget.style.color=C.pink;}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey6;}}>View stack</button></div>
         </div>
         {showStack&&(
           <div onClick={function(){setShowStack(false);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:1100,overflowY:"auto"}}>
