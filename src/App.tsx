@@ -3168,6 +3168,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   var [editing,setEditing]=useState(false);
   var [editLabel,setEditLabel]=useState("");
   var [activeRec,setActiveRec]=useState(null);
+  var [expandedLc,setExpandedLc]=useState<{[id:string]:boolean}>({});
   var [openAccordions,setOpenAccordions]=useState<string[]>(["Change"]);
   useEffect(function(){setOpenAccordions(["Change"]);},[activeRec]);
   var [addedRecs,setAddedRecs]=useState({});
@@ -3383,11 +3384,14 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                       <div style={{fontSize:15,fontWeight:800,color:C.black,marginBottom:4,lineHeight:1.4}}>{lc.title||"Recommendation #"+lc.recNum}</div>
                       <div style={{fontSize:11,color:C.grey6}}>{lc.date} · from {lc.pageLabel} wireframe</div>
                     </div>
+                    {(lc.change||lc.why||lc.shows)&&(
+                      <button onClick={function(){setExpandedLc(function(prev){var n=Object.assign({},prev);n[lc.id]=!prev[lc.id];return n;});}} title="Toggle recommendation detail" style={{background:expandedLc[lc.id]?"#FFF0F7":"none",border:"1px solid "+(expandedLc[lc.id]?C.pink:C.grey4),cursor:"pointer",color:expandedLc[lc.id]?C.pink:C.grey5,padding:4,borderRadius:6,display:"flex",alignItems:"center",flexShrink:0,transition:"all 0.15s"}}><Lightbulb size={14}/></button>
+                    )}
                     <button onClick={function(){if(onUnloveComponent)onUnloveComponent(lc.id);}} title="Remove" style={{background:"none",border:"none",cursor:"pointer",color:C.grey5,padding:4,borderRadius:6,display:"flex",alignItems:"center",flexShrink:0}} onMouseEnter={function(e){e.currentTarget.style.color="#CC0000";}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey5;}}><Trash2 size={14}/></button>
                   </div>
-                  {(lc.change||lc.why||lc.shows)&&(
-                    <div style={{padding:"14px 24px",borderBottom:"1px solid "+C.grey4,display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:10}}>
-                      {[{label:"Change",value:lc.change,labelColor:C.pink},{label:"Why it matters",value:lc.why,labelColor:C.grey8},{label:"Data",value:lc.shows,labelColor:C.grey8}].filter(function(col){return!!col.value;}).map(function(col){return(
+                  {(lc.change||lc.why||lc.shows)&&expandedLc[lc.id]&&(
+                    <div style={{padding:"14px 24px",borderBottom:"1px solid "+C.grey4,display:"flex",flexDirection:"column",gap:6}}>
+                      {[{label:"Change",value:lc.change,labelColor:C.pink},{label:"Why it matters",value:lc.why,labelColor:C.pink},{label:"Data",value:lc.shows,labelColor:C.pink}].filter(function(col){return!!col.value;}).map(function(col){return(
                         <div key={col.label} style={{background:C.grey2,borderRadius:8,padding:"10px 12px"}}>
                           <div style={{fontSize:10,fontWeight:700,color:col.labelColor,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:5}}>{col.label}</div>
                           <div style={{fontSize:12,color:C.grey8,lineHeight:1.6}}>{col.value}</div>
