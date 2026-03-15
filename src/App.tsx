@@ -3493,8 +3493,8 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                       <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:20}}>
                         {[
                           {label:"Change",value:activeRecAction.change,labelColor:C.pink,textColor:C.offBlack},
-                          {label:"Why it matters",value:activeRecAction.why,labelColor:C.grey7,textColor:C.grey8},
-                          {label:"Data",value:activeRecAction.shows,labelColor:C.grey7,textColor:C.grey8},
+                          {label:"Why it matters",value:activeRecAction.why,labelColor:C.pink,textColor:C.grey8},
+                          {label:"Data",value:activeRecAction.shows,labelColor:C.pink,textColor:C.grey8},
                         ].map(function(col){
                           if(!col.value)return null;
                           var isOpen=openAccordions.indexOf(col.label)>=0;
@@ -3510,16 +3510,18 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                         })}
                       </div>
                     )}
-                    {(function(){var lcId=(active?active.id:"")+"-rec-"+activeRec;var isLoved=(lovedComponents||[]).some(function(lc:any){return lc.id===lcId;});var sHtml=active?extractSection(active.html,activeRec as number):null;return(<button onClick={function(){if(isLoved){if(onUnloveComponent)onUnloveComponent(lcId);}else{if(!onLoveComponent||!sHtml)return;onLoveComponent({id:lcId,wireframeId:active.id,pageUrl:active.pageUrl,pageLabel:active.pageLabel,recNum:activeRec,title:activeRecAction?activeRecAction.text:"Recommendation #"+activeRec,change:activeRecAction?activeRecAction.change||"":"",why:activeRecAction?activeRecAction.why||"":"",shows:activeRecAction?activeRecAction.shows||"":"",sectionHtml:sHtml,sharedCss:extractSharedCss(active.html),date:new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})});}}} style={{width:"100%",background:isLoved?"#FFF0F7":C.grey2,color:isLoved?C.pink:C.grey7,border:"1px solid "+(isLoved?C.pink:C.grey4),borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:sHtml||isLoved?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10,opacity:sHtml||isLoved?1:0.5}}><Heart size={14} fill={isLoved?C.pink:"none"} color={isLoved?C.pink:C.grey7}/>{isLoved?"Saved to Loved components":"Save to Loved components"}</button>);})()}
-                    {isGreen?(
-                      <button onClick={function(){if(onRemoveRec&&actionIdForRemove){onRemoveRec(actionIdForRemove,active?active.pageUrl:"/");var _upd2=(activeActions as any[]).slice();if(_upd2[(activeRec as number)-1])_upd2[(activeRec as number)-1]=Object.assign({},_upd2[(activeRec as number)-1],{id:""});var _updWf2=Object.assign({},active,{actions:_upd2});setWireframes(function(prev){return prev.map(function(w){return w.id===active.id?_updWf2:w;});});if(onUpdateWireframe)onUpdateWireframe(_updWf2);setAddedRecs(function(prev){var n=Object.assign({},prev);delete n[recKey];return n;});}}} style={{width:"100%",background:"#E6F9F2",color:"#005C3B",border:"1px solid #A7F3D0",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>
-                        Remove from Recommendations
-                      </button>
-                    ):(
-                      <button onClick={function(){if(onAddRec){var newId="a-"+Date.now()+"-"+activeRec;var finalAction=Object.assign({},actionToAdd,{id:newId});onAddRec(finalAction,active?active.pageUrl:"/");var _upd=(activeActions as any[]).slice();_upd[(activeRec as number)-1]=finalAction;var _updWf=Object.assign({},active,{actions:_upd});setWireframes(function(prev){return prev.map(function(w){return w.id===active.id?_updWf:w;});});if(onUpdateWireframe)onUpdateWireframe(_updWf);setAddedRecs(function(prev){var n=Object.assign({},prev);n[recKey]=newId;return n;});}}} style={{width:"100%",background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>
-                        Add to Recommendations
-                      </button>
-                    )}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                      {isGreen?(
+                        <button onClick={function(){if(onRemoveRec&&actionIdForRemove){onRemoveRec(actionIdForRemove,active?active.pageUrl:"/");var _upd2=(activeActions as any[]).slice();if(_upd2[(activeRec as number)-1])_upd2[(activeRec as number)-1]=Object.assign({},_upd2[(activeRec as number)-1],{id:""});var _updWf2=Object.assign({},active,{actions:_upd2});setWireframes(function(prev){return prev.map(function(w){return w.id===active.id?_updWf2:w;});});if(onUpdateWireframe)onUpdateWireframe(_updWf2);setAddedRecs(function(prev){var n=Object.assign({},prev);delete n[recKey];return n;});}}} style={{background:"#E6F9F2",color:"#005C3B",border:"1px solid #A7F3D0",borderRadius:8,padding:"11px 14px",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                          Remove from Recs
+                        </button>
+                      ):(
+                        <button onClick={function(){if(onAddRec){var newId="a-"+Date.now()+"-"+activeRec;var finalAction=Object.assign({},actionToAdd,{id:newId});onAddRec(finalAction,active?active.pageUrl:"/");var _upd=(activeActions as any[]).slice();_upd[(activeRec as number)-1]=finalAction;var _updWf=Object.assign({},active,{actions:_upd});setWireframes(function(prev){return prev.map(function(w){return w.id===active.id?_updWf:w;});});if(onUpdateWireframe)onUpdateWireframe(_updWf);setAddedRecs(function(prev){var n=Object.assign({},prev);n[recKey]=newId;return n;});}}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"11px 14px",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                          Add to Recs
+                        </button>
+                      )}
+                      {(function(){var lcId=(active?active.id:"")+"-rec-"+activeRec;var isLoved=(lovedComponents||[]).some(function(lc:any){return lc.id===lcId;});var sHtml=active?extractSection(active.html,activeRec as number):null;return(<button onClick={function(){if(isLoved){if(onUnloveComponent)onUnloveComponent(lcId);}else{if(!onLoveComponent||!sHtml)return;onLoveComponent({id:lcId,wireframeId:active.id,pageUrl:active.pageUrl,pageLabel:active.pageLabel,recNum:activeRec,title:activeRecAction?activeRecAction.text:"Recommendation #"+activeRec,change:activeRecAction?activeRecAction.change||"":"",why:activeRecAction?activeRecAction.why||"":"",shows:activeRecAction?activeRecAction.shows||"":"",sectionHtml:sHtml,sharedCss:extractSharedCss(active.html),date:new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})});}}} style={{background:isLoved?"#FFF0F7":C.grey2,color:isLoved?C.pink:C.grey7,border:"1px solid "+(isLoved?C.pink:C.grey4),borderRadius:8,padding:"11px 14px",fontSize:13,fontWeight:700,cursor:sHtml||isLoved?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",gap:6,opacity:sHtml||isLoved?1:0.5}}><Heart size={14} fill={isLoved?C.pink:"none"} color={isLoved?C.pink:C.grey7}/>{isLoved?"Saved":"Save to Loved"}</button>);})()}
+                    </div>
                   </>);
                 })()}
               </div>
