@@ -3808,14 +3808,14 @@ function SharePage({shareId}:{shareId:string}){
       if(snap.exists()){setHtml((snap.data() as any).html);}else{setNotFound(true);}
     }).catch(function(){setNotFound(true);});
   },[shareId]);
-  if(notFound)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:FF,color:"#888",fontSize:14}}>Wireframe not found.</div>);
-  if(!html)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:FF}}><div style={{width:40,height:40,borderRadius:"50%",border:"4px solid #eee",borderTop:"4px solid #FF0077",animation:"spin 0.8s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style></div>);
+  if(notFound)return(<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF,color:"#888",fontSize:14}}>Wireframe not found.</div>);
+  if(!html)return(<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF}}><div style={{width:40,height:40,borderRadius:"50%",border:"4px solid #eee",borderTop:"4px solid #FF0077",animation:"spin 0.8s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style></div>);
   var shareUrl=window.location.href;
   function copyUrl(){navigator.clipboard.writeText(shareUrl).then(function(){setCopied(true);setTimeout(function(){setCopied(false);},2000);});}
   return(
-    <div style={{position:"relative",width:"100vw",height:"100vh",overflow:"hidden"}}>
+    <div style={{position:"fixed",inset:0,overflow:"hidden"}}>
       <style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style>
-      <iframe srcDoc={html} style={{width:"100%",height:"100%",border:"none"}} title="Wireframe" sandbox="allow-scripts allow-same-origin"/>
+      <iframe srcDoc={html} style={{position:"absolute",inset:0,width:"100%",height:"100%",border:"none",display:"block"}} title="Wireframe" sandbox="allow-scripts allow-same-origin"/>
       <div style={{position:"fixed",bottom:24,right:24,zIndex:9999,fontFamily:FF,display:"flex",flexDirection:"column",alignItems:"flex-end"}}>
         {open&&(
           <div style={{background:"#fff",borderRadius:12,boxShadow:"0 4px 24px rgba(0,0,0,0.18)",padding:"14px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:10,minWidth:300,maxWidth:420}}>
