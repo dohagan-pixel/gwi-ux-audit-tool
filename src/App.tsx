@@ -3464,7 +3464,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
         var col=function(title:string,items:string[]){return'<div><div style="font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:16px;">'+title+'</div><ul style="list-style:none;margin:0;padding:0;">'+items.map(function(t){return'<li style="margin-bottom:8px"><a href="#" style="color:#999;font-size:13px;text-decoration:none;">'+t+'</a></li>';}).join('')+'</ul></div>';};
         var footerEl=doc.createElement('footer');
         footerEl.setAttribute('data-gwi-footer','1');
-        footerEl.style.cssText='background:#2a2a2a;color:#ccc;padding:56px 0 0;font-family:\'Faktum\',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-top:0;';
+        footerEl.style.cssText='background:#101720;color:#ccc;padding:56px 0 0;font-family:\'Faktum\',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-top:0;';
         footerEl.innerHTML=
           '<div style="max-width:1200px;margin:0 auto;padding:0 40px;">'
           +'<div style="margin-bottom:40px;"><div style="background:#444;display:inline-block;padding:8px 20px;border-radius:4px;font-size:18px;font-weight:700;color:#fff;letter-spacing:0.05em;">GWI</div></div>'
