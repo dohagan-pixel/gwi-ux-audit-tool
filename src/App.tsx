@@ -1239,7 +1239,7 @@ function ActionList({pageId,actions,reorderActions,openAction,setOpenAction,stat
   );
 }
 
-function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWireframe,setView,wireframeRules}){
+function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWireframe,setView,wireframeRules,wireframes}){
   var [openPage,setOpenPage]=useState(null);
   var [openAction,setOpenAction]=useState(null);
   var [generating,setGenerating]=useState({});
@@ -1393,6 +1393,12 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
                     <span style={{fontSize:11,color:C.grey7,width:40,flexShrink:0}}>{pageDone}/{page.actions.length}</span>
                     <ChevronRight size={21} color={C.pink} style={{flexShrink:0,transform:isOpen?"rotate(-90deg)":"rotate(90deg)",transition:"transform 0.15s"}}/>
                   </button>
+                  {(wireframes||[]).some(function(w:any){return w.pageUrl===page.url;})&&(
+                    <button onClick={function(e){e.stopPropagation();setView("wireframes");}} style={{background:C.black,color:C.white,border:"none",borderRadius:6,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",gap:5,transition:"background 0.15s"}} onMouseEnter={function(e){e.currentTarget.style.background=C.pink;}} onMouseLeave={function(e){e.currentTarget.style.background=C.black;}}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                      View Wireframes
+                    </button>
+                  )}
                   <button onClick={function(e){e.stopPropagation();setWhyPage({url:page.url,label:page.label});}} style={{background:"transparent",border:"none",cursor:"pointer",color:C.grey5,padding:"2px 4px",flexShrink:0,lineHeight:1,fontSize:16}}
                     onMouseEnter={function(e){e.currentTarget.style.color=C.pink;}}
                     onMouseLeave={function(e){e.currentTarget.style.color=C.grey5;}}>&#9432;</button>
@@ -4012,7 +4018,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="affinity"&&<AffinityPage personas={personas} setView={setView}/>}
         {view==="journey"&&<JourneyPage pages={pages} personas={personas} journeys={journeys} initialPersonaId={activePersonaForJourney} setView={setView} goToJourney={goToJourney}/>}
         {view==="flows"&&<UserFlowsPage setView={setView}/>}
-        {view==="audit"&&<AuditPage personas={personas} pages={pages} auditData={auditData} setAuditData={setAuditData} onAddAction={function(){setShowAddAction(true);}} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} setView={setView} wireframeRules={wireframeRules}/>}
+        {view==="audit"&&<AuditPage personas={personas} pages={pages} auditData={auditData} setAuditData={setAuditData} onAddAction={function(){setShowAddAction(true);}} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} setView={setView} wireframeRules={wireframeRules} wireframes={savedWireframes}/>}
         {view==="analytics"&&<AnalyticsPage gaCards={gaCards} setGaCards={setGaCards} vwoPages={vwoPages} setVwoPages={setVwoPages}/>}
         {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} verticals={verticals} clientList={clientList} caseStudies={caseStudies} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit).catch(function(){});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
         {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id)).catch(function(){});}} onUpdateAudit={function(updated){if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",updated.id),updated).catch(function(){});}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
