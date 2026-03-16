@@ -1134,26 +1134,36 @@ function PersonaToggle({personaIds,personas}){
 function ActionList({pageId,actions,reorderActions,openAction,setOpenAction,statusCfg,setActionStatus,updateAction,deleteAction,calcDelta,isMobile}){
   var dragIdx=useRef(null);
   var [dropIdx,setDropIdx]=useState(null);
+  var starred=actions.filter(function(a){return a.starred;});
+  var unstarred=actions.filter(function(a){return !a.starred;});
+  var sorted=starred.concat(unstarred);
   function onDragStart(i){dragIdx.current=i;}
   function onDragOver(e,i){e.preventDefault();e.stopPropagation();if(i!==dragIdx.current)setDropIdx(i);}
-  function onDrop(e,i){e.preventDefault();e.stopPropagation();var from=dragIdx.current;if(from===null||from===i){setDropIdx(null);return;}var next=actions.slice();var moved=next.splice(from,1)[0];next.splice(i,0,moved);reorderActions(pageId,next);dragIdx.current=null;setDropIdx(null);}
+  function onDrop(e,i){e.preventDefault();e.stopPropagation();var from=dragIdx.current;if(from===null||from===i){setDropIdx(null);return;}var next=sorted.slice();var moved=next.splice(from,1)[0];next.splice(i,0,moved);reorderActions(pageId,next);dragIdx.current=null;setDropIdx(null);}
   function onDragEnd(){dragIdx.current=null;setDropIdx(null);}
   function Inp({val,onChange,placeholder}){return <input value={val||""} onChange={function(e){onChange(e.target.value);}} placeholder={placeholder||""} style={{width:"100%",padding:"6px 8px",border:"1px solid "+C.grey4,borderRadius:6,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>;}
   return(
     <div style={{padding:"16px 20px"}}>
-      <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:12}}>Recommendations</div>
       <div>
-        {actions.map(function(action,actionIdx){
+        {sorted.map(function(action,actionIdx){
           var isOpenAction=openAction===(pageId+"-"+action.id);
           var delta=calcDelta(action.before,action.after);
           var needsBaseline=action.status==="inprogress"&&!action.before;
+          var isStarred=!!action.starred;
+          var showStarredHeader=actionIdx===0&&starred.length>0;
+          var showActionsHeader=actionIdx===starred.length&&unstarred.length>0;
           return(
             <div key={action.id}>
+              {showStarredHeader&&<div style={{padding:"4px 0 6px",fontSize:9,fontWeight:700,color:C.grey6,textTransform:"uppercase",letterSpacing:"0.07em",display:"flex",alignItems:"center",gap:4}}><Star size={9} fill="#FFC107" color="#FFC107"/>Starred</div>}
+              {showActionsHeader&&<div style={{padding:(starred.length>0?"12px":"4px")+" 0 6px",fontSize:9,fontWeight:700,color:C.grey6,textTransform:"uppercase",letterSpacing:"0.07em"}}>Recommendations</div>}
               {dropIdx===actionIdx&&<DropLine/>}
               <div draggable onDragStart={function(e){e.stopPropagation();onDragStart(actionIdx);}} onDragOver={function(e){onDragOver(e,actionIdx);}} onDrop={function(e){onDrop(e,actionIdx);}} onDragEnd={onDragEnd}
                 style={{border:"1px solid "+(isOpenAction?C.pink:needsBaseline?"#F5A623":C.grey4),borderRadius:10,marginBottom:6,overflow:"hidden",background:C.white,opacity:dropIdx===actionIdx?0.5:1}}>
                 <div onClick={function(){setOpenAction(isOpenAction?null:(pageId+"-"+action.id));}} style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
                   <div style={{cursor:"grab",color:C.grey5,fontSize:14,flexShrink:0,userSelect:"none"}}>⠿</div>
+                  <button onClick={function(e){e.stopPropagation();updateAction(pageId,action.id,"starred",!isStarred);}} style={{background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0,display:"flex",alignItems:"center",lineHeight:1}}>
+                    <Star size={13} fill={isStarred?"#FFC107":"none"} color={isStarred?"#FFC107":C.grey5}/>
+                  </button>
                   <div style={{cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center"}} onClick={function(e){e.stopPropagation();var order=["todo","inprogress","done"];var next=order[(order.indexOf(action.status)+1)%order.length];setActionStatus(pageId,action.id,next);}}>
                     <span style={{background:statusCfg[action.status].bg,color:statusCfg[action.status].text,border:"1px solid "+statusCfg[action.status].border,fontSize:10,fontWeight:600,padding:"2px 10px",borderRadius:99}}>{statusCfg[action.status].label}</span>
                   </div>
@@ -1220,7 +1230,7 @@ function ActionList({pageId,actions,reorderActions,openAction,setOpenAction,stat
             </div>
           );
         })}
-        {dropIdx===actions.length&&<DropLine/>}
+        {dropIdx===sorted.length&&<DropLine/>}
       </div>
     </div>
   );
@@ -1297,6 +1307,10 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
   var inProgActions=auditData.reduce(function(s,p){return s+p.actions.filter(function(a){return a.status==="inprogress";}).length;},0);
   var todoActions=totalActions-doneActions-inProgActions;
   var [auditView,setAuditView]=useState("list");
+  var [auditFolderOrder,setAuditFolderOrder]=useState<string[]>(function(){try{var v=localStorage.getItem("gwiAuditFolderOrder");return v?JSON.parse(v):[];}catch(e){return [];}});
+  var [auditDragFolder,setAuditDragFolder]=useState<string|null>(null);
+  var [auditDragOver,setAuditDragOver]=useState<string|null>(null);
+  useEffect(function(){try{localStorage.setItem("gwiAuditFolderOrder",JSON.stringify(auditFolderOrder));}catch(e){};},[auditFolderOrder]);
   var priorityLevels=["Critical","High","Medium","Low"];
 
   return(<>
@@ -1345,16 +1359,29 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
         <button onClick={function(){setAuditView("matrix");}} title="Matrix view" style={{position:"relative",zIndex:1,display:"flex",alignItems:"center",gap:6,padding:"7px 18px",borderRadius:9,border:"none",background:"transparent",color:auditView==="matrix"?C.offBlack:C.grey6,fontWeight:700,fontSize:12,cursor:"pointer",transition:"color 0.15s"}}><LayoutGrid size={15} strokeWidth={2.2}/>Matrix</button>
       </div>
       {auditView==="list"&&<div>
-        {auditData.map(function(page,pageIdx){
-          if(page.actions.length===0)return null;
-          var pcfg=pCfg[page.priority]||pCfg.Medium;
+        {(function(){
+          var withActions=auditData.filter(function(p){return p.actions.length>0;});
+          if(auditFolderOrder.length>0){withActions=withActions.slice().sort(function(a,b){var ai=auditFolderOrder.indexOf(a.id);var bi=auditFolderOrder.indexOf(b.id);if(ai===-1)ai=9999;if(bi===-1)bi=9999;return ai-bi;});}
+          return withActions.map(function(page){
           var isOpen=openPage===page.id;
           var pageDone=page.actions.filter(function(a){return a.status==="done";}).length;
+          var isDragOver=auditDragOver===page.id&&auditDragFolder!==page.id;
           return(
-            <div key={page.id}>
-              {pageDrag.dropIdx===pageIdx&&<DropLine/>}
-              <div draggable onDragStart={function(){pageDrag.onDragStart(pageIdx);}} onDragOver={function(e){pageDrag.onDragOver(e,pageIdx);}} onDrop={function(e){pageDrag.onDrop(e,pageIdx);}} onDragEnd={pageDrag.onDragEnd}
-                style={{background:C.white,border:"1px solid "+(isOpen?C.pink:C.grey4),borderRadius:14,marginBottom:8,overflow:"hidden",opacity:pageDrag.dropIdx===pageIdx?0.5:1}}>
+            <div key={page.id}
+              draggable
+              onDragStart={function(){setAuditDragFolder(page.id);}}
+              onDragOver={function(e){e.preventDefault();setAuditDragOver(page.id);}}
+              onDrop={function(){
+                if(!auditDragFolder||auditDragFolder===page.id){setAuditDragFolder(null);setAuditDragOver(null);return;}
+                var ids=withActions.map(function(p){return p.id;});
+                var from=ids.indexOf(auditDragFolder);var to=ids.indexOf(page.id);
+                var next=ids.slice();next.splice(from,1);next.splice(to,0,auditDragFolder);
+                setAuditFolderOrder(next);setAuditDragFolder(null);setAuditDragOver(null);
+              }}
+              onDragEnd={function(){setAuditDragFolder(null);setAuditDragOver(null);}}
+              style={{borderTop:isDragOver?"2px solid "+C.pink:"2px solid transparent",opacity:auditDragFolder===page.id?0.4:1,transition:"border-color 0.1s",marginBottom:8}}>
+              <div
+                style={{background:C.white,border:"1px solid "+(isOpen?C.pink:C.grey4),borderRadius:14,overflow:"hidden"}}>
                 <div style={{display:"flex",alignItems:"center",gap:14,padding:"16px 20px"}}>
                   <div style={{cursor:"grab",color:C.grey5,fontSize:16,flexShrink:0,userSelect:"none"}}>⠿</div>
                   <button onClick={function(){setOpenPage(isOpen?null:page.id);}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left",padding:0,minWidth:0}}>
@@ -1392,8 +1419,7 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
               </div>
             </div>
           );
-        })}
-        {pageDrag.dropIdx===auditData.length&&<DropLine/>}
+        });})()}
       </div>}
       {auditView==="matrix"&&(
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12}}>
