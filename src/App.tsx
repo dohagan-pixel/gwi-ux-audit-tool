@@ -3429,6 +3429,8 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
     parsedDoc.head.appendChild(recStyle);
     if(!parsedDoc.querySelector('link[href*="faktum"]')){var fl=parsedDoc.createElement('link');fl.rel='stylesheet';fl.href=window.location.origin+'/fonts/faktum.css';parsedDoc.head.insertBefore(fl,parsedDoc.head.firstChild);}
     var sf=parsedDoc.createElement('style');sf.textContent='html,body{margin:0!important;padding:0!important;}body,*{font-family:\'Faktum\',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;}code,pre,tt,[style*="monospace"]{font-family:monospace!important;}';parsedDoc.head.appendChild(sf);
+    // Force margin/padding to 0 directly on body element (beats user-agent stylesheet)
+    if(parsedDoc.body){parsedDoc.body.style.setProperty('margin','0','important');parsedDoc.body.style.setProperty('padding','0','important');}
     var existingFooter=parsedDoc.querySelector('[data-gwi-footer]') as HTMLElement|null;
     if(existingFooter){existingFooter.style.background='#101720';}
     if(!existingFooter){
