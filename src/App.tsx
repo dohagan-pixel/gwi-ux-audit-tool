@@ -3119,7 +3119,7 @@ function MobileNav({view,setView}){
   return(
     <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,flexShrink:0,position:"relative",zIndex:50}}>
       <div style={{padding:"0 16px",height:52,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{fontWeight:800,fontSize:15,color:C.white,letterSpacing:"-0.02em",cursor:"pointer"}} onClick={function(){setView("dashboard");setMenuOpen(false);}}>GWI UX</div>
+        <img src="/gwi-logo-on-black.svg" alt="GWI" height={22} style={{cursor:"pointer",display:"block"}} onClick={function(){setView("dashboard");setMenuOpen(false);}}/>
         <button onClick={function(){setMenuOpen(!menuOpen);}} style={{background:"transparent",border:"none",cursor:"pointer",color:C.white,fontSize:13,fontWeight:600,padding:"4px 8px"}}>{menuOpen?"Close":"Menu"}</button>
       </div>
       {menuOpen&&(
@@ -3306,8 +3306,7 @@ function ConfirmResetScreen({oobCode}:{oobCode:string}){
     <div style={_wrap}>
       <div style={_card}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:28}}>
-          <div style={{width:32,height:32,borderRadius:8,background:C.pink,display:"flex",alignItems:"center",justifyContent:"center"}}><Sparkles size={16} color={C.white}/></div>
-          <span style={{fontWeight:800,fontSize:20,color:C.black,letterSpacing:"-0.02em"}}>GWI UX Audit</span>
+          <img src="/gwi-logo.svg" alt="GWI" height={28} style={{display:"block"}}/>
         </div>
         {_done?(
           <>
@@ -3819,7 +3818,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         <MobileNav view={view} setView={setView}/>
       ):(
         <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,padding:"0 20px",height:52,display:"flex",alignItems:"center",gap:4,position:"fixed",top:0,left:0,right:0,zIndex:100,boxSizing:"border-box"}}>
-          <div style={{fontWeight:800,fontSize:15,color:C.white,marginRight:4,letterSpacing:"-0.02em",cursor:"pointer",flexShrink:0}} onClick={function(){setView("dashboard");}}>GWI UX</div>
+          <img src="/gwi-logo-on-black.svg" alt="GWI" height={22} style={{cursor:"pointer",display:"block",flexShrink:0,marginRight:4}} onClick={function(){setView("dashboard");}}/>
           <button onClick={function(){setView("dashboard");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="dashboard"?C.pink:"transparent",color:view==="dashboard"?C.white:C.grey7,flexShrink:0}}>Dashboard</button>
           <button onClick={function(){setView("summary");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:(view==="summary"||view==="generated-audits")?C.pink:"transparent",color:(view==="summary"||view==="generated-audits")?C.white:C.grey7,flexShrink:0}}>UX Audit</button>
           <button onClick={function(){setView("audit");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="audit"?C.pink:"transparent",color:view==="audit"?C.white:C.grey7,flexShrink:0}}>Recommendations</button>
