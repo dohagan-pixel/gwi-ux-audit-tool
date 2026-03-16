@@ -3359,7 +3359,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                   setFolderOrder(next);setDragFolder(null);setDragOverFolder(null);
                 }}
                 onDragEnd={function(){setDragFolder(null);setDragOverFolder(null);}}
-                style={{borderBottom:"1px solid "+C.grey4,opacity:dragFolder===folder.url?0.4:1,background:isDraggingOver?"#FFF0F7":"transparent",transition:"background 0.1s"}}>
+                style={{borderBottom:"1px solid "+C.grey4,borderTop:isDraggingOver?"2px solid "+C.pink:"2px solid transparent",opacity:dragFolder===folder.url?0.4:1,background:"transparent",transition:"border-color 0.1s"}}>
                 <button onClick={function(){setOpenFolders(function(prev){var n=Object.assign({},prev);n[folder.url]=!isOpen;return n;});}} style={{width:"100%",textAlign:"left",padding:"10px 14px",background:"transparent",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:7}}>
                   <GripVertical size={11} color={C.grey5} style={{flexShrink:0,cursor:"grab"}}/>
                   <ChevronRight size={11} color={C.grey5} style={{flexShrink:0,transform:isOpen?"rotate(90deg)":"rotate(0deg)",transition:"transform 0.15s"}}/>
