@@ -2445,7 +2445,7 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,vert
   var [tab,setTab]=useState("home");
   var [newPage,setNewPage]=useState({url:"",label:"",section:"Products",sectionName:"",displayUrl:""});
   var [editingPageUrl,setEditingPageUrl]=useState<string|null>(null);
-  var [pageDraft,setPageDraft]=useState({url:"",label:"",displayUrl:""});
+  var [pageDraft,setPageDraft]=useState({url:"",label:"",displayUrl:"",section:"",sectionName:""});
   var [editingPersona,setEditingPersona]=useState(null);
   var [personaDraft,setPersonaDraft]=useState({});
   var [editingStage,setEditingStage]=useState(null);
@@ -2573,22 +2573,36 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,vert
                     <div key={page.url} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",borderBottom:i<arr.length-1?"1px solid "+C.grey3:"none",background:page.hidden?"#FFF8F8":C.white,opacity:page.hidden?0.6:1}}>
                       {isEditing?(
                         <div style={{flex:1,display:"flex",flexDirection:"column",gap:6}}>
-                          <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                            <div style={{flex:1}}>
+                          <div style={{display:"flex",gap:6,alignItems:"flex-end",flexWrap:"wrap"}}>
+                            <div style={{flex:"1 1 180px"}}>
                               <div style={{fontSize:10,color:C.grey6,marginBottom:2}}>Full URL</div>
                               <input autoFocus value={pageDraft.url} onChange={function(e){var v=e.target.value;setPageDraft(function(d){return Object.assign({},d,{url:v});});}} style={{width:"100%",fontFamily:"monospace",fontSize:12,color:C.offBlack,padding:"5px 8px",border:"1px solid "+C.grey4,borderRadius:6,background:C.white,boxSizing:"border-box"}}/>
                             </div>
-                            <div style={{flex:1}}>
+                            <div style={{flex:"1 1 160px"}}>
                               <div style={{fontSize:10,color:C.grey6,marginBottom:2}}>URL alias <span style={{color:C.pink}}>·</span> shown in UI</div>
                               <input value={pageDraft.displayUrl} onChange={function(e){var v=e.target.value;setPageDraft(function(d){return Object.assign({},d,{displayUrl:v});});}} placeholder="e.g. gwi.com/heineken" style={{width:"100%",fontFamily:"monospace",fontSize:12,color:C.pink,padding:"5px 8px",border:"1px solid "+C.pink,borderRadius:6,background:"#FFF8FC",boxSizing:"border-box"}}/>
                             </div>
-                            <div style={{flex:1}}>
+                            <div style={{flex:"1 1 140px"}}>
                               <div style={{fontSize:10,color:C.grey6,marginBottom:2}}>Label</div>
                               <input value={pageDraft.label} onChange={function(e){var v=e.target.value;setPageDraft(function(d){return Object.assign({},d,{label:v});});}} style={{width:"100%",fontSize:12,color:C.offBlack,padding:"5px 8px",border:"1px solid "+C.grey4,borderRadius:6,background:C.white,boxSizing:"border-box"}}/>
                             </div>
+                            <div style={{flex:"1 1 140px"}}>
+                              <div style={{fontSize:10,color:C.grey6,marginBottom:2}}>Section</div>
+                              {pageDraft.section==="__new__"
+                                ?<input autoFocus value={pageDraft.sectionName} onChange={function(e){var v=e.target.value;setPageDraft(function(d){return Object.assign({},d,{sectionName:v});});}} placeholder="New section name" style={{width:"100%",fontSize:12,color:C.offBlack,padding:"5px 8px",border:"1px solid "+C.pink,borderRadius:6,background:C.white,boxSizing:"border-box"}}/>
+                                :<select value={pageDraft.section} onChange={function(e){setPageDraft(function(d){return Object.assign({},d,{section:e.target.value});});}} style={{width:"100%",fontSize:12,padding:"5px 8px",border:"1px solid "+C.grey4,borderRadius:6,background:C.white}}>
+                                  {sections.map(function(s){return <option key={s} value={s}>{s}</option>;})}
+                                  <option value="__new__">+ Create new section</option>
+                                </select>
+                              }
+                            </div>
                           </div>
                           <div style={{display:"flex",gap:6}}>
-                            <button onClick={function(){setPages(function(prev){return prev.map(function(p){return p.url===page.url?Object.assign({},p,{url:pageDraft.url,label:pageDraft.label,displayUrl:pageDraft.displayUrl}):p;});});setEditingPageUrl(null);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:6,padding:"5px 14px",fontSize:11,fontWeight:700,cursor:"pointer"}}>Save</button>
+                            <button onClick={function(){
+                              var sec=pageDraft.section==="__new__"?(pageDraft.sectionName.trim()||"New Section"):pageDraft.section;
+                              setPages(function(prev){return prev.map(function(p){return p.url===page.url?Object.assign({},p,{url:pageDraft.url,label:pageDraft.label,displayUrl:pageDraft.displayUrl,section:sec}):p;});});
+                              setEditingPageUrl(null);
+                            }} style={{background:C.pink,color:C.white,border:"none",borderRadius:6,padding:"5px 14px",fontSize:11,fontWeight:700,cursor:"pointer"}}>Save</button>
                             <button onClick={function(){setEditingPageUrl(null);}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:6,padding:"5px 14px",fontSize:11,fontWeight:600,cursor:"pointer"}}>Cancel</button>
                           </div>
                         </div>
@@ -2596,7 +2610,7 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,vert
                         <>
                           <span title={page.url} style={{fontFamily:"monospace",color:page.hidden?C.grey6:C.pink,fontSize:12,width:isMobile?120:220,flexShrink:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{shownUrl}</span>
                           <span style={{color:C.offBlack,fontSize:13,flex:1}}>{page.label}</span>
-                          <button onClick={function(){setEditingPageUrl(page.url);setPageDraft({url:page.url,label:page.label,displayUrl:(page as any).displayUrl||""});}} title="Edit" style={{background:"transparent",border:"none",borderRadius:6,width:30,height:30,display:"inline-flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.grey6}} onMouseEnter={function(e){e.currentTarget.style.color=C.black;}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey6;}}><Pencil size={14}/></button>
+                          <button onClick={function(){setEditingPageUrl(page.url);setPageDraft({url:page.url,label:page.label,displayUrl:(page as any).displayUrl||"",section:page.section||"",sectionName:""});}} title="Edit" style={{background:"transparent",border:"none",borderRadius:6,width:30,height:30,display:"inline-flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.grey6}} onMouseEnter={function(e){e.currentTarget.style.color=C.black;}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey6;}}><Pencil size={14}/></button>
                           <button onClick={function(){setPages(function(prev){return prev.map(function(p){return p.url===page.url?Object.assign({},p,{hidden:!p.hidden}):p;});});}} title={page.hidden?"Show":"Hide"} style={{background:"transparent",border:"none",borderRadius:6,width:30,height:30,display:"inline-flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:page.hidden?C.pink:C.grey6}} onMouseEnter={function(e){e.currentTarget.style.color=C.black;}} onMouseLeave={function(e){e.currentTarget.style.color=page.hidden?C.pink:C.grey6;}}>{page.hidden?<Eye size={14}/>:<EyeOff size={14}/>}</button>
                           <button onClick={function(){setPages(function(prev){return prev.filter(function(p){return p.url!==page.url;});});}} title="Delete" style={{background:"transparent",border:"none",borderRadius:6,width:30,height:30,display:"inline-flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.grey6}} onMouseEnter={function(e){e.currentTarget.style.color="#CC0000";}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey6;}}><Trash2 size={14}/></button>
                         </>
