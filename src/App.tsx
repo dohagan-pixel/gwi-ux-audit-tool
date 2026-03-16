@@ -3416,7 +3416,37 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   var unstarredWireframes=wireframes.filter(function(w){return !w.starred;}).slice().reverse();
   function deleteActive(){var rem=wireframes.filter(function(w){return w.id!==activeId;});setWireframes(rem);if(onDeleteWireframe)onDeleteWireframe(activeId);setActiveId(rem.length>0?rem[rem.length-1].id:null);}
   function download(){if(!active)return;var blob=new Blob([active.html],{type:"text/html"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(active.pageLabel||"wireframe").replace(/\s+/g,"-").toLowerCase()+"-wireframe.html";a.click();}
-  function viewFullPage(){if(!active)return;var blob=new Blob([active.html],{type:"text/html"});var url=URL.createObjectURL(blob);window.open(url,"_blank");}
+  function viewFullPage(){
+    if(!active)return;
+    // Parse and clean HTML for a clean full-page view
+    var parser=new DOMParser();
+    var doc=parser.parseFromString(active.html,'text/html');
+    // Remove all injected scripts/styles from previous injectRecScript calls
+    Array.from(doc.querySelectorAll('[data-injected="1"]')).forEach(function(el){el.parentNode&&el.parentNode.removeChild(el);});
+    // Remove rec badges (hide them visually — they stay in DOM as anchors but are invisible)
+    var recStyle=doc.createElement('style');
+    recStyle.textContent='[data-rec]{display:none!important;}[data-eh]{outline:none!important;}';
+    doc.head.appendChild(recStyle);
+    // Inject Faktum font
+    if(!doc.querySelector('link[href*="faktum"]')){var fl=doc.createElement('link');fl.rel='stylesheet';fl.href=window.location.origin+'/fonts/faktum.css';doc.head.insertBefore(fl,doc.head.firstChild);}
+    // Font override
+    var sf=doc.createElement('style');sf.textContent='body,*{font-family:\'Faktum\',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;}code,pre,tt,[style*="monospace"]{font-family:monospace!important;}';doc.head.appendChild(sf);
+    // Update or re-inject footer with latest styles
+    var existingFooter=doc.querySelector('[data-gwi-footer]') as HTMLElement|null;
+    if(existingFooter){existingFooter.style.background='#101720';}
+    if(!existingFooter){
+      var yr=new Date().getFullYear();
+      var col=function(title:string,items:string[]){return'<div><div style="font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:16px;">'+title+'</div><ul style="list-style:none;margin:0;padding:0;">'+items.map(function(t){return'<li style="margin-bottom:8px"><a href="#" style="color:#999;font-size:13px;text-decoration:none;">'+t+'</a></li>';}).join('')+'</ul></div>';};
+      var footerEl=doc.createElement('footer');
+      footerEl.setAttribute('data-gwi-footer','1');
+      footerEl.style.cssText='background:#101720;color:#ccc;padding:56px 0 0;font-family:\'Faktum\',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-top:0;';
+      footerEl.innerHTML='<div style="max-width:1200px;margin:0 auto;padding:0 40px;"><div style="margin-bottom:40px;"><div style="background:#444;display:inline-block;padding:8px 20px;border-radius:4px;font-size:18px;font-weight:700;color:#fff;letter-spacing:0.05em;">GWI</div></div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:32px;margin-bottom:48px;">'+col('Products',['Human insights platform','Agent Spark: Human insights analyst','Learn about our data','Pricing'])+col('Solutions &amp; Integrations',['RLD','Audience activation','Data partnerships','Become a GWI partner'])+col('Resources',['Blog','Reports','Help center'])+col('Company',['Our story','Careers','Press','Contact','Trust center'])+col('Legal stuff',['Website terms and conditions','Website privacy policy','Website cookie policy','Modern slavery statement','See all'])+'</div><div style="border-top:1px solid #444;padding:20px 0;display:flex;align-items:center;justify-content:space-between;"><div style="font-size:12px;color:#666;">© '+yr+' GWI. All rights reserved.</div><div style="display:flex;gap:10px;">'+['in','𝕏','ig','yt'].map(function(lbl){return'<div style="width:30px;height:30px;background:#444;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;"><span style="color:#999;font-size:11px;">'+lbl+'</span></div>';}).join('')+'</div></div></div>';
+      doc.body.appendChild(footerEl);
+    }
+    var cleanHtml='<!DOCTYPE html>'+doc.documentElement.outerHTML;
+    var blob=new Blob([cleanHtml],{type:"text/html"});
+    window.open(URL.createObjectURL(blob),"_blank");
+  }
   function toggleStar(){if(!active)return;var updated=Object.assign({},active,{starred:!active.starred});setWireframes(function(prev){return prev.map(function(w){return w.id===activeId?updated:w;});});if(onUpdateWireframe)onUpdateWireframe(updated);}
   function openEdit(){setEditLabel(active?active.pageLabel:"");setEditing(true);}
   function saveEdit(){if(!active)return;var updated=Object.assign({},active,{pageLabel:editLabel.trim()||active.pageLabel});setWireframes(function(prev){return prev.map(function(w){return w.id===activeId?updated:w;});});if(onUpdateWireframe)onUpdateWireframe(updated);setEditing(false);}
