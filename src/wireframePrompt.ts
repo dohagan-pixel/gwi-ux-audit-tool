@@ -49,7 +49,7 @@ export function buildWireframePrompt(
 
     "VISUAL DESIGN:\n" +
     "- Colour: use #FF0077 (GWI pink) for primary CTAs, key highlights and stat callouts. Use #101720 (near-black) for nav and dark hero/section backgrounds with white text. Use #fff and #f7f8fc for body section backgrounds. Use #333/#555 for body text.\n" +
-    "- Typography: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif. Strong heading hierarchy: 52-60px hero h1, 32-36px section h2, 18-20px card titles.\n" +
+    "- Typography: 'Faktum', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif. Strong heading hierarchy: 52-60px hero h1, 32-36px section h2, 18-20px card titles.\n" +
     "- Layouts: hero (headline + sub + 2 CTAs + stat row + supporting visual), 3-col feature grids, 2-col comparison blocks, logo walls, testimonial carousels, sticky sidebar sections. NEVER stack everything in single full-width text columns.\n" +
     "- Image placeholders: grey rectangle (bg:#e0e0e0, border-radius:8px) labelled with specific content type e.g. 'Platform dashboard screenshot', 'Customer headshot'.\n" +
     "- Section label: tiny uppercase grey comment in top-left corner of each section (e.g. // HERO, // SOCIAL PROOF, // FEATURES).\n\n" +
@@ -73,7 +73,7 @@ export function buildWireframePrompt(
     "Bottom bar: © GWI + social icon placeholders as <span>.\n" +
 
     "RESPONSIVE: @media(max-width:767px) flex rows→column; grids→1 col; padding→16px; buttons→100% width. Use CSS classes in <style> for overrides.\n" +
-    "Full self-contained HTML. <style> in <head>. Max-width 1200px centred. No JavaScript.\n\n" +
+    "Full self-contained HTML. In <head> include: <link rel=\"stylesheet\" href=\"/fonts/faktum.css\"> before your <style> block so Faktum loads. Max-width 1200px centred. No JavaScript.\n\n" +
 
     "Output ONLY the raw HTML — no explanation, no markdown fences, nothing else.";
 
