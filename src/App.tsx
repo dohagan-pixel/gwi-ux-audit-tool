@@ -208,7 +208,8 @@ const INIT_AUDIT = [
   ]},
 ];
 
-var INIT_VWO_PAGES=[{id:"vwo-1",label:"Homepage",pageUrl:"gwi.com",heatmap:""}];
+var VWO_NAV_SECTIONS=["Homepage","Products","Resources","Pricing","Company","Other"];
+var INIT_VWO_PAGES=[{id:"vwo-1",label:"Homepage",pageUrl:"gwi.com",heatmap:"",section:"Homepage"}];
 
 const HOTJAR_SECTIONS = [
   {name:"Homepage",pages:[{url:"gwi.com",scroll:"https://insights.hotjar.com/sites/3099535/heatmap/view?url=https%3A%2F%2Fwww.gwi.com&match=simple_match&device=desktop&type=scroll",click:"https://insights.hotjar.com/sites/3099535/heatmap/view?url=https%3A%2F%2Fwww.gwi.com&match=simple_match&device=desktop&type=click",move:"https://insights.hotjar.com/sites/3099535/heatmap/view?url=https%3A%2F%2Fwww.gwi.com&match=simple_match&device=desktop&type=movement"}]},
@@ -1505,10 +1506,12 @@ function AnalyticsPage({gaCards,setGaCards,vwoPages,setVwoPages}){
   var [vwoEditLabel,setVwoEditLabel]=useState("");
   var [vwoEditPageUrl,setVwoEditPageUrl]=useState("");
   var [vwoEditHeatmap,setVwoEditHeatmap]=useState("");
+  var [vwoEditSection,setVwoEditSection]=useState("Homepage");
   var [showAddVwo,setShowAddVwo]=useState(false);
   var [newVwoLabel,setNewVwoLabel]=useState("");
   var [newVwoPageUrl,setNewVwoPageUrl]=useState("");
   var [newVwoHeatmap,setNewVwoHeatmap]=useState("");
+  var [newVwoSection,setNewVwoSection]=useState("Homepage");
   var isMobile=useWidth()<768;
   var CARD_ICONS_MAP={LayoutDashboard:<LayoutDashboard size={22}/>,Home:<Home size={22}/>,Puzzle:<Puzzle size={22}/>,DollarSign:<DollarSign size={22}/>,FileText:<FileText size={22}/>,Bot:<Bot size={22}/>,MousePointerClick:<MousePointerClick size={22}/>,GitMerge:<GitMerge size={22}/>,BarChart2:<BarChart2 size={22}/>,Layers:<Layers size={22}/>,Zap:<Zap size={22}/>,Brain:<Brain size={22}/>};
   return(
@@ -1576,39 +1579,48 @@ function AnalyticsPage({gaCards,setGaCards,vwoPages,setVwoPages}){
           <div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
               <div style={{fontSize:13,color:C.grey7,lineHeight:1.6}}>Click <strong style={{color:C.offBlack}}>Heatmaps</strong> to open the VWO heatmap for that page. Use the <Cog size={12} style={{display:"inline",verticalAlign:"middle",margin:"0 2px"}} color={C.grey7}/> to update the URL.</div>
-              <button onClick={function(){setShowAddVwo(true);setNewVwoLabel("");setNewVwoPageUrl("");setNewVwoHeatmap("");}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6,flexShrink:0}}><Plus size={13}/>Add page</button>
+              <button onClick={function(){setShowAddVwo(true);setNewVwoLabel("");setNewVwoPageUrl("");setNewVwoHeatmap("");setNewVwoSection("Homepage");}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6,flexShrink:0}}><Plus size={13}/>Add page</button>
             </div>
-            <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,overflow:"hidden"}}>
-              <div style={{background:C.black,padding:"10px 16px",fontSize:12,fontWeight:700,color:C.white,textTransform:"uppercase"}}>Pages</div>
-              <div style={{overflowX:"auto"}}>
-                <table style={{width:"100%",borderCollapse:"collapse",minWidth:320}}>
-                  <thead><tr style={{background:C.grey3}}>
-                    <th style={{padding:"8px 16px",fontSize:11,fontWeight:700,color:C.grey7,textAlign:"left",textTransform:"uppercase",borderBottom:"1px solid "+C.grey4}}>Page</th>
-                    <th style={{padding:"8px 16px",fontSize:11,fontWeight:700,color:C.grey7,textAlign:"center",textTransform:"uppercase",borderBottom:"1px solid "+C.grey4,width:100}}>Heatmaps</th>
-                    <th style={{padding:"8px 16px",fontSize:11,fontWeight:700,color:C.grey7,textAlign:"center",textTransform:"uppercase",borderBottom:"1px solid "+C.grey4,width:48}}></th>
-                  </tr></thead>
-                  <tbody>
-                    {(vwoPages||[]).map(function(page:any,i:number){return(
-                      <tr key={page.id} style={{borderBottom:i<(vwoPages||[]).length-1?"1px solid "+C.grey3:"none"}}>
-                        <td style={{padding:"10px 16px"}}>
-                          <div style={{fontFamily:"monospace",fontSize:12,color:C.pink}}>{page.pageUrl}</div>
-                          {page.label&&<div style={{fontSize:11,color:C.grey6,marginTop:2}}>{page.label}</div>}
-                        </td>
-                        <td style={{padding:"10px 16px",textAlign:"center"}}>
-                          {page.heatmap
-                            ?<a href={page.heatmap} target="_blank" rel="noreferrer" style={{display:"inline-block",padding:"3px 14px",borderRadius:6,fontSize:11,fontWeight:600,background:C.violet,color:C.white,textDecoration:"none"}}>Heatmaps</a>
-                            :<span style={{fontSize:11,color:C.grey5,fontStyle:"italic"}}>No URL set</span>}
-                        </td>
-                        <td style={{padding:"10px 8px",textAlign:"center"}}>
-                          <button onClick={function(){setEditingVwo(page);setVwoEditLabel(page.label);setVwoEditPageUrl(page.pageUrl);setVwoEditHeatmap(page.heatmap);}} title="Edit" style={{background:C.grey3,border:"none",borderRadius:6,width:28,height:28,display:"inline-flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.grey7}} onMouseEnter={function(e){e.currentTarget.style.background=C.grey5;e.currentTarget.style.color=C.white;}} onMouseLeave={function(e){e.currentTarget.style.background=C.grey3;e.currentTarget.style.color=C.grey7;}}><Cog size={13}/></button>
-                        </td>
-                      </tr>
-                    );})}
-                    {(vwoPages||[]).length===0&&<tr><td colSpan={3} style={{padding:"24px 16px",textAlign:"center",fontSize:13,color:C.grey6,fontStyle:"italic"}}>No pages yet — click Add page to get started.</td></tr>}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            {(function(){
+              var allPages=vwoPages||[];
+              var usedSections=VWO_NAV_SECTIONS.filter(function(s){return allPages.some(function(p:any){return (p.section||"Other")===s;});});
+              if(usedSections.length===0)return <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"24px 16px",textAlign:"center",fontSize:13,color:C.grey6,fontStyle:"italic"}}>No pages yet — click Add page to get started.</div>;
+              return usedSections.map(function(sectionName){
+                var sectionPages=allPages.filter(function(p:any){return (p.section||"Other")===sectionName;});
+                return(
+                  <div key={sectionName} style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,marginBottom:16,overflow:"hidden"}}>
+                    <div style={{background:C.black,padding:"10px 16px",fontSize:12,fontWeight:700,color:C.white,textTransform:"uppercase"}}>{sectionName}</div>
+                    <div style={{overflowX:"auto"}}>
+                      <table style={{width:"100%",borderCollapse:"collapse",minWidth:320}}>
+                        <thead><tr style={{background:C.grey3}}>
+                          <th style={{padding:"8px 16px",fontSize:11,fontWeight:700,color:C.grey7,textAlign:"left",textTransform:"uppercase",borderBottom:"1px solid "+C.grey4}}>Page</th>
+                          <th style={{padding:"8px 16px",fontSize:11,fontWeight:700,color:C.grey7,textAlign:"center",textTransform:"uppercase",borderBottom:"1px solid "+C.grey4,width:100}}>Heatmaps</th>
+                          <th style={{padding:"8px 16px",fontSize:11,fontWeight:700,color:C.grey7,textAlign:"center",textTransform:"uppercase",borderBottom:"1px solid "+C.grey4,width:48}}></th>
+                        </tr></thead>
+                        <tbody>
+                          {sectionPages.map(function(page:any,i:number){return(
+                            <tr key={page.id} style={{borderBottom:i<sectionPages.length-1?"1px solid "+C.grey3:"none"}}>
+                              <td style={{padding:"10px 16px"}}>
+                                <div style={{fontFamily:"monospace",fontSize:12,color:C.pink}}>{page.pageUrl}</div>
+                                {page.label&&<div style={{fontSize:11,color:C.grey6,marginTop:2}}>{page.label}</div>}
+                              </td>
+                              <td style={{padding:"10px 16px",textAlign:"center"}}>
+                                {page.heatmap
+                                  ?<a href={page.heatmap} target="_blank" rel="noreferrer" style={{display:"inline-block",padding:"3px 14px",borderRadius:6,fontSize:11,fontWeight:600,background:C.violet,color:C.white,textDecoration:"none"}}>Heatmaps</a>
+                                  :<span style={{fontSize:11,color:C.grey5,fontStyle:"italic"}}>No URL set</span>}
+                              </td>
+                              <td style={{padding:"10px 8px",textAlign:"center"}}>
+                                <button onClick={function(){setEditingVwo(page);setVwoEditLabel(page.label);setVwoEditPageUrl(page.pageUrl);setVwoEditHeatmap(page.heatmap);setVwoEditSection(page.section||"Homepage");}} title="Edit" style={{background:C.grey3,border:"none",borderRadius:6,width:28,height:28,display:"inline-flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.grey7}} onMouseEnter={function(e){e.currentTarget.style.background=C.grey5;e.currentTarget.style.color=C.white;}} onMouseLeave={function(e){e.currentTarget.style.background=C.grey3;e.currentTarget.style.color=C.grey7;}}><Cog size={13}/></button>
+                              </td>
+                            </tr>
+                          );})}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
             {editingVwo&&(
               <div onClick={function(){setEditingVwo(null);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:24}}>
                 <div onClick={function(e){e.stopPropagation();}} style={{background:C.white,borderRadius:16,padding:"28px 32px",maxWidth:480,width:"100%",boxShadow:"0 8px 48px rgba(0,0,0,0.2)"}}>
@@ -1616,6 +1628,12 @@ function AnalyticsPage({gaCards,setGaCards,vwoPages,setVwoPages}){
                     <span style={{background:C.grey3,width:34,height:34,borderRadius:10,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Cog size={16} color={C.grey7}/></span>
                     <h2 style={{fontSize:16,fontWeight:800,color:C.black,margin:0,flex:1}}>Edit VWO Page</h2>
                     <button onClick={function(){setEditingVwo(null);}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey6,fontSize:22,lineHeight:1,padding:"0 0 2px"}}>×</button>
+                  </div>
+                  <div style={{marginBottom:16}}>
+                    <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Nav section</div>
+                    <select value={vwoEditSection} onChange={function(e){setVwoEditSection(e.target.value);}} style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+C.grey4,borderRadius:8,fontSize:13,color:C.offBlack,boxSizing:"border-box",outline:"none",fontFamily:"inherit",background:C.white,cursor:"pointer"}}>
+                      {VWO_NAV_SECTIONS.map(function(s){return <option key={s} value={s}>{s}</option>;})}
+                    </select>
                   </div>
                   {[["Page label",vwoEditLabel,setVwoEditLabel,"e.g. Homepage"],["Page URL",vwoEditPageUrl,setVwoEditPageUrl,"e.g. gwi.com/platform"],["VWO Heatmaps URL",vwoEditHeatmap,setVwoEditHeatmap,"https://app.vwo.com/..."]].map(function(f:any){return(
                     <div key={f[0]} style={{marginBottom:16}}>
@@ -1626,7 +1644,7 @@ function AnalyticsPage({gaCards,setGaCards,vwoPages,setVwoPages}){
                   <div style={{display:"flex",gap:10,marginTop:4}}>
                     <button onClick={function(){if(setVwoPages)setVwoPages(function(prev:any[]){return prev.filter(function(p:any){return p.id!==editingVwo.id;});});setEditingVwo(null);}} style={{background:"transparent",color:C.pink,border:"1px solid "+C.pink,borderRadius:8,padding:"11px 16px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Delete</button>
                     <button onClick={function(){setEditingVwo(null);}} style={{flex:1,background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancel</button>
-                    <button onClick={function(){if(setVwoPages)setVwoPages(function(prev:any[]){return prev.map(function(p:any){return p.id===editingVwo.id?Object.assign({},p,{label:vwoEditLabel.trim(),pageUrl:vwoEditPageUrl.trim(),heatmap:vwoEditHeatmap.trim()}):p;});});setEditingVwo(null);}} style={{flex:2,background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Save</button>
+                    <button onClick={function(){if(setVwoPages)setVwoPages(function(prev:any[]){return prev.map(function(p:any){return p.id===editingVwo.id?Object.assign({},p,{label:vwoEditLabel.trim(),pageUrl:vwoEditPageUrl.trim(),heatmap:vwoEditHeatmap.trim(),section:vwoEditSection}):p;});});setEditingVwo(null);}} style={{flex:2,background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Save</button>
                   </div>
                 </div>
               </div>
@@ -1639,6 +1657,12 @@ function AnalyticsPage({gaCards,setGaCards,vwoPages,setVwoPages}){
                     <h2 style={{fontSize:16,fontWeight:800,color:C.black,margin:0,flex:1}}>Add VWO Page</h2>
                     <button onClick={function(){setShowAddVwo(false);}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey6,fontSize:22,lineHeight:1,padding:"0 0 2px"}}>×</button>
                   </div>
+                  <div style={{marginBottom:16}}>
+                    <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Nav section</div>
+                    <select value={newVwoSection} onChange={function(e){setNewVwoSection(e.target.value);}} style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+C.grey4,borderRadius:8,fontSize:13,color:C.offBlack,boxSizing:"border-box",outline:"none",fontFamily:"inherit",background:C.white,cursor:"pointer"}}>
+                      {VWO_NAV_SECTIONS.map(function(s){return <option key={s} value={s}>{s}</option>;})}
+                    </select>
+                  </div>
                   {[["Page label",newVwoLabel,setNewVwoLabel,"e.g. Platform"],["Page URL",newVwoPageUrl,setNewVwoPageUrl,"e.g. gwi.com/platform"],["VWO Heatmaps URL",newVwoHeatmap,setNewVwoHeatmap,"https://app.vwo.com/..."]].map(function(f:any){return(
                     <div key={f[0]} style={{marginBottom:16}}>
                       <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>{f[0]}</div>
@@ -1647,7 +1671,7 @@ function AnalyticsPage({gaCards,setGaCards,vwoPages,setVwoPages}){
                   );})}
                   <div style={{display:"flex",gap:10,marginTop:4}}>
                     <button onClick={function(){setShowAddVwo(false);}} style={{flex:1,background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancel</button>
-                    <button onClick={function(){if(!newVwoPageUrl.trim())return;if(setVwoPages)setVwoPages(function(prev:any[]){return prev.concat([{id:"vwo-"+Date.now(),label:newVwoLabel.trim(),pageUrl:newVwoPageUrl.trim(),heatmap:newVwoHeatmap.trim()}]);});setShowAddVwo(false);}} style={{flex:2,background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add page</button>
+                    <button onClick={function(){if(!newVwoPageUrl.trim())return;if(setVwoPages)setVwoPages(function(prev:any[]){return prev.concat([{id:"vwo-"+Date.now(),label:newVwoLabel.trim(),pageUrl:newVwoPageUrl.trim(),heatmap:newVwoHeatmap.trim(),section:newVwoSection}]);});setShowAddVwo(false);}} style={{flex:2,background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add page</button>
                   </div>
                 </div>
               </div>
