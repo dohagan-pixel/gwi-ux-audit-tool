@@ -1389,7 +1389,7 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
                   <div style={{cursor:"grab",color:C.grey5,fontSize:16,flexShrink:0,userSelect:"none"}}>⠿</div>
                   <button onClick={function(){setOpenPage(isOpen?null:page.id);}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left",padding:0,minWidth:0}}>
                     <span style={{fontWeight:700,color:C.black,fontSize:15,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{page.label}</span>
-                    {!isMobile&&<span style={{fontFamily:"monospace",color:C.pink,fontSize:12,flexShrink:0}}>{page.url}</span>}
+                    {!isMobile&&(function(){var _ps=pages.find(function(p){return p.url===page.url;});var _du=(_ps as any)?.displayUrl||page.url.replace(/^https?:\/\//,"").replace(/\/$/,"");return <span style={{fontFamily:"monospace",color:C.pink,fontSize:12,flexShrink:0}}>{_du}</span>;}())}
                     <div style={{width:80,background:C.grey3,borderRadius:99,height:6,flexShrink:0}}><div style={{width:(page.actions.length?Math.round(pageDone/page.actions.length*100):0)+"%",background:"#00A86B",height:"100%",borderRadius:99}}/></div>
                     <span style={{fontSize:11,color:C.grey7,width:40,flexShrink:0}}>{pageDone}/{page.actions.length}</span>
                     <ChevronRight size={21} color={C.pink} style={{flexShrink:0,transform:isOpen?"rotate(-90deg)":"rotate(90deg)",transition:"transform 0.15s"}}/>
