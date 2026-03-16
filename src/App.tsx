@@ -3459,7 +3459,9 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
       s3.textContent='@media(max-width:767px){.gwi-fc{grid-template-columns:1fr 1fr!important;}.gwi-fb{flex-direction:column!important;gap:16px!important;}}';
       doc.head.appendChild(s3);
       // ── Standard GWI footer — injected if absent, persists when wireframe is saved ──
-      if(!doc.querySelector('[data-gwi-footer]')){
+      var _existingFooter=doc.querySelector('[data-gwi-footer]') as HTMLElement|null;
+      if(_existingFooter){_existingFooter.style.background='#101720';}
+      if(!_existingFooter){
         var yr=new Date().getFullYear();
         var col=function(title:string,items:string[]){return'<div><div style="font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:16px;">'+title+'</div><ul style="list-style:none;margin:0;padding:0;">'+items.map(function(t){return'<li style="margin-bottom:8px"><a href="#" style="color:#999;font-size:13px;text-decoration:none;">'+t+'</a></li>';}).join('')+'</ul></div>';};
         var footerEl=doc.createElement('footer');
