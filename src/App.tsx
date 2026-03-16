@@ -1393,12 +1393,6 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
                     <span style={{fontSize:11,color:C.grey7,width:40,flexShrink:0}}>{pageDone}/{page.actions.length}</span>
                     <ChevronRight size={21} color={C.pink} style={{flexShrink:0,transform:isOpen?"rotate(-90deg)":"rotate(90deg)",transition:"transform 0.15s"}}/>
                   </button>
-                  {(wireframes||[]).some(function(w:any){return w.pageUrl===page.url;})&&(
-                    <button onClick={function(e){e.stopPropagation();setView("wireframes");}} style={{background:C.black,color:C.white,border:"none",borderRadius:6,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",gap:5,transition:"background 0.15s"}} onMouseEnter={function(e){e.currentTarget.style.background=C.pink;}} onMouseLeave={function(e){e.currentTarget.style.background=C.black;}}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-                      View Wireframes
-                    </button>
-                  )}
                   <button onClick={function(e){e.stopPropagation();setWhyPage({url:page.url,label:page.label});}} style={{background:"transparent",border:"none",cursor:"pointer",color:C.grey5,padding:"2px 4px",flexShrink:0,lineHeight:1,fontSize:16}}
                     onMouseEnter={function(e){e.currentTarget.style.color=C.pink;}}
                     onMouseLeave={function(e){e.currentTarget.style.color=C.grey5;}}>&#9432;</button>
@@ -1417,8 +1411,14 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
                         </div>
                       )}
                       {generating[page.id]?<p style={{fontSize:13,color:C.grey6,lineHeight:1.6,margin:0,fontStyle:"italic"}}>Generating diagnosis...</p>:page.issue?<p style={{fontSize:13,color:C.offBlack,lineHeight:1.6,margin:0}}>{page.issue}</p>:<p style={{fontSize:13,color:C.grey6,lineHeight:1.6,margin:0,fontStyle:"italic"}}>{page.actions.length===0?"Add actions to generate a diagnosis.":"Generating..."}</p>}
-                      <div style={{marginTop:8}}>
+                      <div style={{marginTop:8,display:"flex",gap:8,flexWrap:"wrap"}}>
                         <button onClick={function(){setWireframePage(page);}} style={{background:C.black,color:C.white,border:"none",borderRadius:6,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:5,transition:"background 0.15s"}} onMouseEnter={function(e){e.currentTarget.style.background=C.pink;}} onMouseLeave={function(e){e.currentTarget.style.background=C.black;}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Generate Wireframe</button>
+                        {(wireframes||[]).some(function(w:any){return w.pageUrl===page.url;})&&(
+                          <button onClick={function(){setView("wireframes");}} style={{background:"transparent",color:C.black,border:"1px solid "+C.grey5,borderRadius:6,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:5,transition:"border-color 0.15s,color 0.15s"}} onMouseEnter={function(e){e.currentTarget.style.borderColor=C.pink;e.currentTarget.style.color=C.pink;}} onMouseLeave={function(e){e.currentTarget.style.borderColor=C.grey5;e.currentTarget.style.color=C.black;}}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                            View Wireframes
+                          </button>
+                        )}
                       </div>
                     </div>
                     <ActionList pageId={page.id} actions={page.actions} reorderActions={reorderActions} openAction={openAction} setOpenAction={setOpenAction} statusCfg={statusCfg} setActionStatus={setActionStatus} updateAction={updateAction} deleteAction={deleteAction} calcDelta={calcDelta} isMobile={isMobile}/>
