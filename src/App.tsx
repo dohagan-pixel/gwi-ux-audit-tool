@@ -6,7 +6,7 @@ import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
-import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, List, LayoutGrid, Folder, FolderOpen, Heart, Building2, BookOpen, ExternalLink } from "lucide-react";
+import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, List, LayoutGrid, Folder, FolderOpen, Heart, Building2, BookOpen, ExternalLink, Share2 } from "lucide-react";
 
 const FF="'Faktum',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
 const C = {
@@ -3369,6 +3369,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   var [lcHeights,setLcHeights]=useState({} as {[id:string]:number});
   var [buildPicking,setBuildPicking]=useState(false);
   var [buildPage,setBuildPage]=useState<any>(null);
+  var [sharing,setSharing]=useState(false);
   var [buildWarning,setBuildWarning]=useState<any>(null);
   var [contentSavedTs,setContentSavedTs]=useState(0);
   var [folderOrder,setFolderOrder]=useState<string[]>(function(){try{var v=localStorage.getItem("gwiFolderOrder");return v?JSON.parse(v):[];}catch(e){return [];}});
@@ -3417,35 +3418,35 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   function deleteActive(){var rem=wireframes.filter(function(w){return w.id!==activeId;});setWireframes(rem);if(onDeleteWireframe)onDeleteWireframe(activeId);setActiveId(rem.length>0?rem[rem.length-1].id:null);}
   function download(){if(!active)return;var blob=new Blob([active.html],{type:"text/html"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(active.pageLabel||"wireframe").replace(/\s+/g,"-").toLowerCase()+"-wireframe.html";a.click();}
   function viewFullPage(){
-    if(!active)return;
-    // Parse and clean HTML for a clean full-page view
+    if(!active||sharing)return;
+    setSharing(true);
+    // Parse and clean HTML
     var parser=new DOMParser();
-    var doc=parser.parseFromString(active.html,'text/html');
-    // Remove all injected scripts/styles from previous injectRecScript calls
-    Array.from(doc.querySelectorAll('[data-injected="1"]')).forEach(function(el){el.parentNode&&el.parentNode.removeChild(el);});
-    // Remove rec badges (hide them visually — they stay in DOM as anchors but are invisible)
-    var recStyle=doc.createElement('style');
+    var parsedDoc=parser.parseFromString(active.html,'text/html');
+    Array.from(parsedDoc.querySelectorAll('[data-injected="1"]')).forEach(function(el){el.parentNode&&el.parentNode.removeChild(el);});
+    var recStyle=parsedDoc.createElement('style');
     recStyle.textContent='[data-rec]{display:none!important;}[data-eh]{outline:none!important;}';
-    doc.head.appendChild(recStyle);
-    // Inject Faktum font
-    if(!doc.querySelector('link[href*="faktum"]')){var fl=doc.createElement('link');fl.rel='stylesheet';fl.href=window.location.origin+'/fonts/faktum.css';doc.head.insertBefore(fl,doc.head.firstChild);}
-    // Font override
-    var sf=doc.createElement('style');sf.textContent='body,*{font-family:\'Faktum\',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;}code,pre,tt,[style*="monospace"]{font-family:monospace!important;}';doc.head.appendChild(sf);
-    // Update or re-inject footer with latest styles
-    var existingFooter=doc.querySelector('[data-gwi-footer]') as HTMLElement|null;
+    parsedDoc.head.appendChild(recStyle);
+    if(!parsedDoc.querySelector('link[href*="faktum"]')){var fl=parsedDoc.createElement('link');fl.rel='stylesheet';fl.href=window.location.origin+'/fonts/faktum.css';parsedDoc.head.insertBefore(fl,parsedDoc.head.firstChild);}
+    var sf=parsedDoc.createElement('style');sf.textContent='body,*{font-family:\'Faktum\',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;}code,pre,tt,[style*="monospace"]{font-family:monospace!important;}';parsedDoc.head.appendChild(sf);
+    var existingFooter=parsedDoc.querySelector('[data-gwi-footer]') as HTMLElement|null;
     if(existingFooter){existingFooter.style.background='#101720';}
     if(!existingFooter){
       var yr=new Date().getFullYear();
       var col=function(title:string,items:string[]){return'<div><div style="font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:16px;">'+title+'</div><ul style="list-style:none;margin:0;padding:0;">'+items.map(function(t){return'<li style="margin-bottom:8px"><a href="#" style="color:#999;font-size:13px;text-decoration:none;">'+t+'</a></li>';}).join('')+'</ul></div>';};
-      var footerEl=doc.createElement('footer');
+      var footerEl=parsedDoc.createElement('footer');
       footerEl.setAttribute('data-gwi-footer','1');
       footerEl.style.cssText='background:#101720;color:#ccc;padding:56px 0 0;font-family:\'Faktum\',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-top:0;';
       footerEl.innerHTML='<div style="max-width:1200px;margin:0 auto;padding:0 40px;"><div style="margin-bottom:40px;"><div style="background:#444;display:inline-block;padding:8px 20px;border-radius:4px;font-size:18px;font-weight:700;color:#fff;letter-spacing:0.05em;">GWI</div></div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:32px;margin-bottom:48px;">'+col('Products',['Human insights platform','Agent Spark: Human insights analyst','Learn about our data','Pricing'])+col('Solutions &amp; Integrations',['RLD','Audience activation','Data partnerships','Become a GWI partner'])+col('Resources',['Blog','Reports','Help center'])+col('Company',['Our story','Careers','Press','Contact','Trust center'])+col('Legal stuff',['Website terms and conditions','Website privacy policy','Website cookie policy','Modern slavery statement','See all'])+'</div><div style="border-top:1px solid #444;padding:20px 0;display:flex;align-items:center;justify-content:space-between;"><div style="font-size:12px;color:#666;">© '+yr+' GWI. All rights reserved.</div><div style="display:flex;gap:10px;">'+['in','𝕏','ig','yt'].map(function(lbl){return'<div style="width:30px;height:30px;background:#444;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;"><span style="color:#999;font-size:11px;">'+lbl+'</span></div>';}).join('')+'</div></div></div>';
-      doc.body.appendChild(footerEl);
+      parsedDoc.body.appendChild(footerEl);
     }
-    var cleanHtml='<!DOCTYPE html>'+doc.documentElement.outerHTML;
-    var blob=new Blob([cleanHtml],{type:"text/html"});
-    window.open(URL.createObjectURL(blob),"_blank");
+    var cleanHtml='<!DOCTYPE html>'+parsedDoc.documentElement.outerHTML;
+    // Save to Firebase as a publicly-readable share
+    var shareId=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,10);
+    setDoc(doc(_db,'sharedWireframes',shareId),{html:cleanHtml,pageLabel:active.pageLabel||'Wireframe',createdAt:Date.now()}).then(function(){
+      window.open(window.location.origin+'/share/'+shareId,'_blank');
+      setSharing(false);
+    }).catch(function(){setSharing(false);});
   }
   function toggleStar(){if(!active)return;var updated=Object.assign({},active,{starred:!active.starred});setWireframes(function(prev){return prev.map(function(w){return w.id===activeId?updated:w;});});if(onUpdateWireframe)onUpdateWireframe(updated);}
   function openEdit(){setEditLabel(active?active.pageLabel:"");setEditing(true);}
@@ -3712,7 +3713,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
                   <button onClick={toggleStar} title={active.starred?"Remove from starred":"Add to starred"} style={{background:active.starred?"rgba(255,193,7,0.15)":"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:active.starred?"#FFC107":C.grey4}}><Star size={15} fill={active.starred?"#FFC107":"none"}/></button>
                   <button onClick={openEdit} title="Rename" style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.grey4}}><Pencil size={15}/></button>
                   <button onClick={download} title="Download HTML" style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.grey4}}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
-                  <button onClick={viewFullPage} title="View full page" style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.grey4}}><ExternalLink size={15}/></button>
+                  <button onClick={viewFullPage} title="View full page" disabled={sharing} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:sharing?"wait":"pointer",color:sharing?C.grey6:C.grey4,opacity:sharing?0.6:1}}>{sharing?<div style={{width:14,height:14,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",animation:"spin 0.7s linear infinite"}}/>:<ExternalLink size={15}/>}</button>
                   <button onClick={deleteActive} title="Delete wireframe" style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:8,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#FF6B6B"}}><Trash2 size={15}/></button>
                 </div>
               )}
@@ -3787,6 +3788,39 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   );
 }
 
+function SharePage({shareId}:{shareId:string}){
+  var [html,setHtml]=useState<string|null>(null);
+  var [notFound,setNotFound]=useState(false);
+  var [open,setOpen]=useState(false);
+  var [copied,setCopied]=useState(false);
+  useEffect(function(){
+    getDoc(doc(_db,'sharedWireframes',shareId)).then(function(snap){
+      if(snap.exists()){setHtml((snap.data() as any).html);}else{setNotFound(true);}
+    }).catch(function(){setNotFound(true);});
+  },[shareId]);
+  if(notFound)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:FF,color:"#888",fontSize:14}}>Wireframe not found.</div>);
+  if(!html)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:FF}}><div style={{width:40,height:40,borderRadius:"50%",border:"4px solid #eee",borderTop:"4px solid #FF0077",animation:"spin 0.8s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style></div>);
+  var shareUrl=window.location.href;
+  function copyUrl(){navigator.clipboard.writeText(shareUrl).then(function(){setCopied(true);setTimeout(function(){setCopied(false);},2000);});}
+  return(
+    <div style={{position:"relative",width:"100vw",height:"100vh",overflow:"hidden"}}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style>
+      <iframe srcDoc={html} style={{width:"100%",height:"100%",border:"none"}} title="Wireframe" sandbox="allow-scripts allow-same-origin"/>
+      <div style={{position:"fixed",bottom:24,right:24,zIndex:9999,fontFamily:FF,display:"flex",flexDirection:"column",alignItems:"flex-end"}}>
+        {open&&(
+          <div style={{background:"#fff",borderRadius:12,boxShadow:"0 4px 24px rgba(0,0,0,0.18)",padding:"14px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:10,minWidth:300,maxWidth:420}}>
+            <div style={{flex:1,fontSize:12,color:"#555",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",background:"#f5f5f5",padding:"8px 12px",borderRadius:8,fontFamily:"monospace",userSelect:"all"}}>{shareUrl}</div>
+            <button onClick={copyUrl} style={{background:copied?"#22C55E":"#FF0077",color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",transition:"background 0.2s",flexShrink:0}}>{copied?"Copied!":"Copy"}</button>
+          </div>
+        )}
+        <button onClick={function(){setOpen(function(v){return !v;});}} style={{width:52,height:52,borderRadius:"50%",background:"#FF0077",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 20px rgba(255,0,119,0.45)",transition:"transform 0.15s",flexShrink:0}} onMouseEnter={function(e){(e.currentTarget as HTMLElement).style.transform="scale(1.08)";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.transform="scale(1)";}}>
+          <Share2 size={20} color="#fff"/>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App(){
 
   var VALID_VIEWS=["dashboard","audit","generated-audits","summary","personas","persona-detail","mapping","journey","lifecycle","affinity","flows","analytics","settings","wireframes","feedback","guide","landing"];
@@ -3853,6 +3887,8 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
   function _handleGoogleLogin(){_setLoginError(null);var p=new GoogleAuthProvider();p.setCustomParameters({hd:"gwi.com"});signInWithPopup(_auth,p).catch(function(err:any){_setLoginError(err.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':err.code==='auth/unauthorized-domain'?'This domain is not authorised in Firebase — contact your admin.':'Google sign-in failed. Try again. ('+( err.code||'')+')');});}
   var _qp=new URLSearchParams(window.location.search);
   if(_qp.get('mode')==='resetPassword'&&_qp.get('oobCode'))return(<ConfirmResetScreen oobCode={_qp.get('oobCode')!}/>);
+  var _sharePath=window.location.pathname.match(/^\/share\/([a-z0-9]+)$/);
+  if(_sharePath)return(<SharePage shareId={_sharePath[1]}/>);
   if(_authLoading)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:C.grey2,color:C.grey7,fontSize:14,fontFamily:FF}}>Loading…</div>);
   if(!_user)return(
     <div style={{position:"relative"}}>
