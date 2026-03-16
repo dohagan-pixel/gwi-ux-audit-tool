@@ -208,6 +208,8 @@ const INIT_AUDIT = [
   ]},
 ];
 
+var INIT_VWO_PAGES=[{id:"vwo-1",label:"Homepage",pageUrl:"gwi.com",heatmap:""}];
+
 const HOTJAR_SECTIONS = [
   {name:"Homepage",pages:[{url:"gwi.com",scroll:"https://insights.hotjar.com/sites/3099535/heatmap/view?url=https%3A%2F%2Fwww.gwi.com&match=simple_match&device=desktop&type=scroll",click:"https://insights.hotjar.com/sites/3099535/heatmap/view?url=https%3A%2F%2Fwww.gwi.com&match=simple_match&device=desktop&type=click",move:"https://insights.hotjar.com/sites/3099535/heatmap/view?url=https%3A%2F%2Fwww.gwi.com&match=simple_match&device=desktop&type=movement"}]},
   {name:"Products",pages:[
@@ -1493,12 +1495,20 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
   </>);
 }
 
-function AnalyticsPage({gaCards,setGaCards}){
+function AnalyticsPage({gaCards,setGaCards,vwoPages,setVwoPages}){
   var [tab,setTab]=useState("ga");
   var [showNotice,setShowNotice]=useState(function(){try{return localStorage.getItem("analytics_notice_dismissed")!=="1";}catch(e){return true;}});
   var [hoveredCard,setHoveredCard]=useState<string|null>(null);
   var [editingCard,setEditingCard]=useState<any>(null);
   var [editUrl,setEditUrl]=useState("");
+  var [editingVwo,setEditingVwo]=useState<any>(null);
+  var [vwoEditLabel,setVwoEditLabel]=useState("");
+  var [vwoEditPageUrl,setVwoEditPageUrl]=useState("");
+  var [vwoEditHeatmap,setVwoEditHeatmap]=useState("");
+  var [showAddVwo,setShowAddVwo]=useState(false);
+  var [newVwoLabel,setNewVwoLabel]=useState("");
+  var [newVwoPageUrl,setNewVwoPageUrl]=useState("");
+  var [newVwoHeatmap,setNewVwoHeatmap]=useState("");
   var isMobile=useWidth()<768;
   var CARD_ICONS_MAP={LayoutDashboard:<LayoutDashboard size={22}/>,Home:<Home size={22}/>,Puzzle:<Puzzle size={22}/>,DollarSign:<DollarSign size={22}/>,FileText:<FileText size={22}/>,Bot:<Bot size={22}/>,MousePointerClick:<MousePointerClick size={22}/>,GitMerge:<GitMerge size={22}/>,BarChart2:<BarChart2 size={22}/>,Layers:<Layers size={22}/>,Zap:<Zap size={22}/>,Brain:<Brain size={22}/>};
   return(
@@ -1515,7 +1525,7 @@ function AnalyticsPage({gaCards,setGaCards}){
       <PageWrap isMobile={isMobile}>
         <BlackHero eyebrow="GWI Website - Data" title="Analytics" desc="Browse page-level GA4 and Hotjar reports." why="Analytics grounds every UX recommendation in real behaviour rather than assumption."/>
         <div style={{display:"flex",gap:4,marginBottom:28,background:C.grey4,borderRadius:10,padding:4,width:"fit-content"}}>
-          {[["ga","Google Analytics"],["hotjar","Hotjar Heatmaps"]].map(function(item){return(
+          {[["ga","Google Analytics"],["hotjar","Hotjar Heatmaps"],["vwo","VWO"]].map(function(item){return(
             <button key={item[0]} onClick={function(){setTab(item[0]);}} style={{padding:"8px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:tab===item[0]?C.pink:"transparent",color:tab===item[0]?C.white:C.grey7}}>{item[1]}</button>
           );})}
         </div>
@@ -1561,6 +1571,88 @@ function AnalyticsPage({gaCards,setGaCards}){
               </div>
             )}
           </>
+        )}
+        {tab==="vwo"&&(
+          <div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+              <div style={{fontSize:13,color:C.grey7,lineHeight:1.6}}>Click <strong style={{color:C.offBlack}}>Heatmaps</strong> to open the VWO heatmap for that page. Use the <Cog size={12} style={{display:"inline",verticalAlign:"middle",margin:"0 2px"}} color={C.grey7}/> to update the URL.</div>
+              <button onClick={function(){setShowAddVwo(true);setNewVwoLabel("");setNewVwoPageUrl("");setNewVwoHeatmap("");}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6,flexShrink:0}}><Plus size={13}/>Add page</button>
+            </div>
+            <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,overflow:"hidden"}}>
+              <div style={{background:C.black,padding:"10px 16px",fontSize:12,fontWeight:700,color:C.white,textTransform:"uppercase"}}>Pages</div>
+              <div style={{overflowX:"auto"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",minWidth:320}}>
+                  <thead><tr style={{background:C.grey3}}>
+                    <th style={{padding:"8px 16px",fontSize:11,fontWeight:700,color:C.grey7,textAlign:"left",textTransform:"uppercase",borderBottom:"1px solid "+C.grey4}}>Page</th>
+                    <th style={{padding:"8px 16px",fontSize:11,fontWeight:700,color:C.grey7,textAlign:"center",textTransform:"uppercase",borderBottom:"1px solid "+C.grey4,width:100}}>Heatmaps</th>
+                    <th style={{padding:"8px 16px",fontSize:11,fontWeight:700,color:C.grey7,textAlign:"center",textTransform:"uppercase",borderBottom:"1px solid "+C.grey4,width:48}}></th>
+                  </tr></thead>
+                  <tbody>
+                    {(vwoPages||[]).map(function(page:any,i:number){return(
+                      <tr key={page.id} style={{borderBottom:i<(vwoPages||[]).length-1?"1px solid "+C.grey3:"none"}}>
+                        <td style={{padding:"10px 16px"}}>
+                          <div style={{fontFamily:"monospace",fontSize:12,color:C.pink}}>{page.pageUrl}</div>
+                          {page.label&&<div style={{fontSize:11,color:C.grey6,marginTop:2}}>{page.label}</div>}
+                        </td>
+                        <td style={{padding:"10px 16px",textAlign:"center"}}>
+                          {page.heatmap
+                            ?<a href={page.heatmap} target="_blank" rel="noreferrer" style={{display:"inline-block",padding:"3px 14px",borderRadius:6,fontSize:11,fontWeight:600,background:C.violet,color:C.white,textDecoration:"none"}}>Heatmaps</a>
+                            :<span style={{fontSize:11,color:C.grey5,fontStyle:"italic"}}>No URL set</span>}
+                        </td>
+                        <td style={{padding:"10px 8px",textAlign:"center"}}>
+                          <button onClick={function(){setEditingVwo(page);setVwoEditLabel(page.label);setVwoEditPageUrl(page.pageUrl);setVwoEditHeatmap(page.heatmap);}} title="Edit" style={{background:C.grey3,border:"none",borderRadius:6,width:28,height:28,display:"inline-flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.grey7}} onMouseEnter={function(e){e.currentTarget.style.background=C.grey5;e.currentTarget.style.color=C.white;}} onMouseLeave={function(e){e.currentTarget.style.background=C.grey3;e.currentTarget.style.color=C.grey7;}}><Cog size={13}/></button>
+                        </td>
+                      </tr>
+                    );})}
+                    {(vwoPages||[]).length===0&&<tr><td colSpan={3} style={{padding:"24px 16px",textAlign:"center",fontSize:13,color:C.grey6,fontStyle:"italic"}}>No pages yet — click Add page to get started.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {editingVwo&&(
+              <div onClick={function(){setEditingVwo(null);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:24}}>
+                <div onClick={function(e){e.stopPropagation();}} style={{background:C.white,borderRadius:16,padding:"28px 32px",maxWidth:480,width:"100%",boxShadow:"0 8px 48px rgba(0,0,0,0.2)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
+                    <span style={{background:C.grey3,width:34,height:34,borderRadius:10,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Cog size={16} color={C.grey7}/></span>
+                    <h2 style={{fontSize:16,fontWeight:800,color:C.black,margin:0,flex:1}}>Edit VWO Page</h2>
+                    <button onClick={function(){setEditingVwo(null);}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey6,fontSize:22,lineHeight:1,padding:"0 0 2px"}}>×</button>
+                  </div>
+                  {[["Page label",vwoEditLabel,setVwoEditLabel,"e.g. Homepage"],["Page URL",vwoEditPageUrl,setVwoEditPageUrl,"e.g. gwi.com/platform"],["VWO Heatmaps URL",vwoEditHeatmap,setVwoEditHeatmap,"https://app.vwo.com/..."]].map(function(f:any){return(
+                    <div key={f[0]} style={{marginBottom:16}}>
+                      <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>{f[0]}</div>
+                      <input value={f[1]} onChange={function(e){f[2](e.target.value);}} placeholder={f[3]} style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+C.grey4,borderRadius:8,fontSize:13,color:C.offBlack,boxSizing:"border-box",outline:"none",fontFamily:"inherit"}} onFocus={function(e){e.currentTarget.style.borderColor=C.pink;}} onBlur={function(e){e.currentTarget.style.borderColor=C.grey4;}}/>
+                    </div>
+                  );})}
+                  <div style={{display:"flex",gap:10,marginTop:4}}>
+                    <button onClick={function(){if(setVwoPages)setVwoPages(function(prev:any[]){return prev.filter(function(p:any){return p.id!==editingVwo.id;});});setEditingVwo(null);}} style={{background:"transparent",color:C.pink,border:"1px solid "+C.pink,borderRadius:8,padding:"11px 16px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Delete</button>
+                    <button onClick={function(){setEditingVwo(null);}} style={{flex:1,background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancel</button>
+                    <button onClick={function(){if(setVwoPages)setVwoPages(function(prev:any[]){return prev.map(function(p:any){return p.id===editingVwo.id?Object.assign({},p,{label:vwoEditLabel.trim(),pageUrl:vwoEditPageUrl.trim(),heatmap:vwoEditHeatmap.trim()}):p;});});setEditingVwo(null);}} style={{flex:2,background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Save</button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {showAddVwo&&(
+              <div onClick={function(){setShowAddVwo(false);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:24}}>
+                <div onClick={function(e){e.stopPropagation();}} style={{background:C.white,borderRadius:16,padding:"28px 32px",maxWidth:480,width:"100%",boxShadow:"0 8px 48px rgba(0,0,0,0.2)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
+                    <span style={{background:"#FFEEF6",width:34,height:34,borderRadius:10,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Plus size={16} color={C.pink}/></span>
+                    <h2 style={{fontSize:16,fontWeight:800,color:C.black,margin:0,flex:1}}>Add VWO Page</h2>
+                    <button onClick={function(){setShowAddVwo(false);}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey6,fontSize:22,lineHeight:1,padding:"0 0 2px"}}>×</button>
+                  </div>
+                  {[["Page label",newVwoLabel,setNewVwoLabel,"e.g. Platform"],["Page URL",newVwoPageUrl,setNewVwoPageUrl,"e.g. gwi.com/platform"],["VWO Heatmaps URL",newVwoHeatmap,setNewVwoHeatmap,"https://app.vwo.com/..."]].map(function(f:any){return(
+                    <div key={f[0]} style={{marginBottom:16}}>
+                      <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>{f[0]}</div>
+                      <input value={f[1]} onChange={function(e){f[2](e.target.value);}} placeholder={f[3]} style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+C.grey4,borderRadius:8,fontSize:13,color:C.offBlack,boxSizing:"border-box",outline:"none",fontFamily:"inherit"}} onFocus={function(e){e.currentTarget.style.borderColor=C.pink;}} onBlur={function(e){e.currentTarget.style.borderColor=C.grey4;}}/>
+                    </div>
+                  );})}
+                  <div style={{display:"flex",gap:10,marginTop:4}}>
+                    <button onClick={function(){setShowAddVwo(false);}} style={{flex:1,background:C.grey3,color:C.grey8,border:"none",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancel</button>
+                    <button onClick={function(){if(!newVwoPageUrl.trim())return;if(setVwoPages)setVwoPages(function(prev:any[]){return prev.concat([{id:"vwo-"+Date.now(),label:newVwoLabel.trim(),pageUrl:newVwoPageUrl.trim(),heatmap:newVwoHeatmap.trim()}]);});setShowAddVwo(false);}} style={{flex:2,background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"11px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add page</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
         {tab==="hotjar"&&(
           <div>
@@ -3647,6 +3739,7 @@ export default function App(){
   var [pages,setPages]=useState(INIT_PAGES);
   var [journeys,setJourneys]=useState(INIT_JOURNEYS);
   var [gaCards,setGaCards]=useState(INIT_GA_CARDS);
+  var [vwoPages,setVwoPages]=useState(INIT_VWO_PAGES);
   var [wireframeRules,setWireframeRules]=useState(INIT_WIREFRAME_RULES);
   var [clientList,setClientList]=useState(INIT_CLIENTS);
   var [caseStudies,setCaseStudies]=useState(INIT_CASE_STUDIES);
@@ -3668,9 +3761,9 @@ export default function App(){
   var [_authLoading,_setAuthLoading]=useState(true);
   var [_loginError,_setLoginError]=useState(null);
   var [_showLoginModal,_setShowLoginModal]=useState(false);
-  useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()){var d=snap.data();if(d.auditData)setAuditData(d.auditData);if(d.stages)setStages(d.stages);if(d.verticals)setVerticals(d.verticals);if(d.personas)setPersonas(d.personas);if(d.pages)setPages(d.pages);if(d.journeys)setJourneys(d.journeys);if(d.gaCards)setGaCards(d.gaCards);if(d.wireframeRules)setWireframeRules(d.wireframeRules);if(d.clientList)setClientList(d.clientList);if(d.caseStudies)setCaseStudies(d.caseStudies);}});getDocs(collection(_db,"users",u.uid,"generatedAudits")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setGeneratedAudits(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});merged.sort(function(a,b){return a.id<b.id?-1:1;});return merged;});}).catch(function(){});getDocs(collection(_db,"users",u.uid,"wireframes")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setSavedWireframes(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});return merged;});}).catch(function(){});
+  useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()){var d=snap.data();if(d.auditData)setAuditData(d.auditData);if(d.stages)setStages(d.stages);if(d.verticals)setVerticals(d.verticals);if(d.personas)setPersonas(d.personas);if(d.pages)setPages(d.pages);if(d.journeys)setJourneys(d.journeys);if(d.gaCards)setGaCards(d.gaCards);if(d.vwoPages)setVwoPages(d.vwoPages);if(d.wireframeRules)setWireframeRules(d.wireframeRules);if(d.clientList)setClientList(d.clientList);if(d.caseStudies)setCaseStudies(d.caseStudies);}});getDocs(collection(_db,"users",u.uid,"generatedAudits")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setGeneratedAudits(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});merged.sort(function(a,b){return a.id<b.id?-1:1;});return merged;});}).catch(function(){});getDocs(collection(_db,"users",u.uid,"wireframes")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setSavedWireframes(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});return merged;});}).catch(function(){});
 getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setFeedback(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});return merged;});}).catch(function(){});}else{_setUser(null);}_setAuthLoading(false);});},[]);
-  useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,stages:stages,verticals:verticals,personas:personas,pages:pages,journeys:journeys,gaCards:gaCards,wireframeRules:wireframeRules,clientList:clientList,caseStudies:caseStudies,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[ auditData,stages,verticals,personas,pages,journeys,gaCards,wireframeRules,clientList,caseStudies,_user]);
+  useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,stages:stages,verticals:verticals,personas:personas,pages:pages,journeys:journeys,gaCards:gaCards,vwoPages:vwoPages,wireframeRules:wireframeRules,clientList:clientList,caseStudies:caseStudies,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[ auditData,stages,verticals,personas,pages,journeys,gaCards,vwoPages,wireframeRules,clientList,caseStudies,_user]);
   useEffect(function(){try{localStorage.setItem("gwi_generated_audits",JSON.stringify(generatedAudits));}catch(e){};},[generatedAudits]);
   useEffect(function(){try{localStorage.setItem("gwi_saved_wireframes",JSON.stringify(savedWireframes));}catch(e){};},[savedWireframes]);
   useEffect(function(){try{localStorage.setItem("gwi_loved_components",JSON.stringify(lovedComponents));}catch(e){};},[lovedComponents]);
@@ -3744,7 +3837,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="journey"&&<JourneyPage pages={pages} personas={personas} journeys={journeys} initialPersonaId={activePersonaForJourney} setView={setView} goToJourney={goToJourney}/>}
         {view==="flows"&&<UserFlowsPage setView={setView}/>}
         {view==="audit"&&<AuditPage personas={personas} pages={pages} auditData={auditData} setAuditData={setAuditData} onAddAction={function(){setShowAddAction(true);}} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} setView={setView} wireframeRules={wireframeRules}/>}
-        {view==="analytics"&&<AnalyticsPage gaCards={gaCards} setGaCards={setGaCards}/>}
+        {view==="analytics"&&<AnalyticsPage gaCards={gaCards} setGaCards={setGaCards} vwoPages={vwoPages} setVwoPages={setVwoPages}/>}
         {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} verticals={verticals} clientList={clientList} caseStudies={caseStudies} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit).catch(function(){});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
         {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id)).catch(function(){});}} onUpdateAudit={function(updated){if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",updated.id),updated).catch(function(){});}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
         {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} verticals={verticals} setVerticals={setVerticals} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards} wireframeRules={wireframeRules} setWireframeRules={setWireframeRules} clientList={clientList} setClientList={setClientList} caseStudies={caseStudies} setCaseStudies={setCaseStudies} setView={setView}/>}
