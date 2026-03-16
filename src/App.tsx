@@ -1879,6 +1879,12 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
   var [editLabel,setEditLabel]=useState("");
   var [editDesc,setEditDesc]=useState("");
   var isMobile=useWidth()<768;
+  var [openFolders,setOpenFolders]=useState<{[k:string]:boolean}>(function(){try{var v=localStorage.getItem("gwiGenAuditFolders");return v?JSON.parse(v):{};}catch(e){return {};}});
+  var [folderOrder,setFolderOrder]=useState<string[]>(function(){try{var v=localStorage.getItem("gwiGenAuditFolderOrder");return v?JSON.parse(v):[];}catch(e){return [];}});
+  var [dragFolder,setDragFolder]=useState<string|null>(null);
+  var [dragOverFolder,setDragOverFolder]=useState<string|null>(null);
+  useEffect(function(){try{localStorage.setItem("gwiGenAuditFolders",JSON.stringify(openFolders));}catch(e){};},[openFolders]);
+  useEffect(function(){try{localStorage.setItem("gwiGenAuditFolderOrder",JSON.stringify(folderOrder));}catch(e){};},[folderOrder]);
   var audit=audits.find(function(a){return a.id===activeAudit;});
   function deleteActiveAudit(){var rem=audits.filter(function(x){return x.id!==activeAudit;});setAudits(rem);if(onDeleteAudit)onDeleteAudit(activeAudit);setActiveAudit(rem.length>0?rem[rem.length-1].id:null);}
   function openEdit(){setEditLabel(audit?audit.pageLabel:"");setEditDesc(audit?audit.description||"":"");setEditing(true);}
@@ -1904,27 +1910,67 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
     <div style={{display:"flex",flexDirection:isMobile?"column":"row",flex:1,minHeight:0,background:C.grey2}}>
       <div style={{width:isMobile?"100%":220,background:C.white,borderRight:"1px solid "+C.grey4,flexShrink:0,display:"flex",flexDirection:"column",overflow:"auto"}}>
         <div style={{padding:"14px 16px",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",borderBottom:"1px solid "+C.grey4}}>Generated Audits</div>
-        {unstarredAudits.map(function(a){var isActive=a.id===activeAudit;return(
-          <div key={a.id} style={{borderBottom:"1px solid "+C.grey3,background:isActive?C.grey3:"transparent"}}>
-            <button onClick={function(){setActiveAudit(a.id);setEditing(false);}} style={{textAlign:"left",padding:"12px 16px",borderLeft:"4px solid "+(isActive?C.pink:"transparent"),background:"transparent",color:isActive?C.black:C.grey8,border:"none",cursor:"pointer",width:"100%"}}>
-              <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>{a.pageLabel}</div>
-              <div style={{fontSize:11,color:C.grey6}}>{a.date}</div>
-            </button>
-          </div>
-        );})}
-        {audits.some(function(a){return a.starred;})&&(<>
-          <div style={{padding:"14px 16px",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",borderTop:"2px solid "+C.grey4,borderBottom:"1px solid "+C.grey4,display:"flex",alignItems:"center",gap:6}}>
-            <Star size={11} fill="#FFC107" color="#FFC107"/><span>Starred</span>
-          </div>
-          {starredAudits.map(function(a){var isActive=a.id===activeAudit;return(
-            <div key={"star-"+a.id} style={{borderBottom:"1px solid "+C.grey3,background:isActive?C.grey3:"transparent"}}>
-              <button onClick={function(){setActiveAudit(a.id);setEditing(false);}} style={{textAlign:"left",padding:"12px 16px",borderLeft:"4px solid "+(isActive?"#FFC107":"transparent"),background:"transparent",color:isActive?C.black:C.grey8,border:"none",cursor:"pointer",width:"100%"}}>
-                <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>{a.pageLabel}</div>
-                <div style={{fontSize:11,color:C.grey6}}>{a.date}</div>
-              </button>
-            </div>
-          );})}
-        </>)}
+        {(function(){
+          var folderMap:{[scope:string]:{label:string,items:any[]}}={};
+          audits.forEach(function(a){var scope=a.scope||"all";if(!folderMap[scope])folderMap[scope]={label:a.pageLabel||scope,items:[]};folderMap[scope].items.push(a);});
+          var folders=Object.keys(folderMap).map(function(scope){return {scope,label:folderMap[scope].label,items:folderMap[scope].items};});
+          if(folderOrder.length>0){folders.sort(function(a,b){var ai=folderOrder.indexOf(a.scope);var bi=folderOrder.indexOf(b.scope);if(ai===-1)ai=9999;if(bi===-1)bi=9999;return ai-bi;});}
+          return folders.map(function(folder){
+            var isOpen=openFolders[folder.scope]===true;
+            var starred=folder.items.filter(function(a){return a.starred;});
+            var unstarred=folder.items.filter(function(a){return !a.starred;}).slice().reverse();
+            var isDragOver=dragOverFolder===folder.scope&&dragFolder!==folder.scope;
+            var FolderIcon=isOpen?FolderOpen:Folder;
+            return(
+              <div key={folder.scope}
+                draggable
+                onDragStart={function(){setDragFolder(folder.scope);}}
+                onDragOver={function(e){e.preventDefault();setDragOverFolder(folder.scope);}}
+                onDrop={function(){
+                  if(!dragFolder||dragFolder===folder.scope){setDragFolder(null);setDragOverFolder(null);return;}
+                  var scopes=folders.map(function(f){return f.scope;});
+                  var from=scopes.indexOf(dragFolder);var to=scopes.indexOf(folder.scope);
+                  var next=scopes.slice();next.splice(from,1);next.splice(to,0,dragFolder);
+                  setFolderOrder(next);setDragFolder(null);setDragOverFolder(null);
+                }}
+                onDragEnd={function(){setDragFolder(null);setDragOverFolder(null);}}
+                style={{borderBottom:"1px solid "+C.grey4,borderTop:isDragOver?"2px solid "+C.pink:"2px solid transparent",opacity:dragFolder===folder.scope?0.4:1,transition:"border-color 0.1s"}}>
+                <button onClick={function(){setOpenFolders(function(prev){var n=Object.assign({},prev);n[folder.scope]=!isOpen;return n;});}} style={{width:"100%",textAlign:"left",padding:"10px 14px",background:"transparent",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:7}}>
+                  <GripVertical size={11} color={C.grey5} style={{flexShrink:0,cursor:"grab"}}/>
+                  <ChevronRight size={11} color={C.grey5} style={{flexShrink:0,transform:isOpen?"rotate(90deg)":"rotate(0deg)",transition:"transform 0.15s"}}/>
+                  <FolderIcon size={13} color={isOpen?C.pink:C.grey6} style={{flexShrink:0}}/>
+                  <span style={{fontSize:12,fontWeight:700,color:C.offBlack,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{folder.label}</span>
+                  <span style={{fontSize:10,fontWeight:600,color:C.grey6,background:C.grey3,borderRadius:99,padding:"1px 6px",flexShrink:0}}>{folder.items.length}</span>
+                </button>
+                {isOpen&&(<>
+                  {starred.length>0&&<div style={{padding:"4px 14px 2px",fontSize:9,fontWeight:700,color:C.grey6,textTransform:"uppercase",letterSpacing:"0.07em",background:C.grey3,borderTop:"1px solid "+C.grey4,display:"flex",alignItems:"center",gap:4}}><Star size={9} fill="#FFC107" color="#FFC107"/>Starred</div>}
+                  {starred.map(function(a){var isActive=a.id===activeAudit;return(
+                    <div key={a.id} style={{background:isActive?"#FFF0F7":"transparent"}}>
+                      <button onClick={function(){setActiveAudit(a.id);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 14px 8px 34px",border:"none",borderLeft:"3px solid "+(isActive?"#FFC107":"transparent"),background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+                        <Star size={10} fill="#FFC107" color="#FFC107" style={{flexShrink:0}}/>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:12,fontWeight:700,color:isActive?C.black:C.grey8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.pageLabel}</div>
+                          <div style={{fontSize:10,color:C.grey6,marginTop:1}}>{a.date}</div>
+                        </div>
+                      </button>
+                    </div>
+                  );})}
+                  {unstarred.length>0&&<div style={{padding:"4px 14px 2px",fontSize:9,fontWeight:700,color:C.grey6,textTransform:"uppercase",letterSpacing:"0.07em",background:C.grey3,borderTop:"1px solid "+C.grey4}}>Audits</div>}
+                  {unstarred.map(function(a){var isActive=a.id===activeAudit;return(
+                    <div key={a.id} style={{background:isActive?"#FFF0F7":"transparent"}}>
+                      <button onClick={function(){setActiveAudit(a.id);setEditing(false);}} style={{width:"100%",textAlign:"left",padding:"8px 14px 8px 34px",border:"none",borderLeft:"3px solid "+(isActive?C.pink:"transparent"),background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:12,fontWeight:700,color:isActive?C.black:C.grey8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.pageLabel}</div>
+                          <div style={{fontSize:10,color:C.grey6,marginTop:1}}>{a.date}</div>
+                        </div>
+                      </button>
+                    </div>
+                  );})}
+                </>)}
+              </div>
+            );
+          });
+        })()}
       </div>
       <div style={{flex:1,overflow:"auto",padding:isMobile?16:28}}>
         <div style={{paddingBottom:80}}>
