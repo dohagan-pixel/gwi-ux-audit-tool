@@ -2444,9 +2444,9 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
 
 function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,verticals,setVerticals,journeys,setJourneys,gaCards,setGaCards,wireframeRules,setWireframeRules,clientList,setClientList,caseStudies,setCaseStudies,setView}:{pages:any,setPages:any,personas:any,setPersonas:any,stages:any,setStages:any,verticals:any,setVerticals:any,journeys:any,setJourneys:any,gaCards:any,setGaCards:any,wireframeRules:any,setWireframeRules:any,clientList:any,setClientList:any,caseStudies:any,setCaseStudies:any,setView:any}){
   var [tab,setTab]=useState("home");
-  var [newPage,setNewPage]=useState({url:"",label:"",section:"Products",sectionName:""});
+  var [newPage,setNewPage]=useState({url:"",label:"",section:"Products",sectionName:"",displayUrl:""});
   var [editingPageUrl,setEditingPageUrl]=useState<string|null>(null);
-  var [pageDraft,setPageDraft]=useState({url:"",label:""});
+  var [pageDraft,setPageDraft]=useState({url:"",label:"",displayUrl:""});
   var [editingPersona,setEditingPersona]=useState(null);
   var [personaDraft,setPersonaDraft]=useState({});
   var [editingStage,setEditingStage]=useState(null);
@@ -2535,8 +2535,10 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,vert
             <h3 style={{fontWeight:700,color:C.black,fontSize:15,marginBottom:16}}>Add New Page</h3>
             <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"2fr 2fr 1fr",gap:10,marginBottom:10}}>
               <div>
-                <div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>URL</div>
-                <input value={newPage.url} onChange={function(e){var v=e.target.value;setNewPage(function(p){return Object.assign({},p,{url:v});});}} placeholder="https://gwi.com/page" style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>
+                <div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Full URL</div>
+                <input value={newPage.url} onChange={function(e){var v=e.target.value;setNewPage(function(p){return Object.assign({},p,{url:v});});}} placeholder="https://gwi.com/page?preview=..." style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>
+                <div style={{fontSize:10,color:C.grey6,marginTop:4}}>URL alias <span style={{color:C.pink}}>·</span> shown instead of full URL</div>
+                <input value={newPage.displayUrl} onChange={function(e){var v=e.target.value;setNewPage(function(p){return Object.assign({},p,{displayUrl:v});});}} placeholder="e.g. gwi.com/heineken" style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.pink,background:"#FFF8FC",marginTop:4,boxSizing:"border-box",fontFamily:"monospace"}}/>
               </div>
               <div>
                 <div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Label</div>
@@ -2556,8 +2558,8 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,vert
             <button onClick={function(){
               if(!newPage.url||!newPage.label)return;
               var sec=newPage.section==="__new__"?(newPage.sectionName.trim()||"New Section"):newPage.section;
-              setPages(function(prev){return prev.concat([{url:newPage.url,label:newPage.label,section:sec,hidden:false}]);});
-              setNewPage({url:"",label:"",section:sections[0]||"Products",sectionName:""});
+              setPages(function(prev){return prev.concat([{url:newPage.url,label:newPage.label,section:sec,hidden:false,displayUrl:newPage.displayUrl.trim()||""}]);});
+              setNewPage({url:"",label:"",section:sections[0]||"Products",sectionName:"",displayUrl:""});
             }} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add Page</button>
           </div>
           {sections.map(function(section){return(
@@ -2566,19 +2568,34 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,vert
               <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,overflow:"hidden"}}>
                 {pages.filter(function(p){return p.section===section;}).map(function(page,i,arr){
                   var isEditing=editingPageUrl===page.url;
-                  var displayUrl=page.url.replace(/^https?:\/\//,"").replace(/\/$/,"");
+                  var rawDisplayUrl=page.url.replace(/^https?:\/\//,"").replace(/\/$/,"");
+                  var shownUrl=(page as any).displayUrl||rawDisplayUrl;
                   return(
                     <div key={page.url} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",borderBottom:i<arr.length-1?"1px solid "+C.grey3:"none",background:page.hidden?"#FFF8F8":C.white,opacity:page.hidden?0.6:1}}>
                       {isEditing?(
-                        <>
-                          <input autoFocus value={pageDraft.url} onChange={function(e){var v=e.target.value;setPageDraft(function(d){return Object.assign({},d,{url:v});});}} style={{fontFamily:"monospace",fontSize:12,color:C.pink,width:isMobile?120:220,flexShrink:0,padding:"4px 8px",border:"1px solid "+C.pink,borderRadius:6,background:C.white}}/>
-                          <input value={pageDraft.label} onChange={function(e){var v=e.target.value;setPageDraft(function(d){return Object.assign({},d,{label:v});});}} style={{fontSize:13,color:C.offBlack,flex:1,padding:"4px 8px",border:"1px solid "+C.grey4,borderRadius:6,background:C.white}}/>
-                          <button onClick={function(){setPages(function(prev){return prev.map(function(p){return p.url===page.url?Object.assign({},p,{url:pageDraft.url,label:pageDraft.label}):p;});});setEditingPageUrl(null);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>Save</button>
-                          <button onClick={function(){setEditingPageUrl(null);}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                        </>
+                        <div style={{flex:1,display:"flex",flexDirection:"column",gap:6}}>
+                          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                            <div style={{flex:1}}>
+                              <div style={{fontSize:10,color:C.grey6,marginBottom:2}}>Full URL</div>
+                              <input autoFocus value={pageDraft.url} onChange={function(e){var v=e.target.value;setPageDraft(function(d){return Object.assign({},d,{url:v});});}} style={{width:"100%",fontFamily:"monospace",fontSize:12,color:C.offBlack,padding:"5px 8px",border:"1px solid "+C.grey4,borderRadius:6,background:C.white,boxSizing:"border-box"}}/>
+                            </div>
+                            <div style={{flex:1}}>
+                              <div style={{fontSize:10,color:C.grey6,marginBottom:2}}>URL alias <span style={{color:C.pink}}>·</span> shown in UI</div>
+                              <input value={pageDraft.displayUrl} onChange={function(e){var v=e.target.value;setPageDraft(function(d){return Object.assign({},d,{displayUrl:v});});}} placeholder="e.g. gwi.com/heineken" style={{width:"100%",fontFamily:"monospace",fontSize:12,color:C.pink,padding:"5px 8px",border:"1px solid "+C.pink,borderRadius:6,background:"#FFF8FC",boxSizing:"border-box"}}/>
+                            </div>
+                            <div style={{flex:1}}>
+                              <div style={{fontSize:10,color:C.grey6,marginBottom:2}}>Label</div>
+                              <input value={pageDraft.label} onChange={function(e){var v=e.target.value;setPageDraft(function(d){return Object.assign({},d,{label:v});});}} style={{width:"100%",fontSize:12,color:C.offBlack,padding:"5px 8px",border:"1px solid "+C.grey4,borderRadius:6,background:C.white,boxSizing:"border-box"}}/>
+                            </div>
+                          </div>
+                          <div style={{display:"flex",gap:6}}>
+                            <button onClick={function(){setPages(function(prev){return prev.map(function(p){return p.url===page.url?Object.assign({},p,{url:pageDraft.url,label:pageDraft.label,displayUrl:pageDraft.displayUrl}):p;});});setEditingPageUrl(null);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:6,padding:"5px 14px",fontSize:11,fontWeight:700,cursor:"pointer"}}>Save</button>
+                            <button onClick={function(){setEditingPageUrl(null);}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:6,padding:"5px 14px",fontSize:11,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+                          </div>
+                        </div>
                       ):(
                         <>
-                          <span onClick={function(){setEditingPageUrl(page.url);setPageDraft({url:page.url,label:page.label});}} title="Click to edit" style={{fontFamily:"monospace",color:page.hidden?C.grey6:C.pink,fontSize:12,width:isMobile?120:220,flexShrink:0,cursor:"pointer",textDecoration:"underline dotted",textUnderlineOffset:3}}>{displayUrl}</span>
+                          <span onClick={function(){setEditingPageUrl(page.url);setPageDraft({url:page.url,label:page.label,displayUrl:(page as any).displayUrl||""});}} title={page.url} style={{fontFamily:"monospace",color:page.hidden?C.grey6:C.pink,fontSize:12,width:isMobile?120:220,flexShrink:0,cursor:"pointer",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textDecoration:"underline dotted",textUnderlineOffset:3}}>{shownUrl}</span>
                           <span style={{color:C.offBlack,fontSize:13,flex:1}}>{page.label}</span>
                           <button onClick={function(){setPages(function(prev){return prev.map(function(p){return p.url===page.url?Object.assign({},p,{hidden:!p.hidden}):p;});});}} style={{background:page.hidden?"#FFEEF6":C.grey3,color:page.hidden?"#880040":C.grey8,border:"1px solid "+(page.hidden?"#FF80BB":C.grey5),borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>{page.hidden?"Show":"Hide"}</button>
                           <button onClick={function(){setPages(function(prev){return prev.filter(function(p){return p.url!==page.url;});});}} style={{background:"#FFF0F0",color:"#CC0000",border:"1px solid #FFAAAA",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>Delete</button>
