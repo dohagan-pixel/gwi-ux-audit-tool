@@ -2444,7 +2444,9 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
 
 function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,verticals,setVerticals,journeys,setJourneys,gaCards,setGaCards,wireframeRules,setWireframeRules,clientList,setClientList,caseStudies,setCaseStudies,setView}:{pages:any,setPages:any,personas:any,setPersonas:any,stages:any,setStages:any,verticals:any,setVerticals:any,journeys:any,setJourneys:any,gaCards:any,setGaCards:any,wireframeRules:any,setWireframeRules:any,clientList:any,setClientList:any,caseStudies:any,setCaseStudies:any,setView:any}){
   var [tab,setTab]=useState("home");
-  var [newPage,setNewPage]=useState({url:"",label:"",section:"Products"});
+  var [newPage,setNewPage]=useState({url:"",label:"",section:"Products",sectionName:""});
+  var [editingPageUrl,setEditingPageUrl]=useState<string|null>(null);
+  var [pageDraft,setPageDraft]=useState({url:"",label:""});
   var [editingPersona,setEditingPersona]=useState(null);
   var [personaDraft,setPersonaDraft]=useState({});
   var [editingStage,setEditingStage]=useState(null);
@@ -2532,24 +2534,59 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,vert
           <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:20,marginBottom:20}}>
             <h3 style={{fontWeight:700,color:C.black,fontSize:15,marginBottom:16}}>Add New Page</h3>
             <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"2fr 2fr 1fr",gap:10,marginBottom:10}}>
-              <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>URL</div><Inp val={newPage.url} onChange={function(v){setNewPage(Object.assign({},newPage,{url:v}));}}/></div>
-              <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Label</div><Inp val={newPage.label} onChange={function(v){setNewPage(Object.assign({},newPage,{label:v}));}}/></div>
-              <div><div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Section</div><select value={newPage.section} onChange={function(e){setNewPage(Object.assign({},newPage,{section:e.target.value}));}} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,background:C.white}}>{sections.map(function(s){return <option key={s}>{s}</option>;})}</select></div>
+              <div>
+                <div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>URL</div>
+                <input value={newPage.url} onChange={function(e){var v=e.target.value;setNewPage(function(p){return Object.assign({},p,{url:v});});}} placeholder="https://gwi.com/page" style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>
+              </div>
+              <div>
+                <div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Label</div>
+                <input value={newPage.label} onChange={function(e){var v=e.target.value;setNewPage(function(p){return Object.assign({},p,{label:v});});}} placeholder="e.g. Homepage" style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>
+              </div>
+              <div>
+                <div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:4}}>Section</div>
+                {newPage.section==="__new__"
+                  ?<input autoFocus value={newPage.sectionName} onChange={function(e){var v=e.target.value;setNewPage(function(p){return Object.assign({},p,{sectionName:v});});}} placeholder="New section name" style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.pink,borderRadius:8,fontSize:12,color:C.offBlack,background:C.white,boxSizing:"border-box"}}/>
+                  :<select value={newPage.section} onChange={function(e){setNewPage(function(p){return Object.assign({},p,{section:e.target.value});});}} style={{width:"100%",padding:"8px 10px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:12,background:C.white}}>
+                    {sections.map(function(s){return <option key={s} value={s}>{s}</option>;})}
+                    <option value="__new__">+ Create new section</option>
+                  </select>
+                }
+              </div>
             </div>
-            <button onClick={function(){if(newPage.url&&newPage.label){setPages(function(prev){return prev.concat([Object.assign({},newPage,{hidden:false})]);});setNewPage({url:"",label:"",section:"Products"});}}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add Page</button>
+            <button onClick={function(){
+              if(!newPage.url||!newPage.label)return;
+              var sec=newPage.section==="__new__"?(newPage.sectionName.trim()||"New Section"):newPage.section;
+              setPages(function(prev){return prev.concat([{url:newPage.url,label:newPage.label,section:sec,hidden:false}]);});
+              setNewPage({url:"",label:"",section:sections[0]||"Products",sectionName:""});
+            }} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add Page</button>
           </div>
           {sections.map(function(section){return(
             <div key={section} style={{marginBottom:20}}>
               <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>{section}</div>
               <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,overflow:"hidden"}}>
-                {pages.filter(function(p){return p.section===section;}).map(function(page,i,arr){return(
-                  <div key={page.url} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",borderBottom:i<arr.length-1?"1px solid "+C.grey3:"none",background:page.hidden?"#FFF8F8":C.white,opacity:page.hidden?0.6:1}}>
-                    <span style={{fontFamily:"monospace",color:page.hidden?C.grey6:C.pink,fontSize:12,width:isMobile?120:220,flexShrink:0}}>{page.url.replace("https://gwi.ai","gwi.ai").replace("https://trust.gwi.com","trust.gwi.com")}</span>
-                    <span style={{color:C.offBlack,fontSize:13,flex:1}}>{page.label}</span>
-                    <button onClick={function(){setPages(function(prev){return prev.map(function(p){return p.url===page.url?Object.assign({},p,{hidden:!p.hidden}):p;});});}} style={{background:page.hidden?"#FFEEF6":C.grey3,color:page.hidden?"#880040":C.grey8,border:"1px solid "+(page.hidden?"#FF80BB":C.grey5),borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>{page.hidden?"Show":"Hide"}</button>
-                    <button onClick={function(){setPages(function(prev){return prev.filter(function(p){return p.url!==page.url;});});}} style={{background:"#FFF0F0",color:"#CC0000",border:"1px solid #FFAAAA",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>Delete</button>
-                  </div>
-                );})}
+                {pages.filter(function(p){return p.section===section;}).map(function(page,i,arr){
+                  var isEditing=editingPageUrl===page.url;
+                  var displayUrl=page.url.replace(/^https?:\/\//,"").replace(/\/$/,"");
+                  return(
+                    <div key={page.url} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",borderBottom:i<arr.length-1?"1px solid "+C.grey3:"none",background:page.hidden?"#FFF8F8":C.white,opacity:page.hidden?0.6:1}}>
+                      {isEditing?(
+                        <>
+                          <input autoFocus value={pageDraft.url} onChange={function(e){var v=e.target.value;setPageDraft(function(d){return Object.assign({},d,{url:v});});}} style={{fontFamily:"monospace",fontSize:12,color:C.pink,width:isMobile?120:220,flexShrink:0,padding:"4px 8px",border:"1px solid "+C.pink,borderRadius:6,background:C.white}}/>
+                          <input value={pageDraft.label} onChange={function(e){var v=e.target.value;setPageDraft(function(d){return Object.assign({},d,{label:v});});}} style={{fontSize:13,color:C.offBlack,flex:1,padding:"4px 8px",border:"1px solid "+C.grey4,borderRadius:6,background:C.white}}/>
+                          <button onClick={function(){setPages(function(prev){return prev.map(function(p){return p.url===page.url?Object.assign({},p,{url:pageDraft.url,label:pageDraft.label}):p;});});setEditingPageUrl(null);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>Save</button>
+                          <button onClick={function(){setEditingPageUrl(null);}} style={{background:C.grey3,color:C.grey8,border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+                        </>
+                      ):(
+                        <>
+                          <span onClick={function(){setEditingPageUrl(page.url);setPageDraft({url:page.url,label:page.label});}} title="Click to edit" style={{fontFamily:"monospace",color:page.hidden?C.grey6:C.pink,fontSize:12,width:isMobile?120:220,flexShrink:0,cursor:"pointer",textDecoration:"underline dotted",textUnderlineOffset:3}}>{displayUrl}</span>
+                          <span style={{color:C.offBlack,fontSize:13,flex:1}}>{page.label}</span>
+                          <button onClick={function(){setPages(function(prev){return prev.map(function(p){return p.url===page.url?Object.assign({},p,{hidden:!p.hidden}):p;});});}} style={{background:page.hidden?"#FFEEF6":C.grey3,color:page.hidden?"#880040":C.grey8,border:"1px solid "+(page.hidden?"#FF80BB":C.grey5),borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>{page.hidden?"Show":"Hide"}</button>
+                          <button onClick={function(){setPages(function(prev){return prev.filter(function(p){return p.url!==page.url;});});}} style={{background:"#FFF0F0",color:"#CC0000",border:"1px solid #FFAAAA",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>Delete</button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );})}
