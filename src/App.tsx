@@ -8,7 +8,7 @@ const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-a
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
 import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, List, LayoutGrid, Folder, FolderOpen, Heart, Building2, BookOpen, ExternalLink } from "lucide-react";
 
-const FF="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
+const FF="'Faktum',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
 const C = {
   pink:"#FF0077",white:"#FFFFFF",black:"#101720",offBlack:"#2A3447",
   grey8:"#526482",grey7:"#7989A6",grey6:"#ABB8CF",grey5:"#CED9EB",
