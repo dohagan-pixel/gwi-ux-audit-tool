@@ -2027,7 +2027,7 @@ function GeneratedAuditsPage({audits,setAudits,onDeleteAudit,onUpdateAudit,setAu
         <div style={{padding:"14px 16px",fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",borderBottom:"1px solid "+C.grey4}}>Generated Audits</div>
         {(function(){
           var folderMap:{[scope:string]:{label:string,items:any[]}}={};
-          audits.forEach(function(a){var scope=a.scope||"all";if(!folderMap[scope])folderMap[scope]={label:a.pageLabel||scope,items:[]};folderMap[scope].items.push(a);});
+          audits.forEach(function(a){var scope=a.scope||"all";if(!folderMap[scope]){var _ps=pages.find(function(p:any){return p.url===scope;});folderMap[scope]={label:(_ps&&_ps.label)||a.pageLabel||scope,items:[]};}folderMap[scope].items.push(a);});
           var folders=Object.keys(folderMap).map(function(scope){return {scope,label:folderMap[scope].label,items:folderMap[scope].items};});
           if(folderOrder.length>0){folders.sort(function(a,b){var ai=folderOrder.indexOf(a.scope);var bi=folderOrder.indexOf(b.scope);if(ai===-1)ai=9999;if(bi===-1)bi=9999;return ai-bi;});}
           return folders.map(function(folder){
@@ -3623,7 +3623,8 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
           var folders=(auditData||[]).map(function(page:any){
             var pw=wireframes.filter(function(w){return w.pageUrl===page.url;});
             if(pw.length===0)return null;
-            return {url:page.url,label:page.label,wires:pw};
+            var _ps=(pages||[]).find(function(p:any){return p.url===page.url;});
+            return {url:page.url,label:(_ps&&_ps.label)||page.label,wires:pw};
           }).filter(Boolean) as {url:string,label:string,wires:any[]}[];
           var orphans=wireframes.filter(function(w){return !knownUrls.includes(w.pageUrl);});
           if(orphans.length>0)folders.push({url:"__other__",label:"Other",wires:orphans});
