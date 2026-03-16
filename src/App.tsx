@@ -3184,6 +3184,9 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   var [buildPage,setBuildPage]=useState<any>(null);
   var [buildWarning,setBuildWarning]=useState<any>(null);
   var [contentSavedTs,setContentSavedTs]=useState(0);
+  var [folderOrder,setFolderOrder]=useState<string[]>(function(){try{var v=localStorage.getItem("gwiFolderOrder");return v?JSON.parse(v):[];}catch(e){return [];}});
+  var [dragFolder,setDragFolder]=useState<string|null>(null);
+  var [dragOverFolder,setDragOverFolder]=useState<string|null>(null);
   var _editSaveRef=useRef<any>({});
   var _priCfg:any={Critical:{bg:"#FFEEF6",text:"#880040",border:"#FF80BB"},High:{bg:C.blueBg,text:C.blueDark,border:C.blueLight},Medium:{bg:C.grey3,text:C.grey8,border:C.grey5},Low:{bg:"#E6F9F2",text:"#005C3B",border:"#80D4B0"}};
   var iframeRef=useRef<HTMLIFrameElement>(null);
@@ -3233,6 +3236,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   useEffect(function(){setActiveRec(null);},[viewport]);
   useEffect(function(){function onMsg(e){if(e.data&&e.data.type==="rec-click")setActiveRec(e.data.recNum);}window.addEventListener("message",onMsg);return function(){window.removeEventListener("message",onMsg);};},[]);
   useEffect(function(){try{localStorage.setItem("gwiWireframeFolders",JSON.stringify(openFolders));}catch(e){};},[openFolders]);
+  useEffect(function(){try{localStorage.setItem("gwiFolderOrder",JSON.stringify(folderOrder));}catch(e){};},[folderOrder]);
   useEffect(function(){_editSaveRef.current={wireframes:wireframes,activeId:activeId,onUpdateWireframe:onUpdateWireframe};});
   useEffect(function(){if(contentSavedTs===0)return;var t=setTimeout(function(){setContentSavedTs(0);},2000);return function(){clearTimeout(t);};},[contentSavedTs]);
   useEffect(function(){function onMsg(e:any){if(!e.data||e.data.type!=="wireframe-content-saved")return;var html=e.data.html;var r=_editSaveRef.current;var cur=(r.wireframes||[]).find(function(w:any){return w.id===r.activeId;});if(!cur)return;var updated=Object.assign({},cur,{html:html});setWireframes(function(prev:any[]){return prev.map(function(w:any){return w.id===r.activeId?updated:w;});});if(r.onUpdateWireframe)r.onUpdateWireframe(updated);setContentSavedTs(Date.now());}window.addEventListener("message",onMsg);return function(){window.removeEventListener("message",onMsg);};},[]);
@@ -3334,6 +3338,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
           }).filter(Boolean) as {url:string,label:string,wires:any[]}[];
           var orphans=wireframes.filter(function(w){return !knownUrls.includes(w.pageUrl);});
           if(orphans.length>0)folders.push({url:"__other__",label:"Other",wires:orphans});
+          if(folderOrder.length>0){folders.sort(function(a,b){var ai=folderOrder.indexOf(a.url);var bi=folderOrder.indexOf(b.url);if(ai===-1)ai=9999;if(bi===-1)bi=9999;return ai-bi;});}
           if(folders.length===0)return <div style={{padding:"20px 16px",fontSize:12,color:C.grey6,fontStyle:"italic"}}>No wireframes yet</div>;
           return folders.map(function(folder){
             var isOpen=openFolders[folder.url]===true;
@@ -3341,9 +3346,22 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
             var unstarred=folder.wires.filter(function(w){return !w.starred;}).slice().reverse();
             var ordered=starred.concat(unstarred);
             var FolderIcon=isOpen?FolderOpen:Folder;
+            var isDraggingOver=dragOverFolder===folder.url&&dragFolder!==folder.url;
             return(
-              <div key={folder.url} style={{borderBottom:"1px solid "+C.grey4}}>
+              <div key={folder.url} draggable={true}
+                onDragStart={function(){setDragFolder(folder.url);}}
+                onDragOver={function(e){e.preventDefault();setDragOverFolder(folder.url);}}
+                onDrop={function(){
+                  if(!dragFolder||dragFolder===folder.url){setDragFolder(null);setDragOverFolder(null);return;}
+                  var urls=folders.map(function(f){return f.url;});
+                  var from=urls.indexOf(dragFolder);var to=urls.indexOf(folder.url);
+                  var next=urls.slice();next.splice(from,1);next.splice(to,0,dragFolder);
+                  setFolderOrder(next);setDragFolder(null);setDragOverFolder(null);
+                }}
+                onDragEnd={function(){setDragFolder(null);setDragOverFolder(null);}}
+                style={{borderBottom:"1px solid "+C.grey4,opacity:dragFolder===folder.url?0.4:1,background:isDraggingOver?"#FFF0F7":"transparent",transition:"background 0.1s"}}>
                 <button onClick={function(){setOpenFolders(function(prev){var n=Object.assign({},prev);n[folder.url]=!isOpen;return n;});}} style={{width:"100%",textAlign:"left",padding:"10px 14px",background:"transparent",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:7}}>
+                  <GripVertical size={11} color={C.grey5} style={{flexShrink:0,cursor:"grab"}}/>
                   <ChevronRight size={11} color={C.grey5} style={{flexShrink:0,transform:isOpen?"rotate(90deg)":"rotate(0deg)",transition:"transform 0.15s"}}/>
                   <FolderIcon size={13} color={isOpen?C.pink:C.grey6} style={{flexShrink:0}}/>
                   <span style={{fontSize:12,fontWeight:700,color:C.offBlack,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{folder.label}</span>
