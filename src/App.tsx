@@ -3441,12 +3441,20 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
       parsedDoc.body.appendChild(footerEl);
     }
     var cleanHtml='<!DOCTYPE html>'+parsedDoc.documentElement.outerHTML;
-    // Save to Firebase as a publicly-readable share
+    // Open tab IMMEDIATELY (must be synchronous to avoid popup blocker)
+    var shareWindow=window.open('about:blank','_blank');
+    setSharing(true);
+    // Show a loading screen in the new tab while we save to Firebase
+    if(shareWindow){shareWindow.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Loading…</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#f5f5f5;font-family:sans-serif;}@keyframes spin{to{transform:rotate(360deg);}}.sp{width:40px;height:40px;border-radius:50%;border:4px solid #eee;border-top:4px solid #FF0077;animation:spin 0.8s linear infinite;}</style></head><body><div class="sp"></div></body></html>');shareWindow.document.close();}
     var shareId=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,10);
     setDoc(doc(_db,'sharedWireframes',shareId),{html:cleanHtml,pageLabel:active.pageLabel||'Wireframe',createdAt:Date.now()}).then(function(){
-      window.open(window.location.origin+'/share/'+shareId,'_blank');
+      if(shareWindow){shareWindow.location.href=window.location.origin+'/share/'+shareId;}
       setSharing(false);
-    }).catch(function(){setSharing(false);});
+    }).catch(function(){
+      // Firebase write failed (rules not yet deployed) — fall back to blob URL
+      if(shareWindow){var blob=new Blob([cleanHtml],{type:'text/html'});shareWindow.location.href=URL.createObjectURL(blob);}
+      setSharing(false);
+    });
   }
   function toggleStar(){if(!active)return;var updated=Object.assign({},active,{starred:!active.starred});setWireframes(function(prev){return prev.map(function(w){return w.id===activeId?updated:w;});});if(onUpdateWireframe)onUpdateWireframe(updated);}
   function openEdit(){setEditLabel(active?active.pageLabel:"");setEditing(true);}
