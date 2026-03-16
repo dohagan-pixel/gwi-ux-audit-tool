@@ -3428,7 +3428,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
     recStyle.textContent='[data-rec]{display:none!important;}[data-eh]{outline:none!important;}';
     parsedDoc.head.appendChild(recStyle);
     if(!parsedDoc.querySelector('link[href*="faktum"]')){var fl=parsedDoc.createElement('link');fl.rel='stylesheet';fl.href=window.location.origin+'/fonts/faktum.css';parsedDoc.head.insertBefore(fl,parsedDoc.head.firstChild);}
-    var sf=parsedDoc.createElement('style');sf.textContent='body,*{font-family:\'Faktum\',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;}code,pre,tt,[style*="monospace"]{font-family:monospace!important;}';parsedDoc.head.appendChild(sf);
+    var sf=parsedDoc.createElement('style');sf.textContent='html,body{margin:0!important;padding:0!important;}body,*{font-family:\'Faktum\',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;}code,pre,tt,[style*="monospace"]{font-family:monospace!important;}';parsedDoc.head.appendChild(sf);
     var existingFooter=parsedDoc.querySelector('[data-gwi-footer]') as HTMLElement|null;
     if(existingFooter){existingFooter.style.background='#101720';}
     if(!existingFooter){
