@@ -1134,7 +1134,17 @@ function PersonaToggle({personaIds,personas}){
   );
 }
 
-function ActionList({pageId,actions,reorderActions,openAction,setOpenAction,statusCfg,setActionStatus,updateAction,deleteAction,calcDelta,isMobile}){
+function AsanaPushBtn({onClick}){
+  var [pushing,setPushing]=useState(false);
+  return(
+    <button onClick={async function(e){setPushing(true);await onClick(e);setPushing(false);}} disabled={pushing} style={{background:pushing?"#ccc":"#F06A10",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:pushing?"wait":"pointer",display:"inline-flex",alignItems:"center",gap:6}}>
+      <svg width="12" height="12" viewBox="0 0 32 32" fill="white"><circle cx="16" cy="8" r="5"/><circle cx="7" cy="24" r="5"/><circle cx="25" cy="24" r="5"/></svg>
+      {pushing?"Pushing...":"Push to Asana"}
+    </button>
+  );
+}
+
+function ActionList({pageId,actions,reorderActions,openAction,setOpenAction,statusCfg,setActionStatus,updateAction,deleteAction,calcDelta,isMobile,onPushToAsana,hasAsana}){
   var dragIdx=useRef(null);
   var [dropIdx,setDropIdx]=useState(null);
   var starred=actions.filter(function(a){return a.starred;});
@@ -1222,10 +1232,19 @@ function ActionList({pageId,actions,reorderActions,openAction,setOpenAction,stat
                     </div>
                     {delta&&<div style={{background:delta.positive?"#E6F9F2":"#FFF0F0",border:"1px solid "+(delta.positive?"#80D4B0":"#FFAAAA"),borderRadius:8,padding:"10px 14px",marginBottom:12}}><div style={{fontSize:13,fontWeight:700,color:delta.positive?"#005C3B":"#CC0000"}}>{delta.positive?"Improved":"Declined"} by {Math.abs(delta.pct)}%</div><div style={{fontSize:12,color:C.grey7}}>{action.before} to {action.after} via {action.source||"unknown"}</div></div>}
                     {!delta&&action.before&&!action.after&&<div style={{background:"#FFF8E6",border:"1px solid #F5C842",borderRadius:8,padding:"10px 14px",marginBottom:12}}><div style={{fontSize:12,color:"#7A4F00",fontWeight:600}}>Baseline captured. Add After value once the change has settled.</div></div>}
-                    <div style={{display:"flex",justifyContent:"flex-end"}}>
-                      <button onClick={function(){deleteAction(pageId,action.id);}} style={{background:"transparent",color:C.pink,border:"1px solid "+C.pink,borderRadius:8,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}}
-                        onMouseEnter={function(e){e.currentTarget.style.background=C.pink;e.currentTarget.style.color=C.white;}}
-                        onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.color=C.pink;}}>Delete action</button>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      {hasAsana&&(
+                        action.asanaTask?(
+                          <a href={action.asanaTask.url} target="_blank" rel="noreferrer" style={{background:"#F06A10",color:"#fff",border:"none",borderRadius:8,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,textDecoration:"none"}}>
+                            <svg width="12" height="12" viewBox="0 0 32 32" fill="white"><circle cx="16" cy="8" r="5"/><circle cx="7" cy="24" r="5"/><circle cx="25" cy="24" r="5"/></svg>
+                            View in Asana
+                          </a>
+                        ):(
+                          <AsanaPushBtn onClick={function(e){e.stopPropagation();if(onPushToAsana)onPushToAsana(pageId,action);}}/>
+                        )
+                      )}
+                      {!hasAsana&&<span/>}
+                      <button onClick={function(){deleteAction(pageId,action.id);}} style={{background:"transparent",color:C.pink,border:"1px solid "+C.pink,borderRadius:8,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}} onMouseEnter={function(e){e.currentTarget.style.background=C.pink;e.currentTarget.style.color=C.white;}} onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.color=C.pink;}}>Delete action</button>
                     </div>
                   </div>
                 )}
@@ -1239,7 +1258,7 @@ function ActionList({pageId,actions,reorderActions,openAction,setOpenAction,stat
   );
 }
 
-function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWireframe,setView,wireframeRules,wireframes}){
+function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWireframe,setView,wireframeRules,wireframes,asanaPat,asanaProjectId}){
   var [openPage,setOpenPage]=useState(null);
   var [openAction,setOpenAction]=useState(null);
   var [generating,setGenerating]=useState({});
@@ -1315,6 +1334,25 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
   var [auditDragOver,setAuditDragOver]=useState<string|null>(null);
   useEffect(function(){try{localStorage.setItem("gwiAuditFolderOrder",JSON.stringify(auditFolderOrder));}catch(e){};},[auditFolderOrder]);
   var priorityLevels=["Critical","High","Medium","Low"];
+  async function pushToAsana(pageId,action){
+    if(!asanaPat||!asanaProjectId)return null;
+    var page=auditData.find(function(p){return p.id===pageId;});
+    if(!page)return null;
+    try{
+      var sectRes=await fetch("https://app.asana.com/api/1.0/projects/"+asanaProjectId+"/sections",{headers:{Authorization:"Bearer "+asanaPat}});
+      var sections=(await sectRes.json()).data||[];
+      var pri=action.priority||page.priority||"Medium";
+      var section=sections.find(function(s){return s.name.toLowerCase()===pri.toLowerCase();});
+      var notes=["Page: "+page.label+" · "+page.url,"Priority: "+pri,"",action.change?"Change: "+action.change:"",action.why?"Why it matters: "+action.why:"",action.shows?"Data: "+action.shows:"",action.metric?"Metric: "+action.metric:"",action.description?"Details: "+action.description:""].filter(Boolean).join("\n");
+      var body:any={data:{name:action.text,notes:notes,projects:[asanaProjectId]}};
+      if(section)body.data.memberships=[{project:asanaProjectId,section:section.gid}];
+      var taskRes=await fetch("https://app.asana.com/api/1.0/tasks",{method:"POST",headers:{Authorization:"Bearer "+asanaPat,"Content-Type":"application/json"},body:JSON.stringify(body)});
+      var task=(await taskRes.json()).data;
+      var taskUrl="https://app.asana.com/0/"+asanaProjectId+"/"+task.gid;
+      updateAction(pageId,action.id,"asanaTask",{gid:task.gid,url:taskUrl});
+      return taskUrl;
+    }catch(err){console.error("Asana push failed",err);return null;}
+  }
 
   return(<>
     <PageWrap isMobile={isMobile}>
@@ -1421,7 +1459,7 @@ function AuditPage({personas,pages,auditData,setAuditData,onAddAction,onSaveWire
                         )}
                       </div>
                     </div>
-                    <ActionList pageId={page.id} actions={page.actions} reorderActions={reorderActions} openAction={openAction} setOpenAction={setOpenAction} statusCfg={statusCfg} setActionStatus={setActionStatus} updateAction={updateAction} deleteAction={deleteAction} calcDelta={calcDelta} isMobile={isMobile}/>
+                    <ActionList pageId={page.id} actions={page.actions} reorderActions={reorderActions} openAction={openAction} setOpenAction={setOpenAction} statusCfg={statusCfg} setActionStatus={setActionStatus} updateAction={updateAction} deleteAction={deleteAction} calcDelta={calcDelta} isMobile={isMobile} onPushToAsana={pushToAsana} hasAsana={!!(asanaPat&&asanaProjectId)}/>
                   </div>
                 )}
               </div>
@@ -2447,7 +2485,7 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
   );
 }
 
-function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,verticals,setVerticals,journeys,setJourneys,gaCards,setGaCards,wireframeRules,setWireframeRules,clientList,setClientList,caseStudies,setCaseStudies,setView}:{pages:any,setPages:any,personas:any,setPersonas:any,stages:any,setStages:any,verticals:any,setVerticals:any,journeys:any,setJourneys:any,gaCards:any,setGaCards:any,wireframeRules:any,setWireframeRules:any,clientList:any,setClientList:any,caseStudies:any,setCaseStudies:any,setView:any}){
+function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,verticals,setVerticals,journeys,setJourneys,gaCards,setGaCards,wireframeRules,setWireframeRules,clientList,setClientList,caseStudies,setCaseStudies,setView,asanaPat,setAsanaPat,asanaProjectId,setAsanaProjectId}:{pages:any,setPages:any,personas:any,setPersonas:any,stages:any,setStages:any,verticals:any,setVerticals:any,journeys:any,setJourneys:any,gaCards:any,setGaCards:any,wireframeRules:any,setWireframeRules:any,clientList:any,setClientList:any,caseStudies:any,setCaseStudies:any,setView:any,asanaPat:any,setAsanaPat:any,asanaProjectId:any,setAsanaProjectId:any}){
   var [tab,setTab]=useState("home");
   var [newPage,setNewPage]=useState({url:"",label:"",section:"Products",sectionName:"",displayUrl:""});
   var [editingPageUrl,setEditingPageUrl]=useState<string|null>(null);
@@ -2508,6 +2546,7 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,vert
           {id:"wireframes",icon:<LayoutGrid size={20}/>,label:"Wireframe Rules",desc:"Define rules that every generated wireframe must follow — including tone of voice and copy guidelines.",stat:(wireframeRules as any).tov?"Tone of voice set":"No rules set"},
           {id:"clients",icon:<Building2 size={20}/>,label:"Clients",desc:"The companies that use GWI — used in audit recommendations to suggest logo walls, social proof, and industry-specific use cases.",stat:(clientList as any[]).filter(function(c){return !c.notes.toLowerCase().includes("no longer");}).length+" active clients"},
           {id:"case-studies",icon:<BookOpen size={20}/>,label:"Case Studies",desc:"Real GWI customer outcomes injected into audit prompts so findings reference specific, credible metrics rather than generic best practice.",stat:(caseStudies as any[]).length+" case stud"+(((caseStudies as any[]).length===1)?"y":"ies")},
+          {id:"asana",icon:<ExternalLink size={20}/>,label:"Asana Integration",desc:"Push recommendations directly into your Asana sprint board as tasks.",stat:asanaPat?"Connected ✓":"Not connected"},
         ];
         return(
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
@@ -2529,7 +2568,7 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,vert
       })()}
       {tab!=="home"&&(
         <div style={{display:"flex",flexWrap:"wrap",marginBottom:28,background:C.grey4,borderRadius:10,padding:4,overflow:"hidden"}}>
-          {[["home","← Overview"],["pages","Pages"],["personas","Personas"],["stages","Lifecycle Stages"],["verticals","Verticals"],["journeys","Journey Steps"],["ga","Google Analytics"],["wireframes","Wireframe Rules"],["clients","Clients"],["case-studies","Case Studies"]].map(function(x,i,arr){return(
+          {[["home","← Overview"],["pages","Pages"],["personas","Personas"],["stages","Lifecycle Stages"],["verticals","Verticals"],["journeys","Journey Steps"],["ga","Google Analytics"],["wireframes","Wireframe Rules"],["clients","Clients"],["case-studies","Case Studies"],["asana","Asana"]].map(function(x,i,arr){return(
             <button key={x[0]} onClick={function(){setTab(x[0]);}} style={{padding:"8px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",borderRight:i<arr.length-1?"1px solid rgba(0,0,0,0.1)":"none",cursor:"pointer",background:tab===x[0]?C.pink:"transparent",color:tab===x[0]?C.white:C.grey7,whiteSpace:"nowrap"}}>{x[1]}</button>
           );})}
         </div>
@@ -2980,6 +3019,21 @@ function SettingsPage({pages,setPages,personas,setPersonas,stages,setStages,vert
               <div style={{fontSize:13,color:C.grey6,lineHeight:1.7}}>No case studies yet. Add your first one to start injecting real proof points into your audit prompts.</div>
             </div>
           )}
+        </div>
+      )}
+      {tab==="asana"&&(
+        <div>
+          <div style={{marginBottom:24}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.05em"}}>Personal Access Token</div>
+            <input type="password" value={asanaPat} onChange={function(e){setAsanaPat(e.target.value);}} placeholder="Paste your Asana PAT here" style={{width:"100%",padding:"10px 14px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:13,fontFamily:"monospace",boxSizing:"border-box" as const,background:C.white}}/>
+            <div style={{fontSize:11,color:C.grey6,marginTop:6}}>Create one at: app.asana.com → Profile → Apps → Personal access tokens</div>
+          </div>
+          <div style={{marginBottom:24}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.grey7,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.05em"}}>Project ID</div>
+            <input value={asanaProjectId} onChange={function(e){setAsanaProjectId(e.target.value);}} placeholder="e.g. 1213643921279064" style={{width:"100%",padding:"10px 14px",border:"1px solid "+C.grey4,borderRadius:8,fontSize:13,fontFamily:"monospace",boxSizing:"border-box" as const,background:C.white}}/>
+            <div style={{fontSize:11,color:C.grey6,marginTop:6}}>Copy from the Asana project URL: app.asana.com/1/…/project/<strong>PROJECT_ID</strong>/board/…</div>
+          </div>
+          {asanaPat&&asanaProjectId&&<div style={{background:"#E6F9F2",border:"1px solid #80D4B0",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#005C3B",fontWeight:600}}>✓ Connected — recommendations can now be pushed to Asana</div>}
         </div>
       )}
     </PageWrap>
@@ -3923,6 +3977,8 @@ export default function App(){
   var [wireframeRules,setWireframeRules]=useState(INIT_WIREFRAME_RULES);
   var [clientList,setClientList]=useState(INIT_CLIENTS);
   var [caseStudies,setCaseStudies]=useState(INIT_CASE_STUDIES);
+  var [asanaPat,setAsanaPat]=useState("");
+  var [asanaProjectId,setAsanaProjectId]=useState("");
   var [auditData,setAuditData]=useState(INIT_AUDIT);
   var [activePersonaId,setActivePersonaId]=useState(function(){var v=hashToView(window.location.hash);return v==="persona-detail"?hashToSubId(window.location.hash):null;});
   var [activePersonaForJourney,setActivePersonaForJourney]=useState(function(){var v=hashToView(window.location.hash);return v==="journey"?hashToSubId(window.location.hash):null;});
@@ -3941,9 +3997,9 @@ export default function App(){
   var [_authLoading,_setAuthLoading]=useState(true);
   var [_loginError,_setLoginError]=useState(null);
   var [_showLoginModal,_setShowLoginModal]=useState(false);
-  useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()){var d=snap.data();if(d.auditData)setAuditData(d.auditData);if(d.stages)setStages(d.stages);if(d.verticals)setVerticals(d.verticals);if(d.personas)setPersonas(d.personas);if(d.pages)setPages(d.pages);if(d.journeys)setJourneys(d.journeys);if(d.gaCards)setGaCards(d.gaCards);if(d.vwoPages)setVwoPages(d.vwoPages);if(d.wireframeRules)setWireframeRules(d.wireframeRules);if(d.clientList)setClientList(d.clientList);if(d.caseStudies)setCaseStudies(d.caseStudies);}});getDocs(collection(_db,"users",u.uid,"generatedAudits")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setGeneratedAudits(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});merged.sort(function(a,b){return a.id<b.id?-1:1;});return merged;});}).catch(function(){});getDocs(collection(_db,"users",u.uid,"wireframes")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setSavedWireframes(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});return merged;});}).catch(function(){});
+  useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()){var d=snap.data();if(d.auditData)setAuditData(d.auditData);if(d.stages)setStages(d.stages);if(d.verticals)setVerticals(d.verticals);if(d.personas)setPersonas(d.personas);if(d.pages)setPages(d.pages);if(d.journeys)setJourneys(d.journeys);if(d.gaCards)setGaCards(d.gaCards);if(d.vwoPages)setVwoPages(d.vwoPages);if(d.wireframeRules)setWireframeRules(d.wireframeRules);if(d.clientList)setClientList(d.clientList);if(d.caseStudies)setCaseStudies(d.caseStudies);if(d.asanaPat)setAsanaPat(d.asanaPat);if(d.asanaProjectId)setAsanaProjectId(d.asanaProjectId);}});getDocs(collection(_db,"users",u.uid,"generatedAudits")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setGeneratedAudits(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});merged.sort(function(a,b){return a.id<b.id?-1:1;});return merged;});}).catch(function(){});getDocs(collection(_db,"users",u.uid,"wireframes")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setSavedWireframes(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});return merged;});}).catch(function(){});
 getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setFeedback(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});return merged;});}).catch(function(){});}else{_setUser(null);}_setAuthLoading(false);});},[]);
-  useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,stages:stages,verticals:verticals,personas:personas,pages:pages,journeys:journeys,gaCards:gaCards,vwoPages:vwoPages,wireframeRules:wireframeRules,clientList:clientList,caseStudies:caseStudies,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[ auditData,stages,verticals,personas,pages,journeys,gaCards,vwoPages,wireframeRules,clientList,caseStudies,_user]);
+  useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,stages:stages,verticals:verticals,personas:personas,pages:pages,journeys:journeys,gaCards:gaCards,vwoPages:vwoPages,wireframeRules:wireframeRules,clientList:clientList,caseStudies:caseStudies,asanaPat:asanaPat,asanaProjectId:asanaProjectId,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[ auditData,stages,verticals,personas,pages,journeys,gaCards,vwoPages,wireframeRules,clientList,caseStudies,asanaPat,asanaProjectId,_user]);
   useEffect(function(){try{localStorage.setItem("gwi_generated_audits",JSON.stringify(generatedAudits));}catch(e){};},[generatedAudits]);
   useEffect(function(){try{localStorage.setItem("gwi_saved_wireframes",JSON.stringify(savedWireframes));}catch(e){};},[savedWireframes]);
   useEffect(function(){try{localStorage.setItem("gwi_loved_components",JSON.stringify(lovedComponents));}catch(e){};},[lovedComponents]);
@@ -4018,11 +4074,11 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="affinity"&&<AffinityPage personas={personas} setView={setView}/>}
         {view==="journey"&&<JourneyPage pages={pages} personas={personas} journeys={journeys} initialPersonaId={activePersonaForJourney} setView={setView} goToJourney={goToJourney}/>}
         {view==="flows"&&<UserFlowsPage setView={setView}/>}
-        {view==="audit"&&<AuditPage personas={personas} pages={pages} auditData={auditData} setAuditData={setAuditData} onAddAction={function(){setShowAddAction(true);}} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} setView={setView} wireframeRules={wireframeRules} wireframes={savedWireframes}/>}
+        {view==="audit"&&<AuditPage personas={personas} pages={pages} auditData={auditData} setAuditData={setAuditData} onAddAction={function(){setShowAddAction(true);}} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} setView={setView} wireframeRules={wireframeRules} wireframes={savedWireframes} asanaPat={asanaPat} asanaProjectId={asanaProjectId}/>}
         {view==="analytics"&&<AnalyticsPage gaCards={gaCards} setGaCards={setGaCards} vwoPages={vwoPages} setVwoPages={setVwoPages}/>}
         {view==="summary"&&<SummaryPage personas={personas} stages={stages} pages={pages} journeys={journeys} verticals={verticals} clientList={clientList} caseStudies={caseStudies} onAuditGenerated={function(audit){setGeneratedAudits(function(prev){return prev.concat([audit]);});if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",audit.id),audit).catch(function(){});setView("generated-audits");}} onViewGenerated={function(){setView("generated-audits");}}/>}
         {view==="generated-audits"&&<GeneratedAuditsPage audits={generatedAudits} setAudits={setGeneratedAudits} onDeleteAudit={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"generatedAudits",id)).catch(function(){});}} onUpdateAudit={function(updated){if(_user)setDoc(doc(_db,"users",_user.uid,"generatedAudits",updated.id),updated).catch(function(){});}} setAuditData={setAuditData} auditData={auditData} pages={pages} setView={setView}/>}
-        {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} verticals={verticals} setVerticals={setVerticals} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards} wireframeRules={wireframeRules} setWireframeRules={setWireframeRules} clientList={clientList} setClientList={setClientList} caseStudies={caseStudies} setCaseStudies={setCaseStudies} setView={setView}/>}
+        {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} verticals={verticals} setVerticals={setVerticals} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards} wireframeRules={wireframeRules} setWireframeRules={setWireframeRules} clientList={clientList} setClientList={setClientList} caseStudies={caseStudies} setCaseStudies={setCaseStudies} setView={setView} asanaPat={asanaPat} setAsanaPat={setAsanaPat} asanaProjectId={asanaProjectId} setAsanaProjectId={setAsanaProjectId}/>}
         {view==="landing"&&<LandingPage setView={setView}/>}
         {view==="guide"&&<GuidePage/>}
         {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData} onAddRec={function(action,pageUrl){var pageObj=pages.find(function(p){return p.url===pageUrl;});var newAction=Object.assign({},action,{status:"todo"});var existing=auditData.find(function(p){return p.url===pageUrl;});if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}}} onRemoveRec={function(actionId,pageUrl){setAuditData(function(prev){return prev.map(function(p){return p.url!==pageUrl?p:Object.assign({},p,{actions:(p.actions||[]).filter(function(a:any){return a.id!==actionId;})});});});}} lovedComponents={lovedComponents} onLoveComponent={function(lc){setLovedComponents(function(prev){return (prev as any[]).concat([lc]);});}} onUnloveComponent={function(id){setLovedComponents(function(prev){return (prev as any[]).filter(function(lc:any){return lc.id!==id;});});}} personas={personas} wireframeRules={wireframeRules} pages={pages} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}}/>}
