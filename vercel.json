@@ -1,4 +1,12 @@
 {
   "buildCommand": "vite build",
-  "rewrites": [{"source": "/share/:path*", "destination": "/index.html"}]
+  "rewrites": [{"source": "/share/:path*", "destination": "/index.html"}],
+  "headers": [
+    {
+      "source": "/share/:path*",
+      "headers": [
+        {"key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive, nosnippet"}
+      ]
+    }
+  ]
 }

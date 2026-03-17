@@ -3932,6 +3932,8 @@ function SharePage({shareId}:{shareId:string}){
   var [notFound,setNotFound]=useState(false);
   var [open,setOpen]=useState(false);
   var [copied,setCopied]=useState(false);
+  useEffect(function(){var m=document.createElement('meta');m.name='robots';m.content='noindex,nofollow,noarchive,nosnippet';document.head.appendChild(m);return function(){try{document.head.removeChild(m);}catch(e){}};
+  },[]);
   useEffect(function(){
     getDoc(doc(_db,'sharedWireframes',shareId)).then(function(snap){
       if(snap.exists()){setHtml((snap.data() as any).html);}else{setNotFound(true);}
