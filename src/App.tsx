@@ -3927,6 +3927,230 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
   );
 }
 
+function ReportPage({shareId}:{shareId:string}){
+  var [data,setData]=useState<any>(null);
+  var [notFound,setNotFound]=useState(false);
+  var [tab,setTab]=useState("personas");
+  var [open,setOpen]=useState(false);
+  var [copied,setCopied]=useState(false);
+  var [activePersona,setActivePersona]=useState<string|null>(null);
+  var [activeJourneyPersona,setActiveJourneyPersona]=useState<string|null>(null);
+  var [activeStage,setActiveStage]=useState<string|null>(null);
+  useEffect(function(){var m=document.createElement('meta');m.name='robots';m.content='noindex,nofollow,noarchive,nosnippet';document.head.appendChild(m);return function(){try{document.head.removeChild(m);}catch(e){}};
+  },[]);
+  useEffect(function(){
+    getDoc(doc(_db,'sharedReports',shareId)).then(function(snap){
+      if(snap.exists()){var d=snap.data() as any;setData(d);setActivePersona(d.personas&&d.personas[0]?d.personas[0].id:null);setActiveJourneyPersona(d.personas&&d.personas[0]?d.personas[0].id:null);}else{setNotFound(true);}
+    }).catch(function(){setNotFound(true);});
+  },[shareId]);
+  if(notFound)return(<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF,color:"#888",fontSize:14}}>Report not found.</div>);
+  if(!data)return(<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF}}><div style={{width:40,height:40,borderRadius:"50%",border:"4px solid #eee",borderTop:"4px solid #FF0077",animation:"spin 0.8s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style></div>);
+  var shareUrl=window.location.href;
+  function copyUrl(){navigator.clipboard.writeText(shareUrl).then(function(){setCopied(true);setTimeout(function(){setCopied(false);},2000);});}
+  var personas:any[]=data.personas||[];
+  var journeys:any=data.journeys||{};
+  var pages:any[]=data.pages||[];
+  var gaCards:any[]=data.gaCards||[];
+  var CARD_ICONS_MAP:any={LayoutDashboard:<LayoutDashboard size={22}/>,Home:<Home size={22}/>,Puzzle:<Puzzle size={22}/>,DollarSign:<DollarSign size={22}/>,FileText:<FileText size={22}/>,Bot:<Bot size={22}/>,MousePointerClick:<MousePointerClick size={22}/>,GitMerge:<GitMerge size={22}/>,BarChart2:<BarChart2 size={22}/>,Layers:<Layers size={22}/>,Zap:<Zap size={22}/>,Brain:<Brain size={22}/>};
+  var PERSONA_IMAGES:any={"insight-guru":"https://www.gwi.com/hubfs/UX-Aduit-Imagery/Insight%20Guru.png","inspiration-hunter":"https://www.gwi.com/hubfs/UX-Aduit-Imagery/Inspiration%20Hunter.png","commercial-closer":"https://www.gwi.com/hubfs/UX-Aduit-Imagery/Commercial%20Closer.png","strategic-leader":"https://www.gwi.com/hubfs/UX-Aduit-Imagery/Strategic%20Leader.png","data-integrator":"https://www.gwi.com/hubfs/UX-Aduit-Imagery/Data%20Integrator.png"};
+  var ap=personas.find(function(x){return x.id===activePersona;})||personas[0];
+  var ajp=personas.find(function(x){return x.id===activeJourneyPersona;})||personas[0];
+  return(
+    <div style={{position:"fixed",inset:0,overflow:"hidden",fontFamily:FF,background:C.grey2,display:"flex",flexDirection:"column"}}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style>
+      {/* Header */}
+      <div style={{background:C.black,padding:"0 20px",height:52,display:"flex",alignItems:"center",gap:16,flexShrink:0,zIndex:10}}>
+        <img src="/gwi-logo-on-black.svg" alt="GWI" height={22} style={{display:"block",flexShrink:0}}/>
+        <div style={{height:20,width:1,background:"rgba(255,255,255,0.15)",flexShrink:0}}/>
+        <span style={{fontSize:13,fontWeight:600,color:C.grey6,flexShrink:0}}>UX Audit Report</span>
+        <div style={{flex:1}}/>
+        <div style={{display:"flex",gap:4,background:"rgba(255,255,255,0.08)",borderRadius:8,padding:4}}>
+          {[["personas","Personas"],["journeys","Journeys"],["analytics","Analytics"]].map(function(item){return(
+            <button key={item[0]} onClick={function(){setTab(item[0]);}} style={{padding:"5px 14px",borderRadius:6,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",background:tab===item[0]?C.pink:"transparent",color:tab===item[0]?C.white:C.grey6}}>{item[1]}</button>
+          );})}
+        </div>
+      </div>
+      {/* Content */}
+      <div style={{flex:1,overflow:"auto",padding:"20px 20px 80px"}}>
+        <div style={{maxWidth:920,margin:"0 auto"}}>
+          {/* ── PERSONAS TAB ── */}
+          {tab==="personas"&&(
+            <div>
+              <div style={{marginBottom:20,display:"flex",flexWrap:"wrap",gap:8}}>
+                {personas.map(function(persona:any){var isActive=activePersona===persona.id;var col=getPersonaColor(persona);return(
+                  <button key={persona.id} onClick={function(){setActivePersona(persona.id);}} style={{padding:"6px 16px",borderRadius:99,fontSize:13,fontWeight:600,border:"1.5px solid "+(isActive?col.border:C.grey4),background:isActive?col.bg:"transparent",color:isActive?col.text:C.grey8,cursor:"pointer"}}>{persona.label}</button>
+                );})}
+              </div>
+              {ap&&(function(){
+                var col=getPersonaColor(ap);
+                var img=PERSONA_IMAGES[ap.id]||null;
+                var cards:any[]=[
+                  {key:"website",title:"What they want from our website",content:ap.website,span:true,dark:true},
+                  {key:"who",title:"Who they are",content:ap.who},
+                  {key:"what",title:"What they do",content:ap.what},
+                  {key:"drives",title:"What drives them",content:ap.drives},
+                  {key:"bugs",title:"What bugs them",content:ap.bugs},
+                  {key:"grabs",title:"What grabs their attention",content:ap.grabs,span:true},
+                ];
+                if(ap.concerns)cards.push({key:"concerns",title:"What concerns them",content:ap.concerns,span:true});
+                if(ap.whyUs)cards.push({key:"whyUs",title:"Why they use us",content:ap.whyUs});
+                cards=cards.filter(function(c){return !!c.content;});
+                return(
+                  <div>
+                    <div style={{background:col.bg,border:"1px solid "+col.border,borderRadius:16,padding:24,marginBottom:24,display:"flex",gap:24,alignItems:"center",flexWrap:"wrap"}}>
+                      {img&&<img src={img} alt={ap.label} style={{width:140,height:140,objectFit:"cover",borderRadius:12,flexShrink:0}}/>}
+                      <div style={{flex:1,minWidth:200}}>
+                        <h2 style={{color:C.black,fontSize:22,fontWeight:700,margin:0}}>{ap.label}</h2>
+                        <p style={{color:C.black,marginTop:8,fontSize:16,fontWeight:600,lineHeight:1.3}}>{ap.tagline}</p>
+                        {ap.entry&&<div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:14}}>{ap.entry.split(",").map(function(t:string){return <span key={t} style={{background:col.tag.bg,color:col.tag.text,border:"1px solid "+col.border,fontSize:12,fontWeight:600,padding:"4px 10px",borderRadius:99}}>{t.trim()}</span>;})}</div>}
+                        {ap.traits&&ap.traits.length>0&&<p style={{color:C.black,marginTop:12,fontSize:13,fontWeight:500,lineHeight:1.5}}>{ap.traits.join(" · ")}</p>}
+                      </div>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+                      {cards.map(function(card:any){return(
+                        <div key={card.key} style={{gridColumn:card.span?"1 / -1":"auto",background:card.dark?C.black:C.white,border:"1px solid "+(card.dark?C.black:C.grey4),borderRadius:12,padding:16}}>
+                          <h3 style={{fontSize:13,fontWeight:700,marginBottom:8,color:card.dark?C.white:C.black}}>{card.title}</h3>
+                          <p style={{fontSize:13,lineHeight:1.6,color:card.dark?C.grey5:C.grey8,margin:0}}>{card.content}</p>
+                        </div>
+                      );})}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+          {/* ── JOURNEYS TAB ── */}
+          {tab==="journeys"&&(
+            <div>
+              <div style={{marginBottom:16,display:"flex",flexWrap:"wrap",gap:8}}>
+                {personas.map(function(persona:any){var isActive=activeJourneyPersona===persona.id;var col=getPersonaColor(persona);return(
+                  <button key={persona.id} onClick={function(){setActiveJourneyPersona(persona.id);setActiveStage(null);}} style={{padding:"6px 16px",borderRadius:99,fontSize:13,fontWeight:600,border:"1.5px solid "+(isActive?col.border:C.grey4),background:isActive?col.bg:"transparent",color:isActive?col.text:C.grey8,cursor:"pointer"}}>{persona.label}</button>
+                );})}
+              </div>
+              {ajp&&(function(){
+                var col=getPersonaColor(ajp);
+                var journey:any[]=(journeys[ajp.id]||[]);
+                var visiblePages=(pages||[]).filter(function(p:any){return !p.hidden;});
+                var sectionSet:any={};visiblePages.forEach(function(p:any){sectionSet[p.section]=true;});
+                var sections=Object.keys(sectionSet);
+                var pageStageMap:any={};journey.forEach(function(j:any){j.pages.forEach(function(url:string){if(!pageStageMap[url])pageStageMap[url]=[];pageStageMap[url].push(j.stage);});});
+                return(
+                  <div>
+                    <div style={{background:col.bg,border:"1px solid "+col.border,borderRadius:12,padding:16,marginBottom:16}}>
+                      <div style={{fontWeight:700,color:C.black,fontSize:15}}>{ajp.label}</div>
+                      <div style={{fontSize:13,color:C.black,marginTop:4}}>{ajp.entry}</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:12}}>
+                        {journey.map(function(j:any){var isActive=activeStage===j.stage;return(
+                          <button key={j.stage} onClick={function(){setActiveStage(activeStage===j.stage?null:j.stage);}} style={{background:isActive?C.pink:C.white,color:isActive?C.white:C.offBlack,border:"1.5px solid "+(isActive?C.pink:C.grey4),fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,cursor:"pointer"}}>{j.stage}</button>
+                        );})}
+                      </div>
+                    </div>
+                    {activeStage&&(function(){
+                      var s=journey.find(function(j:any){return j.stage===activeStage;});
+                      var sc:any=STAGE_COLORS[activeStage]||{};
+                      if(!s)return null;
+                      return(
+                        <div style={{background:sc.bg||C.grey3,border:"1px solid "+(sc.border||C.grey5),borderRadius:12,padding:16,marginBottom:16}}>
+                          <p style={{fontSize:13,color:C.offBlack,margin:"0 0 12px"}}>{s.note}</p>
+                          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                            {s.pages.map(function(url:string){return <span key={url} style={{background:C.white,border:"1px solid "+C.grey5,fontSize:12,color:C.grey8,padding:"4px 8px",borderRadius:6,fontFamily:"monospace"}}>{url.replace("https://gwi.ai","gwi.ai").replace("https://trust.gwi.com","trust.gwi.com")}</span>;})}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+                      <div style={{background:C.black,borderRadius:12,padding:24}}><div style={{fontSize:48,fontWeight:800,color:C.white,lineHeight:1}}>{journey.length}</div><div style={{fontSize:14,fontWeight:600,color:C.grey6,marginTop:8}}>Lifecycle stages</div></div>
+                      <div style={{background:C.black,borderRadius:12,padding:24}}><div style={{fontSize:48,fontWeight:800,color:C.white,lineHeight:1}}>{journey.reduce(function(a:number,j:any){return a+j.pages.length;},0)}</div><div style={{fontSize:14,fontWeight:600,color:C.grey6,marginTop:8}}>Page touchpoints</div></div>
+                    </div>
+                    <div style={{marginBottom:20}}>
+                      <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>Full Journey</div>
+                      <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                        {journey.map(function(j:any,i:number){
+                          var sc:any=STAGE_COLORS[j.stage]||{};var isActive=activeStage===j.stage;
+                          return(
+                            <div key={i} onClick={function(){setActiveStage(activeStage===j.stage?null:j.stage);}} style={{background:isActive?sc.bg||C.grey3:C.white,border:"1px solid "+(isActive?sc.border||C.grey5:C.grey4),borderRadius:10,cursor:"pointer"}}>
+                              <div style={{display:"flex",alignItems:"flex-start",gap:12,padding:12}}>
+                                <div style={{width:20,height:20,borderRadius:"50%",background:C.white,border:"2px solid "+C.pink,color:C.black,fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
+                                <span style={{background:sc.bg||C.grey3,color:sc.text||C.grey8,border:"1px solid "+(sc.border||C.grey5),fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:99,flexShrink:0,whiteSpace:"nowrap"}}>{j.stage}</span>
+                                <p style={{fontSize:12,color:C.grey7,flex:1,margin:0}}>{j.note}</p>
+                                <div style={{display:"flex",flexWrap:"wrap",gap:4,width:200,flexShrink:0,justifyContent:"flex-end"}}>
+                                  {j.pages.map(function(url:string){return <span key={url} style={{background:C.grey3,color:C.grey8,fontSize:11,padding:"2px 6px",borderRadius:4,fontFamily:"monospace"}}>{url.replace("https://gwi.ai","gwi.ai").replace("https://trust.gwi.com","trust.gwi.com")}</span>;})}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {sections.length>0&&(
+                      <div>
+                        <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>All GWI.com Pages</div>
+                        {sections.map(function(section){return(
+                          <div key={section} style={{marginBottom:16}}>
+                            <div style={{fontSize:11,fontWeight:700,color:C.grey6,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:6}}>{section}</div>
+                            <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                              {visiblePages.filter(function(p:any){return p.section===section;}).map(function(page:any){
+                                var stgs=pageStageMap[page.url]||[];var visited=stgs.length>0;
+                                return(
+                                  <div key={page.url} style={{display:"flex",alignItems:"center",gap:12,background:visited?C.white:C.grey3,border:"1px solid "+(visited?col.border:C.grey4),borderRadius:8,padding:"8px 12px",opacity:visited?1:0.45,fontSize:12}}>
+                                    <span style={{fontFamily:"monospace",color:C.pink,width:240,flexShrink:0}}>{page.url.replace("https://gwi.ai","gwi.ai").replace("https://trust.gwi.com","trust.gwi.com")}</span>
+                                    <span style={{color:C.grey7,flex:1}}>{page.label}</span>
+                                    <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                                      {visited?stgs.map(function(s:string){var sc:any=STAGE_COLORS[s]||{};return <span key={s} style={{background:sc.bg||C.grey3,color:sc.text||C.grey8,border:"1px solid "+(sc.border||C.grey5),fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:99}}>{s}</span>;}):<span style={{color:C.grey6,fontStyle:"italic"}}>not in journey</span>}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );})}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+          {/* ── ANALYTICS TAB ── */}
+          {tab==="analytics"&&(
+            <div>
+              <div style={{marginBottom:16,background:C.grey3,border:"1px solid "+C.grey5,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"flex-start",gap:8}}>
+                <AlertTriangle size={14} color={C.grey7} style={{flexShrink:0,marginTop:1}}/>
+                <span style={{fontSize:12,color:C.grey7,lineHeight:1.6}}><strong style={{color:C.grey8}}>Note:</strong> GA4 links require appropriate access permissions to open.</span>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:16}}>
+                {gaCards.map(function(card:any){var ckey=card.id||card.title;return(
+                  <a key={ckey} href={card.url} target="_blank" rel="noreferrer"
+                    style={{display:"flex",flexDirection:"column",gap:8,background:C.white,border:"1.5px solid "+C.grey4,borderRadius:14,padding:20,textDecoration:"none",color:"inherit",boxSizing:"border-box"}}
+                    onMouseEnter={function(e){e.currentTarget.style.borderColor="#FFE8EE";e.currentTarget.style.boxShadow="0 4px 16px rgba(255,0,119,0.06)";}}
+                    onMouseLeave={function(e){e.currentTarget.style.borderColor=C.grey4;e.currentTarget.style.boxShadow="none";}}>
+                    <div style={{color:C.pink}}>{CARD_ICONS_MAP[card.iconKey]||<BarChart2 size={22}/>}</div>
+                    <div style={{fontSize:17,fontWeight:800,color:C.offBlack}}>{card.title}</div>
+                    <p style={{fontSize:15,color:C.grey7,lineHeight:1.65,margin:0,flex:1}}>{card.desc}</p>
+                    <div style={{fontSize:12,color:C.pink,fontWeight:600,display:"flex",alignItems:"center",gap:4,marginTop:4}}>Open in GA4 <ExternalLink size={12}/></div>
+                  </a>
+                );})}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Floating share button */}
+      <div style={{position:"fixed",bottom:24,right:24,zIndex:9999,fontFamily:FF,display:"flex",flexDirection:"column",alignItems:"flex-end"}}>
+        {open&&(
+          <div style={{background:"#fff",borderRadius:12,boxShadow:"0 4px 24px rgba(0,0,0,0.18)",padding:"14px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:10,minWidth:300,maxWidth:420}}>
+            <div style={{flex:1,fontSize:12,color:"#555",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",background:"#f5f5f5",padding:"8px 12px",borderRadius:8,fontFamily:"monospace",userSelect:"all"}}>{shareUrl}</div>
+            <button onClick={copyUrl} style={{background:copied?"#22C55E":"#FF0077",color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",transition:"background 0.2s",flexShrink:0}}>{copied?"Copied!":"Copy"}</button>
+          </div>
+        )}
+        <button onClick={function(){setOpen(function(v){return !v;});}} style={{width:52,height:52,borderRadius:"50%",background:"#FF0077",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 20px rgba(255,0,119,0.45)",transition:"transform 0.15s",flexShrink:0}} onMouseEnter={function(e){(e.currentTarget as HTMLElement).style.transform="scale(1.08)";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.transform="scale(1)";}}>
+          <Share2 size={20} color="#fff"/>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function SharePage({shareId}:{shareId:string}){
   var [html,setHtml]=useState<string|null>(null);
   var [notFound,setNotFound]=useState(false);
@@ -3995,6 +4219,7 @@ export default function App(){
   var [feedbackToast,setFeedbackToast]=useState(false);
   var feedbackSubmittedRef=useRef(false);
   var isMobile=useWidth()<768;
+  var [_reportSharing,_setReportSharing]=useState(false);
   var [_user,_setUser]=useState(null);
   var [_authLoading,_setAuthLoading]=useState(true);
   var [_loginError,_setLoginError]=useState(null);
@@ -4028,10 +4253,27 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
   function _handleLogin(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}signInWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/user-not-found'?'Invalid email or password.':'Sign-in failed. Try again.');});}
   function _handleRegister(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}if(password.length<6){_setLoginError('Password must be at least 6 characters.');return;}createUserWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/email-already-in-use'?'Account already exists. Try signing in.':err.code==='auth/weak-password'?'Password must be at least 6 characters.':'Registration failed. Try again.');});}
   function _handleGoogleLogin(){_setLoginError(null);var p=new GoogleAuthProvider();p.setCustomParameters({hd:"gwi.com"});signInWithPopup(_auth,p).catch(function(err:any){_setLoginError(err.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':err.code==='auth/unauthorized-domain'?'This domain is not authorised in Firebase — contact your admin.':'Google sign-in failed. Try again. ('+( err.code||'')+')');});}
+  function _shareReport(){
+    if(_reportSharing)return;
+    _setReportSharing(true);
+    // Open tab synchronously to avoid popup blocker
+    var reportWindow=window.open('about:blank','_blank');
+    if(reportWindow){reportWindow.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Loading…</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#f5f5f5;font-family:sans-serif;}@keyframes spin{to{transform:rotate(360deg);}}.sp{width:40px;height:40px;border-radius:50%;border:4px solid #eee;border-top:4px solid #FF0077;animation:spin 0.8s linear infinite;}</style></head><body><div class="sp"></div></body></html>');reportWindow.document.close();}
+    var shareId=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,10);
+    setDoc(doc(_db,'sharedReports',shareId),{personas:personas,journeys:journeys,pages:pages,gaCards:gaCards,stages:stages,vwoPages:vwoPages,createdAt:Date.now()}).then(function(){
+      if(reportWindow){reportWindow.location.href=window.location.origin+'/report/'+shareId;}
+      _setReportSharing(false);
+    }).catch(function(){
+      if(reportWindow){reportWindow.close();}
+      _setReportSharing(false);
+    });
+  }
   var _qp=new URLSearchParams(window.location.search);
   if(_qp.get('mode')==='resetPassword'&&_qp.get('oobCode'))return(<ConfirmResetScreen oobCode={_qp.get('oobCode')!}/>);
   var _sharePath=window.location.pathname.match(/^\/share\/([a-z0-9]+)$/);
   if(_sharePath)return(<SharePage shareId={_sharePath[1]}/>);
+  var _reportPath=window.location.pathname.match(/^\/report\/([a-z0-9]+)$/);
+  if(_reportPath)return(<ReportPage shareId={_reportPath[1]}/>);
   if(_authLoading)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:C.grey2,color:C.grey7,fontSize:14,fontFamily:FF}}>Loading…</div>);
   if(!_user)return(
     <div style={{position:"relative"}}>
@@ -4064,6 +4306,9 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
           <Dropdown label="Journeys" items={MAPPING_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("mapping");}} forceActive={view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"}/>
           <button onClick={function(){setView("analytics");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="analytics"?C.pink:"transparent",color:view==="analytics"?C.white:C.grey7,flexShrink:0}}>Analytics</button>
           <div style={{flex:1}}/>
+          {(view==="personas"||view==="persona-detail"||view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"||view==="analytics")&&(
+            <button onClick={_shareReport} disabled={_reportSharing} title="Share a public read-only report" style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:700,border:"none",cursor:_reportSharing?"wait":"pointer",background:_reportSharing?"#888":"rgba(255,0,119,0.18)",color:_reportSharing?C.grey6:C.pink,flexShrink:0,transition:"background 0.15s"}} onMouseEnter={function(e){if(!_reportSharing)(e.currentTarget as HTMLElement).style.background="rgba(255,0,119,0.28)";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.background=_reportSharing?"#888":"rgba(255,0,119,0.18)";}}><Share2 size={13}/>{_reportSharing?"Sharing…":"Share report"}</button>
+          )}
           <UserMenu user={_user} onSignOut={function(){fbSignOut(_auth);}} onSettings={function(){setView("settings");}} onFeedbackPage={function(){setView("feedback");}} onGuide={function(){setView("guide");}} activeView={view}/>
         </div>
       )}
