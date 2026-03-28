@@ -3930,7 +3930,7 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
 function ReportPage({shareId}:{shareId:string}){
   var [data,setData]=useState<any>(null);
   var [notFound,setNotFound]=useState(false);
-  var [tab,setTab]=useState("personas");
+  var [tab,setTab]=useState(function(){var h=window.location.hash.replace('#','');return(['personas','journeys','analytics'].indexOf(h)>=0)?h:'personas';});
   var [open,setOpen]=useState(false);
   var [copied,setCopied]=useState(false);
   var [activePersona,setActivePersona]=useState<string|null>(null);
@@ -3945,7 +3945,7 @@ function ReportPage({shareId}:{shareId:string}){
   },[shareId]);
   if(notFound)return(<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF,color:"#888",fontSize:14}}>Report not found.</div>);
   if(!data)return(<div style={{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF}}><div style={{width:40,height:40,borderRadius:"50%",border:"4px solid #eee",borderTop:"4px solid #FF0077",animation:"spin 0.8s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style></div>);
-  var shareUrl=window.location.href;
+  var shareUrl=window.location.origin+window.location.pathname+'#'+tab;
   function copyUrl(){navigator.clipboard.writeText(shareUrl).then(function(){setCopied(true);setTimeout(function(){setCopied(false);},2000);});}
   var personas:any[]=data.personas||[];
   var journeys:any=data.journeys||{};
@@ -4253,15 +4253,15 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
   function _handleLogin(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}signInWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/user-not-found'?'Invalid email or password.':'Sign-in failed. Try again.');});}
   function _handleRegister(email,password){_setLoginError(null);if(!email.endsWith('@gwi.com')){_setLoginError('Access restricted to @gwi.com accounts.');return;}if(password.length<6){_setLoginError('Password must be at least 6 characters.');return;}createUserWithEmailAndPassword(_auth,email,password).catch(function(err){_setLoginError(err.code==='auth/email-already-in-use'?'Account already exists. Try signing in.':err.code==='auth/weak-password'?'Password must be at least 6 characters.':'Registration failed. Try again.');});}
   function _handleGoogleLogin(){_setLoginError(null);var p=new GoogleAuthProvider();p.setCustomParameters({hd:"gwi.com"});signInWithPopup(_auth,p).catch(function(err:any){_setLoginError(err.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':err.code==='auth/unauthorized-domain'?'This domain is not authorised in Firebase — contact your admin.':'Google sign-in failed. Try again. ('+( err.code||'')+')');});}
-  function _shareReport(){
+  function _shareReport(initialTab?:string){
     if(_reportSharing)return;
     _setReportSharing(true);
-    // Open tab synchronously to avoid popup blocker
     var reportWindow=window.open('about:blank','_blank');
     if(reportWindow){reportWindow.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Loading…</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#f5f5f5;font-family:sans-serif;}@keyframes spin{to{transform:rotate(360deg);}}.sp{width:40px;height:40px;border-radius:50%;border:4px solid #eee;border-top:4px solid #FF0077;animation:spin 0.8s linear infinite;}</style></head><body><div class="sp"></div></body></html>');reportWindow.document.close();}
     var shareId=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,10);
     setDoc(doc(_db,'sharedReports',shareId),{personas:personas,journeys:journeys,pages:pages,gaCards:gaCards,stages:stages,vwoPages:vwoPages,createdAt:Date.now()}).then(function(){
-      if(reportWindow){reportWindow.location.href=window.location.origin+'/report/'+shareId;}
+      var hash=initialTab?'#'+initialTab:'';
+      if(reportWindow){reportWindow.location.href=window.location.origin+'/report/'+shareId+hash;}
       _setReportSharing(false);
     }).catch(function(){
       if(reportWindow){reportWindow.close();}
@@ -4307,7 +4307,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
           <button onClick={function(){setView("analytics");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="analytics"?C.pink:"transparent",color:view==="analytics"?C.white:C.grey7,flexShrink:0}}>Analytics</button>
           <div style={{flex:1}}/>
           {(view==="personas"||view==="persona-detail"||view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"||view==="analytics")&&(
-            <button onClick={_shareReport} disabled={_reportSharing} title="Share a public read-only report" style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:700,border:"none",cursor:_reportSharing?"wait":"pointer",background:_reportSharing?"#888":"rgba(255,0,119,0.18)",color:_reportSharing?C.grey6:C.pink,flexShrink:0,transition:"background 0.15s"}} onMouseEnter={function(e){if(!_reportSharing)(e.currentTarget as HTMLElement).style.background="rgba(255,0,119,0.28)";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.background=_reportSharing?"#888":"rgba(255,0,119,0.18)";}}><Share2 size={13}/>{_reportSharing?"Sharing…":"Share report"}</button>
+            <button onClick={function(){var t=(view==="personas"||view==="persona-detail")?"personas":(view==="analytics")?"analytics":"journeys";_shareReport(t);}} disabled={_reportSharing} title="Share a public read-only report" style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:700,border:"none",cursor:_reportSharing?"wait":"pointer",background:_reportSharing?"#888":"rgba(255,0,119,0.18)",color:_reportSharing?C.grey6:C.pink,flexShrink:0,transition:"background 0.15s"}} onMouseEnter={function(e){if(!_reportSharing)(e.currentTarget as HTMLElement).style.background="rgba(255,0,119,0.28)";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.background=_reportSharing?"#888":"rgba(255,0,119,0.18)";}}><Share2 size={13}/>{_reportSharing?"Sharing…":"Share report"}</button>
           )}
           <UserMenu user={_user} onSignOut={function(){fbSignOut(_auth);}} onSettings={function(){setView("settings");}} onFeedbackPage={function(){setView("feedback");}} onGuide={function(){setView("guide");}} activeView={view}/>
         </div>
