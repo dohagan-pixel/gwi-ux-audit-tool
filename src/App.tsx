@@ -3930,12 +3930,16 @@ function WireframesPage({wireframes,setWireframes,onDeleteWireframe,onUpdateWire
 function ReportPage({shareId}:{shareId:string}){
   var [data,setData]=useState<any>(null);
   var [notFound,setNotFound]=useState(false);
-  var [tab,setTab]=useState(function(){var h=window.location.hash.replace('#','');return(['personas','journeys','analytics'].indexOf(h)>=0)?h:'personas';});
+  var [tab,setTab]=useState(function(){var h=window.location.hash.replace('#','');return(['personas','journeys','mapping','affinity','flows'].indexOf(h)>=0)?h:'personas';});
   var [open,setOpen]=useState(false);
   var [copied,setCopied]=useState(false);
   var [activePersona,setActivePersona]=useState<string|null>(null);
   var [activeJourneyPersona,setActiveJourneyPersona]=useState<string|null>(null);
   var [activeStage,setActiveStage]=useState<string|null>(null);
+  var [mappingActiveStage,setMappingActiveStage]=useState("awareness");
+  var [mappingSignupMode,setMappingSignupMode]=useState(true);
+  var [affinityActiveCluster,setAffinityActiveCluster]=useState("cost-anxiety");
+  var [activeFlow,setActiveFlow]=useState("homepage-to-signup");
   useEffect(function(){var m=document.createElement('meta');m.name='robots';m.content='noindex,nofollow,noarchive,nosnippet';document.head.appendChild(m);return function(){try{document.head.removeChild(m);}catch(e){}};
   },[]);
   useEffect(function(){
@@ -3950,8 +3954,7 @@ function ReportPage({shareId}:{shareId:string}){
   var personas:any[]=data.personas||[];
   var journeys:any=data.journeys||{};
   var pages:any[]=data.pages||[];
-  var gaCards:any[]=data.gaCards||[];
-  var CARD_ICONS_MAP:any={LayoutDashboard:<LayoutDashboard size={22}/>,Home:<Home size={22}/>,Puzzle:<Puzzle size={22}/>,DollarSign:<DollarSign size={22}/>,FileText:<FileText size={22}/>,Bot:<Bot size={22}/>,MousePointerClick:<MousePointerClick size={22}/>,GitMerge:<GitMerge size={22}/>,BarChart2:<BarChart2 size={22}/>,Layers:<Layers size={22}/>,Zap:<Zap size={22}/>,Brain:<Brain size={22}/>};
+  var stages:any[]=data.stages||[];
   var PERSONA_IMAGES:any={"insight-guru":"https://www.gwi.com/hubfs/UX-Aduit-Imagery/Insight%20Guru.png","inspiration-hunter":"https://www.gwi.com/hubfs/UX-Aduit-Imagery/Inspiration%20Hunter.png","commercial-closer":"https://www.gwi.com/hubfs/UX-Aduit-Imagery/Commercial%20Closer.png","strategic-leader":"https://www.gwi.com/hubfs/UX-Aduit-Imagery/Strategic%20Leader.png","data-integrator":"https://www.gwi.com/hubfs/UX-Aduit-Imagery/Data%20Integrator.png"};
   var ap=personas.find(function(x){return x.id===activePersona;})||personas[0];
   var ajp=personas.find(function(x){return x.id===activeJourneyPersona;})||personas[0];
@@ -3965,7 +3968,7 @@ function ReportPage({shareId}:{shareId:string}){
         <span style={{fontSize:13,fontWeight:600,color:C.grey6,flexShrink:0}}>UX Audit Report</span>
         <div style={{flex:1}}/>
         <div style={{display:"flex",gap:4,background:"rgba(255,255,255,0.08)",borderRadius:8,padding:4}}>
-          {[["personas","Personas"],["journeys","Journeys"],["analytics","Analytics"]].map(function(item){return(
+          {[["personas","Personas"],["journeys","Journeys"],["mapping","Customer Mapping"],["affinity","Affinity Map"],["flows","User Flows"]].map(function(item){return(
             <button key={item[0]} onClick={function(){setTab(item[0]);}} style={{padding:"5px 14px",borderRadius:6,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",background:tab===item[0]?C.pink:"transparent",color:tab===item[0]?C.white:C.grey6}}>{item[1]}</button>
           );})}
         </div>
@@ -4111,28 +4114,186 @@ function ReportPage({shareId}:{shareId:string}){
               })()}
             </div>
           )}
-          {/* ── ANALYTICS TAB ── */}
-          {tab==="analytics"&&(
-            <div>
-              <div style={{marginBottom:16,background:C.grey3,border:"1px solid "+C.grey5,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"flex-start",gap:8}}>
-                <AlertTriangle size={14} color={C.grey7} style={{flexShrink:0,marginTop:1}}/>
-                <span style={{fontSize:12,color:C.grey7,lineHeight:1.6}}><strong style={{color:C.grey8}}>Note:</strong> GA4 links require appropriate access permissions to open.</span>
+          {/* ── CUSTOMER MAPPING TAB ── */}
+          {tab==="mapping"&&(function(){
+            var visibleStages=mappingSignupMode?stages.filter(function(s:any){return s.signupRole!=="none";}):stages;
+            var stage=stages.find(function(s:any){return s.id===mappingActiveStage;});
+            var signupRoleConfig:any={primary:{label:"Primary role",pill:{bg:"#FFEEF6",text:C.pink}},supporting:{label:"Supporting role",pill:{bg:"#FFF8E1",text:"#F57F17"}},none:{label:"Not in this journey",pill:{bg:C.grey3,text:C.grey8}}};
+            return(
+              <div>
+                <div style={{background:C.black,borderRadius:16,padding:"28px 32px",marginBottom:24,position:"relative"}}>
+                  <div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>The full picture</div>
+                  <h1 style={{color:C.white,fontSize:26,fontWeight:800,margin:"0 0 8px"}}>Customer Lifecycle Map</h1>
+                  <p style={{color:C.grey6,fontSize:15,lineHeight:1.7,margin:"0 0 20px",maxWidth:560}}>The lifecycle map defines what GWI needs to achieve at every stage and what is standing in the way.</p>
+                  <div style={{background:"rgba(255,255,255,0.1)",borderRadius:8,padding:4,display:"inline-flex",gap:4,marginBottom:20}}>
+                    <button onClick={function(){setMappingSignupMode(true);setMappingActiveStage("awareness");}} style={{background:mappingSignupMode?C.white:"transparent",color:mappingSignupMode?C.black:C.grey5,borderRadius:6,padding:"6px 14px",fontSize:12,fontWeight:600,border:"none",cursor:"pointer"}}>Free Sign-up Journey</button>
+                    <button onClick={function(){setMappingSignupMode(false);setMappingActiveStage("awareness");}} style={{background:!mappingSignupMode?C.white:"transparent",color:!mappingSignupMode?C.black:C.grey5,borderRadius:6,padding:"6px 14px",fontSize:12,fontWeight:600,border:"none",cursor:"pointer"}}>Full Lifecycle</button>
+                  </div>
+                  <div style={{overflowX:"auto"}}><div style={{display:"inline-flex",alignItems:"center",paddingBottom:4}}>{visibleStages.map(function(s:any,i:number){return <Arrow key={s.id} label={s.label} isHighlight={!!s.highlight} isActive={mappingActiveStage===s.id} onClick={function(){if(mappingActiveStage!==s.id)setMappingActiveStage(s.id);}} wide={s.id==="first-user-adoption"} first={i===0}/>;})}</div></div>
+                </div>
+                {stage&&(
+                  <div style={{background:C.white,borderRadius:16,border:"1px solid "+C.grey4,padding:24}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20,flexWrap:"wrap"}}>
+                      {stage.highlight&&!mappingSignupMode&&<span style={{background:C.pink,color:C.white,fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:99}}>Focus Stage</span>}
+                      <h2 style={{color:C.black,fontSize:20,fontWeight:700,margin:0,flex:1}}>{stage.label}</h2>
+                      {mappingSignupMode&&stage.signupRole&&signupRoleConfig[stage.signupRole]&&<span style={{background:signupRoleConfig[stage.signupRole].pill.bg,color:signupRoleConfig[stage.signupRole].pill.text,fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{signupRoleConfig[stage.signupRole].label}</span>}
+                    </div>
+                    <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"24px 28px",marginBottom:12}}>
+                      <div style={{fontSize:11,fontWeight:700,color:C.black,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:12}}>How Might We</div>
+                      <p style={{color:C.pink,fontSize:16,fontWeight:600,lineHeight:1.5,margin:"0 0 16px"}}>{stage.hmw}</p>
+                      {mappingSignupMode&&(
+                        <div>
+                          <div style={{fontSize:11,fontWeight:700,color:C.black,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>Personas at this stage</div>
+                          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                            {personas.filter(function(p:any){return(journeys[p.id]||[]).some(function(j:any){return j.stage===stage.label;});}).map(function(p:any){var col=getPersonaColor(p);return <span key={p.id} style={{background:col.bg,color:col.text,border:"1px solid "+col.border,fontSize:12,fontWeight:600,padding:"4px 12px",borderRadius:99}}>{p.label}</span>;})}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+                      <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:16}}>
+                        <div style={{fontSize:11,fontWeight:700,color:C.black,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>GWI Goal</div>
+                        <p style={{color:C.offBlack,fontSize:13,margin:0}}>{stage.gwi_goal}</p>
+                      </div>
+                      {[["Push",stage.push],["Pull",stage.pull],["Habit",stage.habit],["Anxiety",stage.anxiety]].map(function(x:any){return(
+                        <div key={x[0]} style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:16}}>
+                          <div style={{fontSize:11,fontWeight:700,color:C.black,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>{x[0]}</div>
+                          <p style={{color:C.grey8,fontSize:13,lineHeight:1.6,margin:0}}>{x[1]}</p>
+                        </div>
+                      );})}
+                      {mappingSignupMode&&stage.signupNote&&(
+                        <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:16}}>
+                          <div style={{fontSize:11,fontWeight:700,color:C.black,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>Website Role</div>
+                          <p style={{color:C.offBlack,fontSize:13,lineHeight:1.6,margin:0}}>{stage.signupNote}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:16}}>
-                {gaCards.map(function(card:any){var ckey=card.id||card.title;return(
-                  <a key={ckey} href={card.url} target="_blank" rel="noreferrer"
-                    style={{display:"flex",flexDirection:"column",gap:8,background:C.white,border:"1.5px solid "+C.grey4,borderRadius:14,padding:20,textDecoration:"none",color:"inherit",boxSizing:"border-box"}}
-                    onMouseEnter={function(e){e.currentTarget.style.borderColor="#FFE8EE";e.currentTarget.style.boxShadow="0 4px 16px rgba(255,0,119,0.06)";}}
-                    onMouseLeave={function(e){e.currentTarget.style.borderColor=C.grey4;e.currentTarget.style.boxShadow="none";}}>
-                    <div style={{color:C.pink}}>{CARD_ICONS_MAP[card.iconKey]||<BarChart2 size={22}/>}</div>
-                    <div style={{fontSize:17,fontWeight:800,color:C.offBlack}}>{card.title}</div>
-                    <p style={{fontSize:15,color:C.grey7,lineHeight:1.65,margin:0,flex:1}}>{card.desc}</p>
-                    <div style={{fontSize:12,color:C.pink,fontWeight:600,display:"flex",alignItems:"center",gap:4,marginTop:4}}>Open in GA4 <ExternalLink size={12}/></div>
-                  </a>
-                );})}
+            );
+          })()}
+          {/* ── AFFINITY MAP TAB ── */}
+          {tab==="affinity"&&(function(){
+            var CLUSTERS=[
+              {id:"cost-anxiety",name:"Cost and Value Anxiety",theme:"Across every stage of the customer journey, cost is the single most persistent blocker to conversion.",insight:"The website needs to reframe spend as investment at every touchpoint — not just on the pricing page.",signals:[{text:"Cost is prohibitive",type:"anxiety",stage:"Awareness",personas:["insight-guru","inspiration-hunter","commercial-closer"],explanation:"Before personas have even engaged with GWI, cost anxiety is already present."},{text:"Cost will be high — will we use it enough to get value for money?",type:"anxiety",stage:"Acquisition",personas:["commercial-closer","strategic-leader"],explanation:"At the point of trial or internal buy-in, budget holders start questioning utilisation."},{text:"ROI, ROI, and more ROI",type:"drives",stage:"Cross-stage",personas:["commercial-closer"],explanation:"For the Commercial Closer, every decision is filtered through return on investment."}]},
+              {id:"speed-friction",name:"Speed and Friction",theme:"Time pressure is a constant across all personas. Any unnecessary step between intent and value is a drop-off risk.",insight:"The website must eliminate friction at every stage — from discovery to sign-up to first use.",signals:[{text:"Lack of speed and unnecessary friction in their workflows",type:"bugs",stage:"Cross-stage",personas:["inspiration-hunter"],explanation:"The Inspiration Hunter will not tolerate slow pages, complex navigation or multi-step sign-up flows."},{text:"They need to work at speed and cannot spend time learning a new tool",type:"habit",stage:"First User Adoption",personas:["inspiration-hunter","commercial-closer"],explanation:"At First User Adoption, the biggest churn risk is a blank canvas."}]},
+              {id:"trust-credibility",name:"Trust and Credibility",theme:"Before committing time or budget, every persona needs proof that GWI is credible, accurate and safe to rely on.",insight:"Credibility signals must be front-loaded across the homepage, /data, and /case-studies.",signals:[{text:"Data trustworthiness — if the data is wrong, they are wrong",type:"concerns",stage:"Cross-stage",personas:["insight-guru"],explanation:"The Insight Guru's professional reputation depends on the accuracy of their sources."},{text:"Security, compliance, and data governance",type:"concerns",stage:"Cross-stage",personas:["data-integrator"],explanation:"Data Integrators need GDPR compliance, ISO certification and API reliability evidence."}]},
+              {id:"self-serve",name:"Self-Serve vs Sales Friction",theme:"Self-serve personas actively avoid sales conversations. Forcing them into a demo flow is one of the biggest conversion killers on the site.",insight:"The website's primary CTA needs to be Sign up for free, not Book a demo.",signals:[{text:"A way to self-serve platform trial access without needing a sales call",type:"website",stage:"Cross-stage",personas:["insight-guru"],explanation:"The Insight Guru will not book a demo until they have already validated GWI independently."},{text:"The sales person might waste my time",type:"anxiety",stage:"Evaluation",personas:["insight-guru","inspiration-hunter"],explanation:"Sales anxiety is a real blocker during Evaluation."}]},
+              {id:"blank-canvas",name:"Blank Canvas Anxiety",theme:"When users do not know where to start, they do not start at all. First User Adoption is the highest-risk stage.",insight:"The website directly shapes what users expect when they log in for the first time.",signals:[{text:"The way this tool works is overwhelming and I cannot get my head around it",type:"anxiety",stage:"First User Adoption",personas:["insight-guru","inspiration-hunter","commercial-closer"],explanation:"This anxiety is felt across three of the five core personas at the moment of first login."}]},
+              {id:"champion-problem",name:"Internal Advocacy",theme:"None of these personas make the final decision alone. They all need to convince someone else — and the website gives them nothing to help do that.",insight:"The website needs to arm champions with shareable evidence: ROI framing, one-pagers, case studies by sector, and clear upgrade paths their manager can approve without a sales call.",signals:[{text:"I need to get buy-in from my manager before I can commit to anything",type:"anxiety",stage:"Consideration",personas:["inspiration-hunter","commercial-closer"],explanation:"The Inspiration Hunter and Commercial Closer are often mid-seniority — they're sold on GWI but need upward sign-off before proceeding."},{text:"Finance will want to see a clear ROI before approving the budget",type:"anxiety",stage:"Acquisition",personas:["commercial-closer","strategic-leader"],explanation:"Budget approval is a distinct stage in the journey that the website doesn't acknowledge or support."},{text:"IT and legal need to review this before we can integrate anything",type:"concerns",stage:"Consideration",personas:["data-integrator"],explanation:"The Data Integrator is rarely the sole decision-maker. Security, legal and procurement all have a veto."},{text:"I need something I can forward to my director to make the case",type:"website",stage:"Consideration",personas:["inspiration-hunter","commercial-closer","strategic-leader"],explanation:"The website has no shareable, non-sales assets designed for internal champions to use in approval conversations."}]},
+              {id:"discoverability",name:"Navigation and Discoverability",theme:"The website treats all visitors the same. No persona is actively routed to the content most relevant to them, and critical pages are invisible without prior knowledge.",insight:"Navigation needs persona-aware pathways. The homepage, pricing page, and top-level nav should actively direct different visitors toward the content that answers their specific question.",signals:[{text:"I cannot find the API documentation without already knowing it exists",type:"bugs",stage:"Awareness",personas:["data-integrator"],explanation:"The /api page is not surfaced in the main navigation or from the homepage. A Data Integrator arriving cold has no clear path to it."},{text:"I want to see data relevant to my industry but cannot find it easily",type:"anxiety",stage:"Evaluation",personas:["commercial-closer","inspiration-hunter"],explanation:"Sector-specific content and audience coverage data is not discoverable from the top-level navigation."},{text:"The homepage tries to speak to everyone and ends up speaking to no one",type:"concerns",stage:"Awareness",personas:["insight-guru","strategic-leader"],explanation:"Without persona routing — even simple 'I am a...' pathways — every visitor gets the same generic experience regardless of their intent."},{text:"I have to dig to find case studies relevant to my type of work",type:"bugs",stage:"Evaluation",personas:["commercial-closer","strategic-leader"],explanation:"Case studies exist but are not filtered or surfaced by sector, use case or persona type, making them hard to use as internal evidence."}]},
+              {id:"proof-of-fit",name:"Proof of Fit",theme:"Before evaluating how good GWI is, every persona needs to answer a more basic question: is GWI even right for me? The website rarely answers this directly.",insight:"The website must lead with relevance before credibility. Sector coverage, audience examples, and use-case framing need to appear earlier and more prominently across key landing pages.",signals:[{text:"Does GWI actually have data on the audiences I work with?",type:"anxiety",stage:"Awareness",personas:["commercial-closer","inspiration-hunter"],explanation:"The first conversion barrier isn't price or trust — it's relevance. If personas can't see their audience in GWI's coverage, they self-select out before even evaluating."},{text:"I need to see a case study from a company like mine before I take this further",type:"pull",stage:"Evaluation",personas:["strategic-leader","commercial-closer"],explanation:"Sector-matched social proof is a prerequisite for the Strategic Leader before they will invest time in a demo or trial."},{text:"I want to know if GWI covers the markets and countries I need",type:"concerns",stage:"Evaluation",personas:["insight-guru","data-integrator"],explanation:"Global coverage, market depth, and data recency are specific requirements that must be answered before technical evaluation begins."},{text:"The homepage tells me what GWI does, not whether it works for someone like me",type:"concerns",stage:"Awareness",personas:["insight-guru","inspiration-hunter","commercial-closer"],explanation:"Generic product messaging delays the moment of relevance. Personas need to see themselves — their role, their industry, their use case — reflected back at them quickly."}]},
+              {id:"competitive-context",name:"Competitive Comparison",theme:"Almost every persona arrives having already evaluated at least one competitor. The website doesn't acknowledge this and makes no attempt to differentiate or directly address the comparison.",insight:"GWI needs a clear competitive narrative on the website — not aggressive positioning, but honest differentiation. Personas need to understand what GWI does that alternatives do not.",signals:[{text:"I am already using a competitor and need a compelling reason to switch",type:"anxiety",stage:"Evaluation",personas:["insight-guru","strategic-leader"],explanation:"Switching costs are high. The website needs to give existing competitor users a clear, specific reason to change — not just generic claims of being 'the best'."},{text:"I need to explain to my stakeholders why GWI and not a cheaper alternative",type:"drives",stage:"Consideration",personas:["commercial-closer","strategic-leader"],explanation:"The champion needs competitive ammunition to win the internal argument. The website provides none."},{text:"How is this different from what I can get from a free tool or public data?",type:"anxiety",stage:"Awareness",personas:["inspiration-hunter","insight-guru"],explanation:"For data-savvy personas, the default question is whether paid data is worth it versus free alternatives. This objection is never addressed on the website."},{text:"I want to see a direct comparison of GWI's data coverage versus alternatives",type:"website",stage:"Evaluation",personas:["data-integrator","insight-guru"],explanation:"Technical evaluators want structured comparisons — sample sizes, methodology, coverage breadth — not marketing copy. This content doesn't exist on the website."}]},
+            ];
+            var typeColors:any={push:{bg:"#E8F5E9",text:"#2E7D32",label:"Push"},pull:{bg:"#E3F2FD",text:"#1565C0",label:"Pull"},habit:{bg:"#FFF8E1",text:"#F57F17",label:"Habit"},anxiety:{bg:"#FCE4EC",text:"#880E4F",label:"Anxiety"},drives:{bg:C.purpleBg,text:C.purpleDark,label:"Drives"},bugs:{bg:"#FFF0E6",text:"#7A3A00",label:"Bugs"},concerns:{bg:C.grey3,text:C.grey8,label:"Concerns"},website:{bg:C.blueBg,text:C.blueDark,label:"Website need"}};
+            var active=CLUSTERS.find(function(c){return c.id===affinityActiveCluster;})||CLUSTERS[0];
+            return(
+              <div>
+                <div style={{background:C.black,borderRadius:16,padding:"28px 32px",marginBottom:24}}>
+                  <div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Patterns across all personas</div>
+                  <h1 style={{color:C.white,fontSize:26,fontWeight:800,margin:"0 0 8px"}}>Affinity Map</h1>
+                  <p style={{color:C.grey6,fontSize:15,lineHeight:1.7,margin:0,maxWidth:560}}>An affinity map clusters recurring signals from across all five personas into the systemic problems the website must solve.</p>
+                </div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:24}}>
+                  {CLUSTERS.map(function(c){return(
+                    <button key={c.id} onClick={function(){setAffinityActiveCluster(c.id);}} style={{background:affinityActiveCluster===c.id?C.pink:C.white,color:affinityActiveCluster===c.id?C.white:C.offBlack,border:"1.5px solid "+(affinityActiveCluster===c.id?C.pink:C.grey4),fontSize:12,fontWeight:700,padding:"6px 16px",borderRadius:99,cursor:"pointer"}}>
+                      {c.name} <span style={{marginLeft:6,opacity:0.6,fontWeight:400}}>{c.signals.length}</span>
+                    </button>
+                  );})}
+                </div>
+                {active&&(
+                  <div>
+                    <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:16,padding:"28px 32px",marginBottom:16}}>
+                      <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>Pattern</div>
+                      <h2 style={{color:C.black,fontSize:24,fontWeight:800,margin:"0 0 12px",lineHeight:1.3}}>{active.theme}</h2>
+                      <div style={{height:1,background:C.grey3,marginBottom:16}}/>
+                      <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>What this means for GWI</div>
+                      <p style={{color:C.offBlack,fontSize:15,lineHeight:1.7,margin:0}}>{active.insight}</p>
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                      {active.signals.map(function(sig:any,i:number){
+                        var tc=typeColors[sig.type]||{bg:C.grey3,text:C.grey8,label:sig.type};
+                        return(
+                          <div key={i} style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:12,padding:"20px 24px"}}>
+                            <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
+                              <span style={{background:C.white,color:C.grey8,fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:99,border:"1px solid "+C.grey4}}>{tc.label}</span>
+                              <span style={{background:C.white,color:C.grey8,fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:99,border:"1px solid "+C.grey4}}>{sig.stage}</span>
+                            </div>
+                            <p style={{fontSize:16,fontWeight:700,color:C.black,margin:"0 0 10px",lineHeight:1.4}}>{sig.text}</p>
+                            <p style={{fontSize:14,color:C.grey7,lineHeight:1.7,margin:"0 0 16px"}}>{sig.explanation}</p>
+                            <div style={{borderTop:"1px solid "+C.grey3,paddingTop:12}}>
+                              <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>Personas affected</div>
+                              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                                {sig.personas.map(function(pid:string){var p=personas.find(function(x:any){return x.id===pid;});var col=p?getPersonaColor(p):{bg:C.grey3,border:C.grey5,text:C.grey8};return <span key={pid} style={{background:col.bg,color:col.text,border:"1px solid "+col.border,fontSize:12,fontWeight:600,padding:"4px 12px",borderRadius:99}}>{p?p.label:pid}</span>;})}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
+          {/* ── USER FLOWS TAB ── */}
+          {tab==="flows"&&(function(){
+            var FLOWS=[
+              {id:"homepage-to-signup",label:"Homepage to Free Sign-up",persona:"Inspiration Hunter / Commercial Closer",goal:"User lands on gwi.com and completes free account creation",steps:[{id:"s1",type:"page",label:"Homepage",note:"User lands via ad, search or referral"},{id:"s2",type:"decision",label:"Does the page communicate value instantly?",noLabel:"Bounces"},{id:"s3",type:"page",label:"Scrolls homepage",note:"Scans hero, logos, product highlights"},{id:"s4",type:"decision",label:"Does CTA say Sign up for free?",noLabel:"Clicks Book a Demo instead"},{id:"s5",type:"action",label:"Clicks Sign up for free CTA"},{id:"s6",type:"page",label:"Sign-up page",note:"Email, name, password or SSO"},{id:"s7",type:"decision",label:"Is the form friction low?",noLabel:"Abandons form"},{id:"s8",type:"action",label:"Submits sign-up form"},{id:"s9",type:"system",label:"System sends verification email"},{id:"s10",type:"page",label:"Email inbox",note:"User verifies email"},{id:"s11",type:"page",label:"Platform first login",note:"Blank canvas. What now?",isHighlight:true}]},
+              {id:"evaluation-to-demo",label:"Evaluation to Demo Booking",persona:"Strategic Leader / Commercial Closer",goal:"User evaluates GWI and books a demo with sales",steps:[{id:"e1",type:"page",label:"Homepage",note:"Arrives via word of mouth or outreach"},{id:"e2",type:"decision",label:"Credibility signals land in 5 seconds?",noLabel:"Exits"},{id:"e3",type:"page",label:"Browses case studies and about us",note:"Validates reputation and client names"},{id:"e4",type:"page",label:"Pricing page",note:"Checks ballpark cost"},{id:"e5",type:"decision",label:"Is value clear enough to justify a call?",noLabel:"Exits — too vague"},{id:"e6",type:"action",label:"Clicks Book a Demo CTA"},{id:"e7",type:"page",label:"Demo booking form / Calendly",note:"Selects time, fills details"},{id:"e8",type:"system",label:"Confirmation email sent"},{id:"e9",type:"page",label:"Demo call with GWI sales",note:"Outside website funnel",isHighlight:true}]},
+              {id:"api-evaluation",label:"API / Integration Evaluation",persona:"Data Integrator",goal:"Technical user evaluates GWI API for integration",steps:[{id:"a1",type:"page",label:"/api page",note:"Arrives via technical search — this is their homepage"},{id:"a2",type:"decision",label:"Does the page answer: endpoints, schema, auth, rate limits?",noLabel:"Exits to competitor docs"},{id:"a3",type:"page",label:"Explores /data and /respondent-level-data",note:"Validates data structure and freshness"},{id:"a4",type:"page",label:"Trust Center",note:"Checks GDPR, ISO, compliance"},{id:"a5",type:"decision",label:"Technical requirements met?",noLabel:"Raises internally — stalls"},{id:"a6",type:"action",label:"Requests API access / contacts sales"},{id:"a7",type:"page",label:"Proof of concept build",note:"First integration. Outside website funnel.",isHighlight:true}]},
+              {id:"report-to-signup",label:"Report / Insight → Sign-up",persona:"Insight Guru",goal:"User finds a GWI report via search and signs up to access full data",steps:[{id:"r1",type:"page",label:"Google search",note:"Searches for a specific stat, trend or data point"},{id:"r2",type:"page",label:"GWI blog or report page",note:"Lands on an article or truncated report via organic search"},{id:"r3",type:"decision",label:"Does the content prove GWI data quality?",noLabel:"Exits — no trust built"},{id:"r4",type:"page",label:"Reads article / scrolls report",note:"Validates methodology, sample size, recency of data"},{id:"r5",type:"system",label:"Hits gated content or data paywall"},{id:"r6",type:"decision",label:"Is the sign-up CTA compelling enough?",noLabel:"Exits — friction too high"},{id:"r7",type:"action",label:"Clicks 'Sign up for free' or 'See full data'"},{id:"r8",type:"page",label:"Sign-up page",note:"Email, name, password or SSO"},{id:"r9",type:"decision",label:"Is form friction low?",noLabel:"Abandons form"},{id:"r10",type:"action",label:"Submits sign-up form"},{id:"r11",type:"page",label:"Platform: full report unlocked",note:"The data they came for is now visible",isHighlight:true}]},
+              {id:"trial-to-paid",label:"Free Trial → Paid Upgrade",persona:"Insight Guru / Commercial Closer",goal:"Free trial user hits a limit and upgrades to a paid plan",steps:[{id:"t1",type:"page",label:"Inside GWI platform",note:"Active on a free trial — exploring the product"},{id:"t2",type:"system",label:"Hits feature limit or data paywall"},{id:"t3",type:"decision",label:"Is the upgrade value clear from the paywall?",noLabel:"Churns — returns to free tools"},{id:"t4",type:"page",label:"gwi.com/pricing",note:"Returns to website to compare plans and understand what paid unlocks"},{id:"t5",type:"decision",label:"Is pricing clear enough to self-serve?",noLabel:"Exits — too vague, or contacts support"},{id:"t6",type:"page",label:"Plan comparison",note:"Weighs what the paid tier unlocks vs the free tier"},{id:"t7",type:"decision",label:"Can they upgrade without speaking to sales?",noLabel:"Books an upgrade call with sales"},{id:"t8",type:"action",label:"Clicks Upgrade and enters payment"},{id:"t9",type:"system",label:"Payment processed, plan upgraded"},{id:"t10",type:"page",label:"Platform: full access unlocked",note:"All paywalled features and data now available",isHighlight:true}]},
+              {id:"trust-compliance",label:"Trust & Compliance Check",persona:"Data Integrator / Strategic Leader",goal:"Legal or security team validates GWI meets compliance requirements before sign-off",steps:[{id:"c1",type:"page",label:"Internal procurement request",note:"Legal or InfoSec team tasked with due diligence before deal can proceed"},{id:"c2",type:"page",label:"gwi.com Trust Center",note:"Searching for certifications, data policies and processing agreements"},{id:"c3",type:"decision",label:"Are ISO, GDPR and SOC2 certs clearly visible?",noLabel:"Contacts GWI directly — adds friction and delays"},{id:"c4",type:"page",label:"Reviews certifications",note:"ISO 27001, GDPR compliance, SOC2 documentation"},{id:"c5",type:"page",label:"Looks for DPA / data processing agreement",note:"Critical for enterprise procurement sign-off"},{id:"c6",type:"decision",label:"Do compliance docs meet requirements?",noLabel:"Requests additional documentation from GWI"},{id:"c7",type:"action",label:"Downloads DPA or requests signed agreement"},{id:"c8",type:"page",label:"Internal sign-off meeting",note:"Outside website funnel — legal reviews docs"},{id:"c9",type:"page",label:"Legal approval granted — deal unblocked",note:"Procurement cleared, commercial discussion can resume",isHighlight:true}]},
+              {id:"agency-evaluation",label:"Agency Evaluation",persona:"Commercial Closer",goal:"Agency evaluates GWI on behalf of a client brief",steps:[{id:"ag1",type:"page",label:"Client brief received",note:"Agency tasked with finding a data and insight partner for a campaign or project"},{id:"ag2",type:"page",label:"gwi.com homepage",note:"Evaluating GWI alongside 2–3 competitor platforms"},{id:"ag3",type:"page",label:"Case studies and sector coverage",note:"Looking for relevant client industry and audience data"},{id:"ag4",type:"decision",label:"Does GWI cover the client's audience and sector?",noLabel:"Eliminates GWI — wrong fit for the brief"},{id:"ag5",type:"page",label:"Platform features and reporting",note:"Assessing output quality, chart types and client-facing exports"},{id:"ag6",type:"decision",label:"Does GWI support agency or white-label workflows?",noLabel:"Raises concern internally — may still proceed"},{id:"ag7",type:"action",label:"Contacts sales or requests an agency demo"},{id:"ag8",type:"page",label:"Agency partnership demo",note:"GWI sales presents agency-specific use cases and pricing"},{id:"ag9",type:"page",label:"GWI recommended to client",note:"Agency champion secures internal buy-in and pitches GWI",isHighlight:true}]},
+              {id:"content-discovery",label:"Content Discovery",persona:"Inspiration Hunter",goal:"User arrives via social sharing and converts to a free account",steps:[{id:"cd1",type:"page",label:"Social media or newsletter",note:"Clicks a shared GWI chart, trend or stat — no prior brand awareness"},{id:"cd2",type:"page",label:"GWI insight article or trends page",note:"Lands on engaging content with no immediate purchase intent"},{id:"cd3",type:"decision",label:"Does the content spark ideas or validate their thinking?",noLabel:"Bounces — content not relevant enough"},{id:"cd4",type:"action",label:"Shares content internally or saves it for later"},{id:"cd5",type:"page",label:"Explores related articles",note:"Browses /blog or /reports for more content in the same vein"},{id:"cd6",type:"decision",label:"Does GWI have a depth of relevant content?",noLabel:"Leaves — treats it as a one-off visit"},{id:"cd7",type:"page",label:"Discovers free sign-up CTA",note:"Prompted by a content gate, email capture or newsletter prompt"},{id:"cd8",type:"decision",label:"Is the free tier compelling enough to sign up now?",noLabel:"Exits — not enough incentive at this moment"},{id:"cd9",type:"action",label:"Creates free account"},{id:"cd10",type:"page",label:"Returns to explore the data behind the insights",note:"Free account becomes a regular content user and internal champion",isHighlight:true}]},
+            ];
+            var typeConfig:any={page:{bg:C.white,border:C.grey4,text:C.black,label:"Page",labelText:C.grey8},decision:{bg:"#EBF1FB",border:C.violet,text:C.black,label:"Decision",labelText:C.violetDark},action:{bg:"#F7FAFF",border:C.teal,text:C.black,label:"Action",labelText:C.tealDark},system:{bg:"#EBF1FB",border:C.blueMed,text:C.black,label:"System",labelText:C.blueDark}};
+            var flow=FLOWS.find(function(f){return f.id===activeFlow;})||FLOWS[0];
+            return(
+              <div>
+                <div style={{background:C.black,borderRadius:16,padding:"28px 32px",marginBottom:24}}>
+                  <div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Step by step</div>
+                  <h1 style={{color:C.white,fontSize:26,fontWeight:800,margin:"0 0 8px"}}>User Flows</h1>
+                  <p style={{color:C.grey6,fontSize:15,lineHeight:1.7,margin:0,maxWidth:560}}>The exact clicks from A to B. Each flow maps screens, decision points, actions and drop-off paths for a specific goal on gwi.com.</p>
+                </div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:24}}>
+                  {FLOWS.map(function(f){return(<button key={f.id} onClick={function(){setActiveFlow(f.id);}} style={{background:activeFlow===f.id?C.pink:C.white,color:activeFlow===f.id?C.white:C.offBlack,border:"1.5px solid "+(activeFlow===f.id?C.pink:C.grey4),fontSize:12,fontWeight:700,padding:"6px 16px",borderRadius:99,cursor:"pointer"}}>{f.label}</button>);})}
+                </div>
+                <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:14,padding:24}}>
+                  <div style={{marginBottom:20}}>
+                    <h2 style={{fontSize:18,fontWeight:800,color:C.black,margin:"0 0 4px"}}>{flow.label}</h2>
+                    <p style={{fontSize:13,color:C.grey7,margin:"0 0 4px"}}><strong style={{color:C.offBlack}}>Persona:</strong> {flow.persona}</p>
+                    <p style={{fontSize:13,color:C.grey7,margin:0}}><strong style={{color:C.offBlack}}>Goal:</strong> {flow.goal}</p>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                    {flow.steps.map(function(step:any,i:number){
+                      var cfg=typeConfig[step.type]||typeConfig.page;var isLast=i===flow.steps.length-1;
+                      return(
+                        <div key={step.id}>
+                          <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+                            <div style={{display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0}}>
+                              <div style={{width:32,height:32,borderRadius:"50%",background:C.white,border:"2px solid "+C.pink,color:C.black,fontSize:12,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center"}}>{i+1}</div>
+                              {!isLast&&<div style={{width:2,flex:1,minHeight:24,background:C.grey4,margin:"4px 0"}}/>}
+                            </div>
+                            <div style={{flex:1,background:step.isHighlight?C.pink:C.white,border:"1.5px solid "+(step.isHighlight?C.pink:C.grey4),borderRadius:12,padding:"14px 16px",marginBottom:isLast?0:4}}>
+                              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:step.note?8:0}}>
+                                <span style={{background:"rgba(255,255,255,0.25)",color:step.isHighlight?C.white:cfg.labelText,fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,flexShrink:0,textTransform:"uppercase",border:"1px solid "+(step.isHighlight?"rgba(255,255,255,0.3)":C.grey4)}}>{step.isHighlight?"Key moment":cfg.label}</span>
+                                <span style={{fontSize:14,fontWeight:700,color:step.isHighlight?C.white:cfg.text}}>{step.label}</span>
+                              </div>
+                              {step.note&&<p style={{fontSize:12,color:step.isHighlight?"rgba(255,255,255,0.8)":C.grey7,margin:0,lineHeight:1.5}}>{step.note}</p>}
+                              {step.type==="decision"&&(<div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}><span style={{background:C.white,color:"#005C3B",border:"1px solid #80D4B0",fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:99}}>Yes — continues</span><span style={{background:C.white,color:"#CC0000",border:"1px solid #FFAAAA",fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:99}}>No — {step.noLabel}</span></div>)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
       {/* Floating share button */}
@@ -4259,7 +4420,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
     var reportWindow=window.open('about:blank','_blank');
     if(reportWindow){reportWindow.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Loading…</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#f5f5f5;font-family:sans-serif;}@keyframes spin{to{transform:rotate(360deg);}}.sp{width:40px;height:40px;border-radius:50%;border:4px solid #eee;border-top:4px solid #FF0077;animation:spin 0.8s linear infinite;}</style></head><body><div class="sp"></div></body></html>');reportWindow.document.close();}
     var shareId=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,10);
-    setDoc(doc(_db,'sharedReports',shareId),{personas:personas,journeys:journeys,pages:pages,gaCards:gaCards,stages:stages,vwoPages:vwoPages,createdAt:Date.now()}).then(function(){
+    setDoc(doc(_db,'sharedReports',shareId),{personas:personas,journeys:journeys,pages:pages,stages:stages,createdAt:Date.now()}).then(function(){
       var hash=initialTab?'#'+initialTab:'';
       if(reportWindow){reportWindow.location.href=window.location.origin+'/report/'+shareId+hash;}
       _setReportSharing(false);
@@ -4306,8 +4467,8 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
           <Dropdown label="Journeys" items={MAPPING_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("mapping");}} forceActive={view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"}/>
           <button onClick={function(){setView("analytics");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="analytics"?C.pink:"transparent",color:view==="analytics"?C.white:C.grey7,flexShrink:0}}>Analytics</button>
           <div style={{flex:1}}/>
-          {(view==="personas"||view==="persona-detail"||view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"||view==="analytics")&&(
-            <button onClick={function(){var t=(view==="personas"||view==="persona-detail")?"personas":(view==="analytics")?"analytics":"journeys";_shareReport(t);}} disabled={_reportSharing} title="Share a public read-only report" style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:700,border:"none",cursor:_reportSharing?"wait":"pointer",background:_reportSharing?"#888":"rgba(255,0,119,0.18)",color:_reportSharing?C.grey6:C.pink,flexShrink:0,transition:"background 0.15s"}} onMouseEnter={function(e){if(!_reportSharing)(e.currentTarget as HTMLElement).style.background="rgba(255,0,119,0.28)";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.background=_reportSharing?"#888":"rgba(255,0,119,0.18)";}}><Share2 size={13}/>{_reportSharing?"Sharing…":"Share report"}</button>
+          {(view==="personas"||view==="persona-detail"||view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows")&&(
+            <button onClick={function(){var t=(view==="personas"||view==="persona-detail")?"personas":(view==="mapping"||view==="lifecycle")?"mapping":(view==="affinity")?"affinity":(view==="flows")?"flows":"journeys";_shareReport(t);}} disabled={_reportSharing} title="Share a public read-only report" style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:700,border:"none",cursor:_reportSharing?"wait":"pointer",background:_reportSharing?"#888":"rgba(255,0,119,0.18)",color:_reportSharing?C.grey6:C.pink,flexShrink:0,transition:"background 0.15s"}} onMouseEnter={function(e){if(!_reportSharing)(e.currentTarget as HTMLElement).style.background="rgba(255,0,119,0.28)";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.background=_reportSharing?"#888":"rgba(255,0,119,0.18)";}}><Share2 size={13}/>{_reportSharing?"Sharing…":"Share report"}</button>
           )}
           <UserMenu user={_user} onSignOut={function(){fbSignOut(_auth);}} onSettings={function(){setView("settings");}} onFeedbackPage={function(){setView("feedback");}} onGuide={function(){setView("guide");}} activeView={view}/>
         </div>
