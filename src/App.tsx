@@ -3969,7 +3969,7 @@ function ReportPage({shareId}:{shareId:string}){
         <div style={{flex:1}}/>
         <div style={{display:"flex",gap:4,background:"rgba(255,255,255,0.08)",borderRadius:8,padding:4}}>
           {[["personas","Personas"],["journeys","Journeys"],["mapping","Customer Mapping"],["affinity","Affinity Map"],["flows","User Flows"]].map(function(item){return(
-            <button key={item[0]} onClick={function(){setTab(item[0]);}} style={{padding:"5px 14px",borderRadius:6,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",background:tab===item[0]?C.pink:"transparent",color:tab===item[0]?C.white:C.grey6}}>{item[1]}</button>
+            <button key={item[0]} onClick={function(){setTab(item[0]);window.location.hash=item[0];}} style={{padding:"5px 14px",borderRadius:6,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",background:tab===item[0]?C.pink:"transparent",color:tab===item[0]?C.white:C.grey6}}>{item[1]}</button>
           );})}
         </div>
       </div>
