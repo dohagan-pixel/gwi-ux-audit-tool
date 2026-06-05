@@ -4354,6 +4354,8 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
   var [activeCategory,setActiveCategory]=useState("content");
   var [showReport,setShowReport]=useState(false);
   var [expandedItems,setExpandedItems]=useState<Record<string,boolean>>({});
+  var [ccFg,setCcFg]=useState("#101720");
+  var [ccBg,setCcBg]=useState("#FFFFFF");
   var [showNewForm,setShowNewForm]=useState(false);
   var [newUrl,setNewUrl]=useState("");
   var [newLabel,setNewLabel]=useState("");
@@ -4426,6 +4428,8 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
   function auditStats(p:any){var all=CATEGORIES.flatMap(function(c:any){return c.items;});var done=all.filter(function(it:any){var r=p.results[it.id];return r&&r.status!==null;}).length;var scored=all.filter(function(it:any){var r=p.results[it.id];return r&&r.status&&r.status!=="na";}).length;var passed=all.filter(function(it:any){var r=p.results[it.id];return r&&r.status==="pass";}).length;var pct=scored>0?Math.round(passed/scored*100):null;return{done,total:all.length,pct};}
   function createAudit(){if(!newUrl.trim())return;var id="qa-"+Date.now();setQaPages(function(prev:any[]){return [{id,url:newUrl.trim(),label:newLabel.trim()||newUrl.trim(),createdAt:Date.now(),results:{}},...prev];});setActiveAuditId(id);setActiveCategory("content");setExpandedItems({});setShowNewForm(false);setNewUrl("");setNewLabel("");}
   function deleteAudit(id:string,e:any){e.stopPropagation();if(!confirm("Delete this page audit?"))return;setQaPages(function(prev:any[]){return prev.filter(function(p:any){return p.id!==id;});});if(activeAuditId===id)setActiveAuditId(null);}
+  function hexLuminance(hex:string):number|null{var m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);if(!m)return null;var ch=[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)];return ch.reduce(function(L:number,c:number,i:number){var s=c/255;return L+([0.2126,0.7152,0.0722][i])*(s<=0.04045?s/12.92:Math.pow((s+0.055)/1.055,2.4));},0);}
+  function contrastRatio(fg:string,bg:string):number|null{var L1=hexLuminance(fg);var L2=hexLuminance(bg);if(L1===null||L2===null)return null;var hi=Math.max(L1,L2);var lo=Math.min(L1,L2);return Math.round(((hi+0.05)/(lo+0.05))*100)/100;}
   var allItems=CATEGORIES.flatMap(function(c){return c.items.map(function(it){return {...it,category:c.label};});});
   var totalItems=allItems.length;
   var activeResults=activeAudit?.results||{};
@@ -4559,7 +4563,32 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
                       {Object.entries(STATUS_CFG).map(function([key,cfg]:any){var isActive=r.status===key;return(<button key={key} onClick={function(){setResult(item.id,"status",isActive?null:key);if(isActive)setResult(item.id,"severity",null);}} style={{padding:"5px 12px",borderRadius:99,fontSize:11,fontWeight:700,border:"1.5px solid "+(isActive?cfg.activeBg:cfg.border),background:isActive?cfg.activeBg:cfg.bg,color:isActive?cfg.activeText:cfg.text,cursor:"pointer",transition:"all 0.15s"}}>{isActive&&<span style={{marginRight:3}}>✓</span>}{cfg.label}</button>);})}
                       <button onClick={function(){setExpandedItems(function(prev){return {...prev,[item.id]:!prev[item.id]};});}} style={{padding:"5px 12px",borderRadius:99,fontSize:11,fontWeight:600,border:"1.5px solid "+C.grey4,background:r.notes?C.grey3:"transparent",color:C.grey7,cursor:"pointer",marginLeft:"auto"}}>{expanded||r.notes?"Hide note":"+ Note"}</button>
                     </div>
-                    {needsSeverity&&(<div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:expanded||r.notes?12:0}}><span style={{fontSize:11,color:C.grey7,fontWeight:600}}>Severity:</span>{Object.entries(SEVERITY_CFG).map(function([key,cfg]:any){var isActive=r.severity===key;return(<button key={key} onClick={function(){setResult(item.id,"severity",isActive?null:key);}} style={{padding:"4px 10px",borderRadius:99,fontSize:11,fontWeight:700,border:"1.5px solid "+(isActive?cfg.activeBg:cfg.border),background:isActive?cfg.activeBg:cfg.bg,color:isActive?cfg.activeText:cfg.text,cursor:"pointer",transition:"all 0.15s"}}>{cfg.label}</button>);})}</div>)}
+                    {needsSeverity&&(<div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:item.id==="qc-d4"||expanded||r.notes?12:0}}><span style={{fontSize:11,color:C.grey7,fontWeight:600}}>Severity:</span>{Object.entries(SEVERITY_CFG).map(function([key,cfg]:any){var isActive=r.severity===key;return(<button key={key} onClick={function(){setResult(item.id,"severity",isActive?null:key);}} style={{padding:"4px 10px",borderRadius:99,fontSize:11,fontWeight:700,border:"1.5px solid "+(isActive?cfg.activeBg:cfg.border),background:isActive?cfg.activeBg:cfg.bg,color:isActive?cfg.activeText:cfg.text,cursor:"pointer",transition:"all 0.15s"}}>{cfg.label}</button>);})}</div>)}
+                    {item.id==="qc-d4"&&(function(){
+                      var ratio=contrastRatio(ccFg,ccBg);
+                      var passAA=ratio!==null&&ratio>=4.5;var passAALg=ratio!==null&&ratio>=3;var passAAA=ratio!==null&&ratio>=7;var passAAALg=ratio!==null&&ratio>=4.5;
+                      var ratioColor=ratio===null?C.grey6:ratio>=7?"#22C55E":ratio>=4.5?"#22C55E":ratio>=3?"#F5A623":"#E53E3E";
+                      return(<div style={{background:C.grey2,borderRadius:12,padding:"16px",marginBottom:expanded||r.notes?12:0}}>
+                        <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:12}}>Contrast Checker</div>
+                        <div style={{display:"flex",gap:12,marginBottom:14,flexWrap:"wrap"}}>
+                          {[{label:"Text colour",val:ccFg,set:setCcFg},{label:"Background",val:ccBg,set:setCcBg}].map(function(inp){return(<div key={inp.label} style={{flex:1,minWidth:140}}>
+                            <div style={{fontSize:11,fontWeight:600,color:C.grey7,marginBottom:6}}>{inp.label}</div>
+                            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                              <input type="color" value={inp.val} onChange={function(e){inp.set(e.target.value);}} style={{width:34,height:34,borderRadius:6,border:"1.5px solid "+C.grey4,cursor:"pointer",padding:2,flexShrink:0}}/>
+                              <input value={inp.val} onChange={function(e){if(/^#[0-9a-fA-F]{0,6}$/.test(e.target.value))inp.set(e.target.value);}} style={{width:"100%",padding:"7px 10px",borderRadius:6,border:"1.5px solid "+C.grey4,fontSize:12,fontFamily:"monospace",outline:"none",boxSizing:"border-box"}} onFocus={function(e){e.currentTarget.style.borderColor=C.pink;}} onBlur={function(e){e.currentTarget.style.borderColor=C.grey4;}}/>
+                            </div>
+                          </div>);})}
+                        </div>
+                        <div style={{background:ccBg,borderRadius:10,padding:"16px 20px",marginBottom:12,border:"1px solid "+C.grey4,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+                          <div><div style={{color:ccFg,fontSize:16,fontWeight:700,lineHeight:1.4,marginBottom:2}}>Aa — Normal text sample</div><div style={{color:ccFg,fontSize:13,lineHeight:1.5,opacity:0.85}}>The quick brown fox jumps over the lazy dog.</div></div>
+                          <div style={{textAlign:"right",flexShrink:0}}><div style={{fontSize:30,fontWeight:900,color:ratioColor,lineHeight:1}}>{ratio!==null?ratio+":1":"—"}</div><div style={{fontSize:10,color:C.grey6,marginTop:2}}>contrast ratio</div></div>
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:12}}>
+                          {[{l:"AA Normal",p:passAA,req:"≥4.5:1"},{l:"AA Large",p:passAALg,req:"≥3:1"},{l:"AAA Normal",p:passAAA,req:"≥7:1"},{l:"AAA Large",p:passAAALg,req:"≥4.5:1"}].map(function(ch){return(<div key={ch.l} style={{background:ch.p?"#E6F9F2":"#FFF0F0",borderRadius:8,padding:"8px 6px",textAlign:"center",border:"1px solid "+(ch.p?"#00A86B":"#E53E3E")}}><div style={{fontSize:10,fontWeight:700,color:ch.p?"#005C3B":"#7A1A1A"}}>{ch.l}</div><div style={{fontSize:11,fontWeight:800,color:ch.p?"#00A86B":"#E53E3E",marginTop:2}}>{ch.p?"Pass":"Fail"}</div><div style={{fontSize:9,color:ch.p?"#005C3B":"#7A1A1A",opacity:0.7}}>{ch.req}</div></div>);})}
+                        </div>
+                        <button onClick={function(){if(ratio===null)return;var note="Contrast ratio: "+ratio+":1 — AA Normal: "+(passAA?"Pass":"Fail")+" · AA Large: "+(passAALg?"Pass":"Fail")+" · AAA Normal: "+(passAAA?"Pass":"Fail")+". Text: "+ccFg+", Background: "+ccBg+".";setResult(item.id,"notes",(r.notes?r.notes+"\n":"")+note);setExpandedItems(function(prev){return{...prev,[item.id]:true};});}} style={{fontSize:11,fontWeight:600,color:C.grey7,background:"none",border:"1px solid "+C.grey4,borderRadius:6,padding:"5px 12px",cursor:"pointer"}}>Copy result to notes</button>
+                      </div>);
+                    })()}
                     {(expanded||r.notes)&&(<textarea value={r.notes||""} onChange={function(e){setResult(item.id,"notes",e.target.value);}} placeholder="Add a note, observation, or screenshot link..." style={{width:"100%",minHeight:68,padding:"10px 14px",borderRadius:8,border:"1.5px solid "+C.grey4,fontSize:13,color:C.offBlack,fontFamily:FF,resize:"vertical",boxSizing:"border-box",outline:"none",lineHeight:1.6}} onFocus={function(e){e.currentTarget.style.borderColor=C.pink;}} onBlur={function(e){e.currentTarget.style.borderColor=C.grey4;}}/>)}
                   </div>
                 </div>
