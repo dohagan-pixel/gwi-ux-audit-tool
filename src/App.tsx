@@ -4348,11 +4348,15 @@ function SharePage({shareId}:{shareId:string}){
   );
 }
 
-function QAChecklistPage({qaChecklist,setQaChecklist}:{qaChecklist:Record<string,{status:string|null,severity:string|null,notes:string}>,setQaChecklist:Function}){
+function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function}){
   var isMobile=useWidth()<768;
+  var [activeAuditId,setActiveAuditId]=useState<string|null>(null);
   var [activeCategory,setActiveCategory]=useState("content");
   var [showReport,setShowReport]=useState(false);
   var [expandedItems,setExpandedItems]=useState<Record<string,boolean>>({});
+  var [showNewForm,setShowNewForm]=useState(false);
+  var [newUrl,setNewUrl]=useState("");
+  var [newLabel,setNewLabel]=useState("");
   const CATEGORIES=[
     {id:"content",label:"Content",items:[
       {id:"qc-c1",text:"Value proposition is clear within 5 seconds of landing"},
@@ -4415,28 +4419,79 @@ function QAChecklistPage({qaChecklist,setQaChecklist}:{qaChecklist:Record<string
       {id:"qc-m10",text:"Hover-only interactions are replaced with mobile-friendly alternatives"},
     ]},
   ];
-  function getResult(id:string){return qaChecklist[id]||{status:null,severity:null,notes:""};}
-  function setResult(id:string,field:string,val:any){setQaChecklist(function(prev:any){var ex=prev[id]||{status:null,severity:null,notes:""};return {...prev,[id]:{...ex,[field]:val}};});}
-  function categoryScore(cat:any){var scored=cat.items.filter(function(it:any){var r=getResult(it.id);return r.status&&r.status!=="na";});var passed=cat.items.filter(function(it:any){return getResult(it.id).status==="pass";});return scored.length>0?Math.round(passed.length/scored.length*100):null;}
+  var activeAudit:any=qaPages.find(function(p:any){return p.id===activeAuditId;})||null;
+  function getResult(id:string){var r=(activeAudit?.results)||{};return r[id]||{status:null,severity:null,notes:""};}
+  function setResult(id:string,field:string,val:any){setQaPages(function(prev:any[]){return prev.map(function(p:any){if(p.id!==activeAuditId)return p;var ex=(p.results[id])||{status:null,severity:null,notes:""};return{...p,results:{...p.results,[id]:{...ex,[field]:val}}};});});}
+  function categoryScore(cat:any,res?:any){var results=res||activeAudit?.results||{};var scored=cat.items.filter(function(it:any){var r=results[it.id];return r&&r.status&&r.status!=="na";});var passed=cat.items.filter(function(it:any){var r=results[it.id];return r&&r.status==="pass";});return scored.length>0?Math.round(passed.length/scored.length*100):null;}
+  function auditStats(p:any){var all=CATEGORIES.flatMap(function(c:any){return c.items;});var done=all.filter(function(it:any){var r=p.results[it.id];return r&&r.status!==null;}).length;var scored=all.filter(function(it:any){var r=p.results[it.id];return r&&r.status&&r.status!=="na";}).length;var passed=all.filter(function(it:any){var r=p.results[it.id];return r&&r.status==="pass";}).length;var pct=scored>0?Math.round(passed/scored*100):null;return{done,total:all.length,pct};}
+  function createAudit(){if(!newUrl.trim())return;var id="qa-"+Date.now();setQaPages(function(prev:any[]){return [{id,url:newUrl.trim(),label:newLabel.trim()||newUrl.trim(),createdAt:Date.now(),results:{}},...prev];});setActiveAuditId(id);setActiveCategory("content");setExpandedItems({});setShowNewForm(false);setNewUrl("");setNewLabel("");}
+  function deleteAudit(id:string,e:any){e.stopPropagation();if(!confirm("Delete this page audit?"))return;setQaPages(function(prev:any[]){return prev.filter(function(p:any){return p.id!==id;});});if(activeAuditId===id)setActiveAuditId(null);}
   var allItems=CATEGORIES.flatMap(function(c){return c.items.map(function(it){return {...it,category:c.label};});});
   var totalItems=allItems.length;
-  var totalDone=allItems.filter(function(it){return getResult(it.id).status!==null;}).length;
-  var totalScored=allItems.filter(function(it){var r=getResult(it.id);return r.status&&r.status!=="na";}).length;
-  var totalPassed=allItems.filter(function(it){return getResult(it.id).status==="pass";}).length;
+  var activeResults=activeAudit?.results||{};
+  var totalDone=allItems.filter(function(it){var r=activeResults[it.id];return r&&r.status!==null;}).length;
+  var totalScored=allItems.filter(function(it){var r=activeResults[it.id];return r&&r.status&&r.status!=="na";}).length;
+  var totalPassed=allItems.filter(function(it){var r=activeResults[it.id];return r&&r.status==="pass";}).length;
   var overallPct=totalScored>0?Math.round(totalPassed/totalScored*100):null;
-  var criticalFails=allItems.filter(function(it){var r=getResult(it.id);return (r.status==="fail"||r.status==="partial")&&r.severity==="critical";});
-  var majorFails=allItems.filter(function(it){var r=getResult(it.id);return (r.status==="fail"||r.status==="partial")&&r.severity==="major";});
-  var minorFails=allItems.filter(function(it){var r=getResult(it.id);return (r.status==="fail"||r.status==="partial")&&r.severity==="minor";});
+  var criticalFails=allItems.filter(function(it){var r=activeResults[it.id];return r&&(r.status==="fail"||r.status==="partial")&&r.severity==="critical";});
+  var majorFails=allItems.filter(function(it){var r=activeResults[it.id];return r&&(r.status==="fail"||r.status==="partial")&&r.severity==="major";});
+  var minorFails=allItems.filter(function(it){var r=activeResults[it.id];return r&&(r.status==="fail"||r.status==="partial")&&r.severity==="minor";});
   var activeCat=CATEGORIES.find(function(c){return c.id===activeCategory;})||CATEGORIES[0];
+  // LIST VIEW — no active audit
+  if(!activeAudit){return(
+    <div style={{background:C.grey2,height:"100%",overflow:"auto",padding:isMobile?"20px 16px":"40px 32px",fontFamily:FF}}>
+      <div style={{maxWidth:900,margin:"0 auto",paddingBottom:80}}>
+        <div style={{background:C.black,borderRadius:20,padding:isMobile?"24px":"36px 40px",marginBottom:28}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>UX Heuristic Evaluation</div>
+          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
+            <div><h1 style={{color:C.white,fontSize:isMobile?24:30,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:"-0.02em"}}>QA Checklist</h1><p style={{color:C.grey6,fontSize:14,lineHeight:1.7,margin:0,maxWidth:500}}>Run a structured heuristic audit on any page. Each audit scores 50 criteria across 5 categories and generates a prioritised roadmap.</p></div>
+            <button onClick={function(){setShowNewForm(true);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:10,padding:"12px 20px",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>+ Start new QA test</button>
+          </div>
+        </div>
+        {showNewForm&&(<div style={{background:C.white,borderRadius:16,padding:"24px 28px",marginBottom:20,border:"1.5px solid "+C.pink}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.offBlack,marginBottom:16}}>New page audit</div>
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            <div><label style={{fontSize:12,fontWeight:600,color:C.grey7,display:"block",marginBottom:4}}>Page URL <span style={{color:C.pink}}>*</span></label><input value={newUrl} onChange={function(e){setNewUrl(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")createAudit();}} placeholder="https://www.gwi.com/platform" style={{width:"100%",padding:"10px 14px",borderRadius:8,border:"1.5px solid "+C.grey4,fontSize:14,fontFamily:FF,boxSizing:"border-box",outline:"none"}} onFocus={function(e){e.currentTarget.style.borderColor=C.pink;}} onBlur={function(e){e.currentTarget.style.borderColor=C.grey4;}}/></div>
+            <div><label style={{fontSize:12,fontWeight:600,color:C.grey7,display:"block",marginBottom:4}}>Label <span style={{color:C.grey6,fontWeight:400}}>(optional)</span></label><input value={newLabel} onChange={function(e){setNewLabel(e.target.value);}} placeholder="e.g. Platform page" style={{width:"100%",padding:"10px 14px",borderRadius:8,border:"1.5px solid "+C.grey4,fontSize:14,fontFamily:FF,boxSizing:"border-box",outline:"none"}} onFocus={function(e){e.currentTarget.style.borderColor=C.pink;}} onBlur={function(e){e.currentTarget.style.borderColor=C.grey4;}}/></div>
+            <div style={{display:"flex",gap:8}}><button onClick={createAudit} disabled={!newUrl.trim()} style={{flex:1,background:newUrl.trim()?C.pink:C.grey4,color:C.white,border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:newUrl.trim()?"pointer":"default"}}>Start audit</button><button onClick={function(){setShowNewForm(false);setNewUrl("");setNewLabel("");}} style={{padding:"11px 20px",borderRadius:8,border:"1px solid "+C.grey4,background:"transparent",fontSize:13,fontWeight:600,color:C.grey7,cursor:"pointer"}}>Cancel</button></div>
+          </div>
+        </div>)}
+        {qaPages.length===0&&!showNewForm&&(<div style={{background:C.white,borderRadius:16,padding:"48px 32px",textAlign:"center",border:"1px dashed "+C.grey4}}><div style={{fontSize:32,marginBottom:12}}>📋</div><div style={{fontSize:15,fontWeight:700,color:C.offBlack,marginBottom:6}}>No page audits yet</div><div style={{fontSize:14,color:C.grey7,marginBottom:20}}>Click "Start new QA test" to audit your first page.</div><button onClick={function(){setShowNewForm(true);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>+ Start new QA test</button></div>)}
+        {qaPages.length>0&&(<div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {qaPages.map(function(p:any){var stats=auditStats(p);var scoreColor=stats.pct===null?C.grey6:stats.pct>=80?"#22C55E":stats.pct>=60?"#F5A623":"#E53E3E";var critCount=CATEGORIES.flatMap(function(c:any){return c.items;}).filter(function(it:any){var r=p.results[it.id];return r&&(r.status==="fail"||r.status==="partial")&&r.severity==="critical";}).length;return(
+            <div key={p.id} onClick={function(){setActiveAuditId(p.id);setShowReport(false);setActiveCategory("content");setExpandedItems({});}} style={{background:C.white,borderRadius:14,padding:"18px 22px",border:"1px solid "+C.grey4,cursor:"pointer",transition:"box-shadow 0.15s,border-color 0.15s"}} onMouseEnter={function(e){(e.currentTarget as HTMLElement).style.boxShadow="0 4px 20px rgba(0,0,0,0.09)";(e.currentTarget as HTMLElement).style.borderColor=C.grey5;}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.boxShadow="none";(e.currentTarget as HTMLElement).style.borderColor=C.grey4;}}>
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:700,color:C.offBlack,marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.label||p.url}</div>
+                  <div style={{fontSize:12,color:C.grey7,marginBottom:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.url}</div>
+                  <div style={{display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:6,height:6,borderRadius:"50%",background:stats.pct===null?C.grey5:scoreColor}}/><span style={{fontSize:12,fontWeight:700,color:scoreColor}}>{stats.pct!==null?stats.pct+"%":"Not scored"}</span></div>
+                    <span style={{fontSize:12,color:C.grey7}}>{stats.done}/{stats.total} assessed</span>
+                    {critCount>0&&<span style={{fontSize:11,fontWeight:700,color:"#E53E3E",background:"#FFF0F0",padding:"2px 8px",borderRadius:99}}>{critCount} critical</span>}
+                    <span style={{fontSize:11,color:C.grey6}}>{new Date(p.createdAt).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</span>
+                  </div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                  <div style={{textAlign:"right"}}><div style={{fontSize:24,fontWeight:900,color:stats.pct===null?C.grey5:scoreColor,lineHeight:1}}>{stats.pct!==null?stats.pct+"%":"—"}</div><div style={{fontSize:10,color:C.grey6,marginTop:2}}>pass rate</div></div>
+                  <button onClick={function(e:any){deleteAudit(p.id,e);}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey5,padding:"4px",borderRadius:6,transition:"color 0.15s"}} onMouseEnter={function(e){(e.currentTarget as HTMLElement).style.color="#E53E3E";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.color=C.grey5;}}><Trash2 size={15}/></button>
+                </div>
+              </div>
+            </div>
+          );})}
+        </div>)}
+      </div>
+    </div>
+  );}
   var STATUS_CFG:any={pass:{label:"Pass",bg:"#E6F9F2",border:"#00A86B",text:"#005C3B",activeBg:"#00A86B",activeText:"#fff"},partial:{label:"Partial",bg:"#FFF8E6",border:"#F5A623",text:"#7A4F00",activeBg:"#F5A623",activeText:"#fff"},fail:{label:"Fail",bg:"#FFF0F0",border:"#E53E3E",text:"#7A1A1A",activeBg:"#E53E3E",activeText:"#fff"},na:{label:"N/A",bg:C.grey3,border:C.grey5,text:C.grey7,activeBg:C.grey6,activeText:"#fff"}};
   var SEVERITY_CFG:any={critical:{label:"Critical",bg:"#FFF0F0",border:"#E53E3E",text:"#7A1A1A",activeBg:"#E53E3E",activeText:"#fff"},major:{label:"Major",bg:"#FFF8E6",border:"#F5A623",text:"#7A4F00",activeBg:"#F5A623",activeText:"#fff"},minor:{label:"Minor",bg:C.grey3,border:C.grey5,text:C.grey7,activeBg:C.grey6,activeText:"#fff"}};
   if(showReport){return(
     <div style={{background:C.grey2,height:"100%",overflow:"auto",padding:isMobile?"20px 16px":"40px 32px",fontFamily:FF}}>
       <div style={{maxWidth:800,margin:"0 auto",paddingBottom:80}}>
-        <button onClick={function(){setShowReport(false);}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey7,fontSize:13,fontWeight:600,padding:"0 0 20px",display:"flex",alignItems:"center",gap:6}}>← Back to checklist</button>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20}}><button onClick={function(){setShowReport(false);}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey7,fontSize:13,fontWeight:600,padding:0,display:"flex",alignItems:"center",gap:6}}>← Back to checklist</button><span style={{color:C.grey5}}>·</span><button onClick={function(){setActiveAuditId(null);setShowReport(false);}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey7,fontSize:13,fontWeight:600,padding:0}}>All audits</button></div>
         <div style={{background:C.black,borderRadius:20,padding:isMobile?"24px":"36px 40px",marginBottom:24}}>
           <div style={{fontSize:12,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>QA Audit Report</div>
-          <h1 style={{color:C.white,fontSize:isMobile?24:30,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:"-0.02em"}}>GWI Website — QA Checklist</h1>
+          <h1 style={{color:C.white,fontSize:isMobile?24:30,fontWeight:900,margin:"0 0 4px",lineHeight:1.15,letterSpacing:"-0.02em"}}>{activeAudit.label||activeAudit.url}</h1>
+          <div style={{fontSize:12,color:C.grey6,marginBottom:16}}>{activeAudit.url}</div>
           <p style={{color:C.grey6,fontSize:14,lineHeight:1.7,margin:"0 0 20px"}}>{totalDone} of {totalItems} criteria assessed{overallPct!==null?" · "+overallPct+"% pass rate":""}</p>
           <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(5,1fr)",gap:8}}>
             {CATEGORIES.map(function(cat){var score=categoryScore(cat);var scoreColor=score===null?C.grey6:score>=80?"#22C55E":score>=60?"#F5A623":"#E53E3E";return(<div key={cat.id} style={{background:"rgba(255,255,255,0.06)",borderRadius:10,padding:"12px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:800,color:scoreColor,lineHeight:1}}>{score!==null?score+"%":"—"}</div><div style={{fontSize:9,color:C.grey6,marginTop:4,lineHeight:1.3}}>{cat.label}</div></div>);})}
@@ -4471,10 +4526,11 @@ function QAChecklistPage({qaChecklist,setQaChecklist}:{qaChecklist:Record<string
   return(
     <div style={{background:C.grey2,height:"100%",overflow:"auto",padding:isMobile?"20px 16px":"40px 32px",fontFamily:FF}}>
       <div style={{maxWidth:900,margin:"0 auto",paddingBottom:80}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20}}><button onClick={function(){setActiveAuditId(null);}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey7,fontSize:13,fontWeight:600,padding:0,display:"flex",alignItems:"center",gap:6}}>← All audits</button></div>
         <div style={{background:C.black,borderRadius:20,padding:isMobile?"24px":"36px 40px",marginBottom:28}}>
           <div style={{fontSize:12,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>UX Heuristic Evaluation</div>
-          <h1 style={{color:C.white,fontSize:isMobile?24:30,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:"-0.02em"}}>QA Checklist</h1>
-          <p style={{color:C.grey6,fontSize:14,lineHeight:1.7,margin:"0 0 20px",maxWidth:560}}>Score each criterion across 5 categories. Flag failures as Critical, Major, or Minor to generate a prioritised roadmap.</p>
+          <h1 style={{color:C.white,fontSize:isMobile?22:28,fontWeight:900,margin:"0 0 4px",lineHeight:1.15,letterSpacing:"-0.02em"}}>{activeAudit.label||activeAudit.url}</h1>
+          <div style={{fontSize:12,color:C.grey6,marginBottom:16}}>{activeAudit.url}</div>
           <div style={{background:"rgba(255,255,255,0.06)",borderRadius:12,padding:"16px 20px"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
               <span style={{fontSize:13,fontWeight:600,color:C.white}}>Progress</span>
@@ -4546,7 +4602,7 @@ export default function App(){
   var [savedWireframes,setSavedWireframes]=useState(function(){try{var s=localStorage.getItem("gwi_saved_wireframes");return s?JSON.parse(s):[];}catch(e){return [];}});
   var [lovedComponents,setLovedComponents]=useState(function(){try{var s=localStorage.getItem("gwi_loved_components");return s?JSON.parse(s):[];}catch(e){return [];}});
   var [feedback,setFeedback]=useState(function(){try{var s=localStorage.getItem("gwi_feedback");return s?JSON.parse(s):[];}catch(e){return [];}});
-  var [qaChecklist,setQaChecklist]=useState(function(){try{var s=localStorage.getItem("gwi_qa_checklist");return s?JSON.parse(s):{};}catch(e){return {};}});
+  var [qaPages,setQaPages]=useState(function(){try{var s=localStorage.getItem("gwi_qa_pages");return s?JSON.parse(s):[];}catch(e){return [];}});
   var [showFeedbackModal,setShowFeedbackModal]=useState(false);
   var [feedbackToast,setFeedbackToast]=useState(false);
   var feedbackSubmittedRef=useRef(false);
@@ -4563,7 +4619,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
   useEffect(function(){try{localStorage.setItem("gwi_saved_wireframes",JSON.stringify(savedWireframes));}catch(e){};},[savedWireframes]);
   useEffect(function(){try{localStorage.setItem("gwi_loved_components",JSON.stringify(lovedComponents));}catch(e){};},[lovedComponents]);
   useEffect(function(){try{localStorage.setItem("gwi_feedback",JSON.stringify(feedback));}catch(e){};},[feedback]);
-  useEffect(function(){try{localStorage.setItem("gwi_qa_checklist",JSON.stringify(qaChecklist));}catch(e){};},[qaChecklist]);
+  useEffect(function(){try{localStorage.setItem("gwi_qa_pages",JSON.stringify(qaPages));}catch(e){};},[qaPages]);
   useEffect(function(){function onHash(){var h=window.location.hash;var v=hashToView(h);var sub=hashToSubId(h);setViewRaw(v);if(v==="persona-detail"&&sub)setActivePersonaId(sub);if(v==="journey"&&sub)setActivePersonaForJourney(sub);}window.addEventListener("hashchange",onHash);return function(){window.removeEventListener("hashchange",onHash);};},[]);
   useEffect(function(){function onKey(e:KeyboardEvent){if((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.key==="F"){e.preventDefault();setShowFeedbackModal(function(prev){return !prev;});}}document.addEventListener("keydown",onKey);return function(){document.removeEventListener("keydown",onKey);};},[]);
   var _NAV_VIEWS=["dashboard","summary","audit","wireframes","personas","mapping","analytics","qa-checklist"];
@@ -4662,7 +4718,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} verticals={verticals} setVerticals={setVerticals} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards} wireframeRules={wireframeRules} setWireframeRules={setWireframeRules} clientList={clientList} setClientList={setClientList} caseStudies={caseStudies} setCaseStudies={setCaseStudies} setView={setView} asanaPat={asanaPat} setAsanaPat={setAsanaPat} asanaProjectId={asanaProjectId} setAsanaProjectId={setAsanaProjectId}/>}
         {view==="landing"&&<LandingPage setView={setView}/>}
         {view==="guide"&&<GuidePage/>}
-        {view==="qa-checklist"&&<QAChecklistPage qaChecklist={qaChecklist} setQaChecklist={setQaChecklist}/>}
+        {view==="qa-checklist"&&<QAChecklistPage qaPages={qaPages} setQaPages={setQaPages}/>}
         {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData} onAddRec={function(action,pageUrl){var pageObj=pages.find(function(p){return p.url===pageUrl;});var newAction=Object.assign({},action,{status:"todo"});var existing=auditData.find(function(p){return p.url===pageUrl;});if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}}} onRemoveRec={function(actionId,pageUrl){setAuditData(function(prev){return prev.map(function(p){return p.url!==pageUrl?p:Object.assign({},p,{actions:(p.actions||[]).filter(function(a:any){return a.id!==actionId;})});});});}} lovedComponents={lovedComponents} onLoveComponent={function(lc){setLovedComponents(function(prev){return (prev as any[]).concat([lc]);});}} onUnloveComponent={function(id){setLovedComponents(function(prev){return (prev as any[]).filter(function(lc:any){return lc.id!==id;});});}} personas={personas} wireframeRules={wireframeRules} pages={pages} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}}/>}
       </div>
       {view==="feedback"&&<FeedbackPage feedback={feedback} onDeleteFeedback={function(id){setFeedback(function(prev){return(prev as any[]).filter(function(f){return f.id!==id;});});if(_user)deleteDoc(doc(_db,"users",_user.uid,"feedback",id)).catch(function(){});}} onSubmit={function(entry){var full=Object.assign({},entry,{user:_user?_user.email:""});setFeedback(function(prev){return prev.concat([full]);});if(_user)setDoc(doc(_db,"users",_user.uid,"feedback",full.id),full).catch(function(){});}} onEditFeedback={function(id,newText){setFeedback(function(prev){return(prev as any[]).map(function(f){return f.id===id?Object.assign({},f,{feedback:newText}):f;});});if(_user){var entry=(feedback as any[]).find(function(f){return f.id===id;});if(entry)setDoc(doc(_db,"users",_user.uid,"feedback",id),Object.assign({},entry,{feedback:newText})).catch(function(){});}}}/>}
