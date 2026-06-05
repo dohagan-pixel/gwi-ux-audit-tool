@@ -649,6 +649,7 @@ function Dashboard({personas,auditData,setView,onFeedback}){
     {icon:<Map size={24}/>,label:"Journeys",desc:"Shows the real path from first visit to sign-up to activation.",cta:"Explore journeys",action:function(){setView("mapping");}},
     {icon:<BarChart2 size={24}/>,label:"Analytics",desc:"Proof of what is happening on-page — where attention goes and what is killing conversion.",cta:"Open analytics",action:function(){setView("analytics");}},
     {icon:<Cog size={24}/>,label:"Settings",desc:"Keeps the framework flexible as priorities shift.",cta:"Edit settings",action:function(){setView("settings");}},
+    {icon:<List size={24}/>,label:"QA Checklist",desc:"A structured heuristic evaluation across Content, Design, Navigation, Accessibility, and Mobile — scored and summarised with a prioritised roadmap.",cta:"Run a QA audit",action:function(){setView("qa-checklist");}},
     {icon:<MessageSquare size={24}/>,label:"Feedback",desc:"Share what's working, what's not, and what you'd like to see next — your input shapes the roadmap.",cta:"Leave feedback",action:function(){if(onFeedback)onFeedback();}},
   ];
   return(
@@ -4347,9 +4348,178 @@ function SharePage({shareId}:{shareId:string}){
   );
 }
 
+function QAChecklistPage({qaChecklist,setQaChecklist}:{qaChecklist:Record<string,{status:string|null,severity:string|null,notes:string}>,setQaChecklist:Function}){
+  var isMobile=useWidth()<768;
+  var [activeCategory,setActiveCategory]=useState("content");
+  var [showReport,setShowReport]=useState(false);
+  var [expandedItems,setExpandedItems]=useState<Record<string,boolean>>({});
+  const CATEGORIES=[
+    {id:"content",label:"Content",items:[
+      {id:"qc-c1",text:"Value proposition is clear within 5 seconds of landing"},
+      {id:"qc-c2",text:"CTAs are specific, action-oriented, and use first-person language"},
+      {id:"qc-c3",text:"Copy is free of jargon and accessible to the target audience"},
+      {id:"qc-c4",text:"Error messages are human, helpful, and non-technical"},
+      {id:"qc-c5",text:"Content is scannable — headers, bullets, and concise paragraphs"},
+      {id:"qc-c6",text:"Tone of voice is consistent across all pages"},
+      {id:"qc-c7",text:"Form labels are clear and positioned above their inputs"},
+      {id:"qc-c8",text:"Images and media are relevant, high quality, and on-brand"},
+      {id:"qc-c9",text:"Page titles are descriptive and unique per page"},
+      {id:"qc-c10",text:"Empty states and zero-data screens have helpful, guiding copy"},
+    ]},
+    {id:"design",label:"Design & Typography",items:[
+      {id:"qc-d1",text:"Clear visual hierarchy exists on every page"},
+      {id:"qc-d2",text:"Body text is at least 16px and legible at a glance"},
+      {id:"qc-d3",text:"Line height is comfortable (1.4–1.6) and aids readability"},
+      {id:"qc-d4",text:"Colour contrast meets WCAG AA — at least 4.5:1 for body text"},
+      {id:"qc-d5",text:"Design is consistent with brand guidelines throughout"},
+      {id:"qc-d6",text:"Interactive elements are visually distinct from non-interactive ones"},
+      {id:"qc-d7",text:"Whitespace is used consistently and intentionally"},
+      {id:"qc-d8",text:"Icons are used consistently and labelled where needed"},
+      {id:"qc-d9",text:"Grid and layout system is consistent across pages"},
+      {id:"qc-d10",text:"Loading states and skeleton screens are designed"},
+    ]},
+    {id:"navigation",label:"Navigation & Structure",items:[
+      {id:"qc-n1",text:"Primary navigation is visible and immediately understandable"},
+      {id:"qc-n2",text:"Users can reach their goal within 3 clicks from any page"},
+      {id:"qc-n3",text:"Current page or section is clearly indicated (active state)"},
+      {id:"qc-n4",text:"Information architecture reflects user mental models"},
+      {id:"qc-n5",text:"Breadcrumbs are used on deep pages where helpful"},
+      {id:"qc-n6",text:"Search (if present) returns relevant and well-ranked results"},
+      {id:"qc-n7",text:"404 and error pages are helpful with clear recovery actions"},
+      {id:"qc-n8",text:"External links are clearly indicated and open in a new tab"},
+      {id:"qc-n9",text:"Footer is well-organised and provides useful navigation"},
+      {id:"qc-n10",text:"Navigation labels are descriptive — not clever or vague"},
+    ]},
+    {id:"accessibility",label:"Accessibility & Compliance",items:[
+      {id:"qc-a1",text:"All images have appropriate, descriptive alt text"},
+      {id:"qc-a2",text:"Keyboard navigation is fully functional across all interactions"},
+      {id:"qc-a3",text:"Focus states are visible on all interactive elements"},
+      {id:"qc-a4",text:"Colour is not the only means of conveying information"},
+      {id:"qc-a5",text:"Form errors are clearly associated with their input fields"},
+      {id:"qc-a6",text:"ARIA attributes are used correctly where native HTML is insufficient"},
+      {id:"qc-a7",text:"Text can be resized to 200% without loss of content or functionality"},
+      {id:"qc-a8",text:"Video and audio content has captions or transcripts"},
+      {id:"qc-a9",text:"Site meets WCAG 2.1 AA standards overall"},
+      {id:"qc-a10",text:"Cookie and privacy policy is accessible and up to date"},
+    ]},
+    {id:"mobile",label:"Mobile Responsiveness",items:[
+      {id:"qc-m1",text:"Layout is fully functional at 320px screen width and above"},
+      {id:"qc-m2",text:"Touch targets are at least 44×44px"},
+      {id:"qc-m3",text:"Mobile navigation is clear and usable"},
+      {id:"qc-m4",text:"Forms are easy to complete on a mobile device"},
+      {id:"qc-m5",text:"Text is readable without needing to zoom"},
+      {id:"qc-m6",text:"Images are appropriately scaled for mobile screens"},
+      {id:"qc-m7",text:"No horizontal scrolling occurs on any page"},
+      {id:"qc-m8",text:"Page loads in under 3 seconds on a mobile connection"},
+      {id:"qc-m9",text:"Modals and overlays are usable on mobile screens"},
+      {id:"qc-m10",text:"Hover-only interactions are replaced with mobile-friendly alternatives"},
+    ]},
+  ];
+  function getResult(id:string){return qaChecklist[id]||{status:null,severity:null,notes:""};}
+  function setResult(id:string,field:string,val:any){setQaChecklist(function(prev:any){var ex=prev[id]||{status:null,severity:null,notes:""};return {...prev,[id]:{...ex,[field]:val}};});}
+  function categoryScore(cat:any){var scored=cat.items.filter(function(it:any){var r=getResult(it.id);return r.status&&r.status!=="na";});var passed=cat.items.filter(function(it:any){return getResult(it.id).status==="pass";});return scored.length>0?Math.round(passed.length/scored.length*100):null;}
+  var allItems=CATEGORIES.flatMap(function(c){return c.items.map(function(it){return {...it,category:c.label};});});
+  var totalItems=allItems.length;
+  var totalDone=allItems.filter(function(it){return getResult(it.id).status!==null;}).length;
+  var totalScored=allItems.filter(function(it){var r=getResult(it.id);return r.status&&r.status!=="na";}).length;
+  var totalPassed=allItems.filter(function(it){return getResult(it.id).status==="pass";}).length;
+  var overallPct=totalScored>0?Math.round(totalPassed/totalScored*100):null;
+  var criticalFails=allItems.filter(function(it){var r=getResult(it.id);return (r.status==="fail"||r.status==="partial")&&r.severity==="critical";});
+  var majorFails=allItems.filter(function(it){var r=getResult(it.id);return (r.status==="fail"||r.status==="partial")&&r.severity==="major";});
+  var minorFails=allItems.filter(function(it){var r=getResult(it.id);return (r.status==="fail"||r.status==="partial")&&r.severity==="minor";});
+  var activeCat=CATEGORIES.find(function(c){return c.id===activeCategory;})||CATEGORIES[0];
+  var STATUS_CFG:any={pass:{label:"Pass",bg:"#E6F9F2",border:"#00A86B",text:"#005C3B",activeBg:"#00A86B",activeText:"#fff"},partial:{label:"Partial",bg:"#FFF8E6",border:"#F5A623",text:"#7A4F00",activeBg:"#F5A623",activeText:"#fff"},fail:{label:"Fail",bg:"#FFF0F0",border:"#E53E3E",text:"#7A1A1A",activeBg:"#E53E3E",activeText:"#fff"},na:{label:"N/A",bg:C.grey3,border:C.grey5,text:C.grey7,activeBg:C.grey6,activeText:"#fff"}};
+  var SEVERITY_CFG:any={critical:{label:"Critical",bg:"#FFF0F0",border:"#E53E3E",text:"#7A1A1A",activeBg:"#E53E3E",activeText:"#fff"},major:{label:"Major",bg:"#FFF8E6",border:"#F5A623",text:"#7A4F00",activeBg:"#F5A623",activeText:"#fff"},minor:{label:"Minor",bg:C.grey3,border:C.grey5,text:C.grey7,activeBg:C.grey6,activeText:"#fff"}};
+  if(showReport){return(
+    <div style={{background:C.grey2,height:"100%",overflow:"auto",padding:isMobile?"20px 16px":"40px 32px",fontFamily:FF}}>
+      <div style={{maxWidth:800,margin:"0 auto",paddingBottom:80}}>
+        <button onClick={function(){setShowReport(false);}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey7,fontSize:13,fontWeight:600,padding:"0 0 20px",display:"flex",alignItems:"center",gap:6}}>← Back to checklist</button>
+        <div style={{background:C.black,borderRadius:20,padding:isMobile?"24px":"36px 40px",marginBottom:24}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>QA Audit Report</div>
+          <h1 style={{color:C.white,fontSize:isMobile?24:30,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:"-0.02em"}}>GWI Website — QA Checklist</h1>
+          <p style={{color:C.grey6,fontSize:14,lineHeight:1.7,margin:"0 0 20px"}}>{totalDone} of {totalItems} criteria assessed{overallPct!==null?" · "+overallPct+"% pass rate":""}</p>
+          <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(5,1fr)",gap:8}}>
+            {CATEGORIES.map(function(cat){var score=categoryScore(cat);var scoreColor=score===null?C.grey6:score>=80?"#22C55E":score>=60?"#F5A623":"#E53E3E";return(<div key={cat.id} style={{background:"rgba(255,255,255,0.06)",borderRadius:10,padding:"12px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:800,color:scoreColor,lineHeight:1}}>{score!==null?score+"%":"—"}</div><div style={{fontSize:9,color:C.grey6,marginTop:4,lineHeight:1.3}}>{cat.label}</div></div>);})}
+          </div>
+        </div>
+        <div style={{background:C.white,borderRadius:16,padding:"24px 28px",marginBottom:16,border:"1px solid "+C.grey4}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:12}}>Executive Summary</div>
+          <p style={{fontSize:15,color:C.offBlack,lineHeight:1.7,margin:0}}>The GWI website QA audit assessed {totalItems} heuristic criteria across five areas.{overallPct!==null?" An overall pass rate of "+overallPct+"% was recorded from "+totalScored+" scored items.":""}{criticalFails.length>0?" "+criticalFails.length+" critical issue"+(criticalFails.length>1?"s were":" was")+" identified requiring immediate attention.":""}{majorFails.length>0?" "+majorFails.length+" major issue"+(majorFails.length>1?"s":"")+" require prioritisation in the next sprint.":""}{criticalFails.length===0&&majorFails.length===0&&minorFails.length===0?" No issues were logged.":" All issues are detailed below with a recommended remediation roadmap."}</p>
+        </div>
+        {criticalFails.length>0&&(<div style={{background:C.white,borderRadius:16,padding:"24px 28px",marginBottom:16,border:"1px solid #FECACA"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}><div style={{width:10,height:10,borderRadius:"50%",background:"#E53E3E",flexShrink:0}}/><div style={{fontSize:11,fontWeight:700,color:"#E53E3E",textTransform:"uppercase",letterSpacing:"0.08em"}}>Critical Issues ({criticalFails.length})</div></div>
+          {criticalFails.map(function(it:any){var r=getResult(it.id);return(<div key={it.id} style={{padding:"12px 0",borderBottom:"1px solid "+C.grey3}}><div style={{fontSize:14,fontWeight:600,color:C.offBlack,marginBottom:2}}>{it.text}</div><div style={{fontSize:12,color:C.grey7}}>{it.category}</div>{r.notes&&<div style={{fontSize:13,color:C.grey8,marginTop:6,fontStyle:"italic"}}>"{r.notes}"</div>}</div>);})}
+        </div>)}
+        {majorFails.length>0&&(<div style={{background:C.white,borderRadius:16,padding:"24px 28px",marginBottom:16,border:"1px solid #FDE68A"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}><div style={{width:10,height:10,borderRadius:"50%",background:"#F5A623",flexShrink:0}}/><div style={{fontSize:11,fontWeight:700,color:"#7A4F00",textTransform:"uppercase",letterSpacing:"0.08em"}}>Major Issues ({majorFails.length})</div></div>
+          {majorFails.map(function(it:any){var r=getResult(it.id);return(<div key={it.id} style={{padding:"12px 0",borderBottom:"1px solid "+C.grey3}}><div style={{fontSize:14,fontWeight:600,color:C.offBlack,marginBottom:2}}>{it.text}</div><div style={{fontSize:12,color:C.grey7}}>{it.category}</div>{r.notes&&<div style={{fontSize:13,color:C.grey8,marginTop:6,fontStyle:"italic"}}>"{r.notes}"</div>}</div>);})}
+        </div>)}
+        {minorFails.length>0&&(<div style={{background:C.white,borderRadius:16,padding:"24px 28px",marginBottom:16,border:"1px solid "+C.grey4}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}><div style={{width:10,height:10,borderRadius:"50%",background:C.grey6,flexShrink:0}}/><div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em"}}>Minor Issues ({minorFails.length})</div></div>
+          {minorFails.map(function(it:any){var r=getResult(it.id);return(<div key={it.id} style={{padding:"12px 0",borderBottom:"1px solid "+C.grey3}}><div style={{fontSize:14,fontWeight:600,color:C.offBlack,marginBottom:2}}>{it.text}</div><div style={{fontSize:12,color:C.grey7}}>{it.category}</div>{r.notes&&<div style={{fontSize:13,color:C.grey8,marginTop:6,fontStyle:"italic"}}>"{r.notes}"</div>}</div>);})}
+        </div>)}
+        <div style={{background:C.white,borderRadius:16,padding:"24px 28px",border:"1px solid "+C.grey4}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:16}}>Recommended Roadmap</div>
+          {criticalFails.length===0&&majorFails.length===0&&minorFails.length===0&&<div style={{fontSize:14,color:C.grey7}}>No issues logged. Complete the checklist to generate a roadmap.</div>}
+          {criticalFails.length>0&&<div style={{marginBottom:16}}><div style={{fontSize:12,fontWeight:700,color:"#E53E3E",marginBottom:8}}>Immediate — this sprint</div>{criticalFails.map(function(it:any){return <div key={it.id} style={{fontSize:14,color:C.offBlack,padding:"6px 0",borderBottom:"1px solid "+C.grey3,display:"flex",alignItems:"flex-start",gap:8}}><span style={{color:"#E53E3E",flexShrink:0}}>•</span>{it.text}</div>;})}</div>}
+          {majorFails.length>0&&<div style={{marginBottom:16}}><div style={{fontSize:12,fontWeight:700,color:"#F5A623",marginBottom:8}}>Next sprint</div>{majorFails.map(function(it:any){return <div key={it.id} style={{fontSize:14,color:C.offBlack,padding:"6px 0",borderBottom:"1px solid "+C.grey3,display:"flex",alignItems:"flex-start",gap:8}}><span style={{color:"#F5A623",flexShrink:0}}>•</span>{it.text}</div>;})}</div>}
+          {minorFails.length>0&&<div><div style={{fontSize:12,fontWeight:700,color:C.grey7,marginBottom:8}}>Backlog</div>{minorFails.map(function(it:any){return <div key={it.id} style={{fontSize:14,color:C.offBlack,padding:"6px 0",borderBottom:"1px solid "+C.grey3,display:"flex",alignItems:"flex-start",gap:8}}><span style={{color:C.grey5,flexShrink:0}}>•</span>{it.text}</div>;})}</div>}
+        </div>
+      </div>
+    </div>
+  );}
+  return(
+    <div style={{background:C.grey2,height:"100%",overflow:"auto",padding:isMobile?"20px 16px":"40px 32px",fontFamily:FF}}>
+      <div style={{maxWidth:900,margin:"0 auto",paddingBottom:80}}>
+        <div style={{background:C.black,borderRadius:20,padding:isMobile?"24px":"36px 40px",marginBottom:28}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>UX Heuristic Evaluation</div>
+          <h1 style={{color:C.white,fontSize:isMobile?24:30,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:"-0.02em"}}>QA Checklist</h1>
+          <p style={{color:C.grey6,fontSize:14,lineHeight:1.7,margin:"0 0 20px",maxWidth:560}}>Score each criterion across 5 categories. Flag failures as Critical, Major, or Minor to generate a prioritised roadmap.</p>
+          <div style={{background:"rgba(255,255,255,0.06)",borderRadius:12,padding:"16px 20px"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+              <span style={{fontSize:13,fontWeight:600,color:C.white}}>Progress</span>
+              <span style={{fontSize:18,fontWeight:800,color:C.pink}}>{totalDone}/{totalItems}</span>
+            </div>
+            <div style={{background:"rgba(255,255,255,0.1)",borderRadius:99,height:6,overflow:"hidden",marginBottom:16}}><div style={{width:(totalItems>0?totalDone/totalItems*100:0)+"%",background:C.pink,height:"100%",borderRadius:99,transition:"width 0.4s"}}/></div>
+            <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(5,1fr)",gap:6,marginBottom:16}}>
+              {CATEGORIES.map(function(cat){var score=categoryScore(cat);var scoreColor=score===null?C.grey6:score>=80?"#22C55E":score>=60?"#F5A623":"#E53E3E";var done=cat.items.filter(function(it){return getResult(it.id).status!==null;}).length;return(<button key={cat.id} onClick={function(){setActiveCategory(cat.id);}} style={{textAlign:"center",background:activeCategory===cat.id?"rgba(255,255,255,0.14)":"rgba(255,255,255,0.04)",borderRadius:8,padding:"10px 6px",border:activeCategory===cat.id?"1px solid rgba(255,255,255,0.2)":"1px solid transparent",cursor:"pointer",transition:"background 0.15s"}}><div style={{fontSize:18,fontWeight:800,color:scoreColor,lineHeight:1}}>{score!==null?score+"%":"—"}</div><div style={{fontSize:9,color:C.grey6,marginTop:3,lineHeight:1.3}}>{done}/{cat.items.length}</div></button>);})}
+            </div>
+            <button onClick={function(){setShowReport(true);}} style={{width:"100%",background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"12px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>View Report</button>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"}}>
+          {CATEGORIES.map(function(cat){var done=cat.items.filter(function(it){return getResult(it.id).status!==null;}).length;var isActive=activeCategory===cat.id;return(<button key={cat.id} onClick={function(){setActiveCategory(cat.id);}} style={{padding:"8px 14px",borderRadius:99,fontSize:12,fontWeight:700,border:"none",cursor:"pointer",background:isActive?C.pink:C.white,color:isActive?C.white:C.grey8,boxShadow:isActive?"0 2px 8px rgba(255,0,119,0.25)":"0 1px 4px rgba(0,0,0,0.08)",transition:"all 0.15s",whiteSpace:"nowrap"}}>{cat.label}<span style={{marginLeft:6,opacity:0.7,fontWeight:400}}>{done}/{cat.items.length}</span></button>);})}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {activeCat.items.map(function(item,idx){
+            var r=getResult(item.id);var statusCfg=r.status?STATUS_CFG[r.status]:null;var expanded=expandedItems[item.id];var needsSeverity=r.status==="fail"||r.status==="partial";
+            return(
+              <div key={item.id} style={{background:C.white,borderRadius:12,padding:"16px 20px",border:"1.5px solid "+(statusCfg?statusCfg.border:C.grey4),transition:"border-color 0.2s"}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+                  <div style={{fontSize:12,fontWeight:700,color:C.grey6,marginTop:3,minWidth:20,flexShrink:0}}>{idx+1}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:14,fontWeight:600,color:C.offBlack,marginBottom:12,lineHeight:1.5}}>{item.text}</div>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:needsSeverity||expanded||r.notes?12:0}}>
+                      {Object.entries(STATUS_CFG).map(function([key,cfg]:any){var isActive=r.status===key;return(<button key={key} onClick={function(){setResult(item.id,"status",isActive?null:key);if(isActive)setResult(item.id,"severity",null);}} style={{padding:"5px 12px",borderRadius:99,fontSize:11,fontWeight:700,border:"1.5px solid "+(isActive?cfg.activeBg:cfg.border),background:isActive?cfg.activeBg:cfg.bg,color:isActive?cfg.activeText:cfg.text,cursor:"pointer",transition:"all 0.15s"}}>{isActive&&<span style={{marginRight:3}}>✓</span>}{cfg.label}</button>);})}
+                      <button onClick={function(){setExpandedItems(function(prev){return {...prev,[item.id]:!prev[item.id]};});}} style={{padding:"5px 12px",borderRadius:99,fontSize:11,fontWeight:600,border:"1.5px solid "+C.grey4,background:r.notes?C.grey3:"transparent",color:C.grey7,cursor:"pointer",marginLeft:"auto"}}>{expanded||r.notes?"Hide note":"+ Note"}</button>
+                    </div>
+                    {needsSeverity&&(<div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:expanded||r.notes?12:0}}><span style={{fontSize:11,color:C.grey7,fontWeight:600}}>Severity:</span>{Object.entries(SEVERITY_CFG).map(function([key,cfg]:any){var isActive=r.severity===key;return(<button key={key} onClick={function(){setResult(item.id,"severity",isActive?null:key);}} style={{padding:"4px 10px",borderRadius:99,fontSize:11,fontWeight:700,border:"1.5px solid "+(isActive?cfg.activeBg:cfg.border),background:isActive?cfg.activeBg:cfg.bg,color:isActive?cfg.activeText:cfg.text,cursor:"pointer",transition:"all 0.15s"}}>{cfg.label}</button>);})}</div>)}
+                    {(expanded||r.notes)&&(<textarea value={r.notes||""} onChange={function(e){setResult(item.id,"notes",e.target.value);}} placeholder="Add a note, observation, or screenshot link..." style={{width:"100%",minHeight:68,padding:"10px 14px",borderRadius:8,border:"1.5px solid "+C.grey4,fontSize:13,color:C.offBlack,fontFamily:FF,resize:"vertical",boxSizing:"border-box",outline:"none",lineHeight:1.6}} onFocus={function(e){e.currentTarget.style.borderColor=C.pink;}} onBlur={function(e){e.currentTarget.style.borderColor=C.grey4;}}/>)}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {CATEGORIES.findIndex(function(c){return c.id===activeCategory;})<CATEGORIES.length-1&&(<div style={{marginTop:16}}><button onClick={function(){var idx=CATEGORIES.findIndex(function(c){return c.id===activeCategory;});setActiveCategory(CATEGORIES[idx+1].id);}} style={{width:"100%",padding:"13px",borderRadius:12,background:C.white,border:"1px solid "+C.grey4,fontSize:14,fontWeight:700,color:C.offBlack,cursor:"pointer"}}>Next: {CATEGORIES[CATEGORIES.findIndex(function(c){return c.id===activeCategory;})+1].label} →</button></div>)}
+      </div>
+    </div>
+  );
+}
+
 export default function App(){
 
-  var VALID_VIEWS=["dashboard","audit","generated-audits","summary","personas","persona-detail","mapping","journey","lifecycle","affinity","flows","analytics","settings","wireframes","feedback","guide","landing"];
+  var VALID_VIEWS=["dashboard","audit","generated-audits","summary","personas","persona-detail","mapping","journey","lifecycle","affinity","flows","analytics","settings","wireframes","feedback","guide","landing","qa-checklist"];
   function hashToView(h){var v=(h||"").replace(/^#\//,"").split("/")[0];return VALID_VIEWS.indexOf(v)>=0?v:"dashboard";}
   function hashToSubId(h){var parts=(h||"").replace(/^#\//,"").split("/");return parts.length>1?decodeURIComponent(parts[1]):null;}
   var [view,setViewRaw]=useState(function(){return hashToView(window.location.hash);});
@@ -4376,6 +4546,7 @@ export default function App(){
   var [savedWireframes,setSavedWireframes]=useState(function(){try{var s=localStorage.getItem("gwi_saved_wireframes");return s?JSON.parse(s):[];}catch(e){return [];}});
   var [lovedComponents,setLovedComponents]=useState(function(){try{var s=localStorage.getItem("gwi_loved_components");return s?JSON.parse(s):[];}catch(e){return [];}});
   var [feedback,setFeedback]=useState(function(){try{var s=localStorage.getItem("gwi_feedback");return s?JSON.parse(s):[];}catch(e){return [];}});
+  var [qaChecklist,setQaChecklist]=useState(function(){try{var s=localStorage.getItem("gwi_qa_checklist");return s?JSON.parse(s):{};}catch(e){return {};}});
   var [showFeedbackModal,setShowFeedbackModal]=useState(false);
   var [feedbackToast,setFeedbackToast]=useState(false);
   var feedbackSubmittedRef=useRef(false);
@@ -4392,10 +4563,11 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
   useEffect(function(){try{localStorage.setItem("gwi_saved_wireframes",JSON.stringify(savedWireframes));}catch(e){};},[savedWireframes]);
   useEffect(function(){try{localStorage.setItem("gwi_loved_components",JSON.stringify(lovedComponents));}catch(e){};},[lovedComponents]);
   useEffect(function(){try{localStorage.setItem("gwi_feedback",JSON.stringify(feedback));}catch(e){};},[feedback]);
+  useEffect(function(){try{localStorage.setItem("gwi_qa_checklist",JSON.stringify(qaChecklist));}catch(e){};},[qaChecklist]);
   useEffect(function(){function onHash(){var h=window.location.hash;var v=hashToView(h);var sub=hashToSubId(h);setViewRaw(v);if(v==="persona-detail"&&sub)setActivePersonaId(sub);if(v==="journey"&&sub)setActivePersonaForJourney(sub);}window.addEventListener("hashchange",onHash);return function(){window.removeEventListener("hashchange",onHash);};},[]);
   useEffect(function(){function onKey(e:KeyboardEvent){if((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.key==="F"){e.preventDefault();setShowFeedbackModal(function(prev){return !prev;});}}document.addEventListener("keydown",onKey);return function(){document.removeEventListener("keydown",onKey);};},[]);
-  var _NAV_VIEWS=["dashboard","summary","audit","wireframes","personas","mapping","analytics"];
-  var _NAV_MAP:Record<string,string>={dashboard:"dashboard",summary:"summary","generated-audits":"summary",wireframes:"wireframes",audit:"audit",personas:"personas","persona-detail":"personas",mapping:"mapping",journey:"mapping",lifecycle:"mapping",affinity:"mapping",flows:"mapping",analytics:"analytics"};
+  var _NAV_VIEWS=["dashboard","summary","audit","wireframes","personas","mapping","analytics","qa-checklist"];
+  var _NAV_MAP:Record<string,string>={dashboard:"dashboard",summary:"summary","generated-audits":"summary",wireframes:"wireframes",audit:"audit",personas:"personas","persona-detail":"personas",mapping:"mapping",journey:"mapping",lifecycle:"mapping",affinity:"mapping",flows:"mapping",analytics:"analytics","qa-checklist":"qa-checklist"};
   useEffect(function(){
     function onArrow(e:KeyboardEvent){
       if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight")return;
@@ -4466,6 +4638,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
           <button onClick={function(){setView("personas");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:(view==="personas"||view==="persona-detail")?C.pink:"transparent",color:(view==="personas"||view==="persona-detail")?C.white:C.grey7,flexShrink:0}}>Personas</button>
           <Dropdown label="Journeys" items={MAPPING_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("mapping");}} forceActive={view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"}/>
           <button onClick={function(){setView("analytics");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="analytics"?C.pink:"transparent",color:view==="analytics"?C.white:C.grey7,flexShrink:0}}>Analytics</button>
+          <button onClick={function(){setView("qa-checklist");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="qa-checklist"?C.pink:"transparent",color:view==="qa-checklist"?C.white:C.grey7,flexShrink:0}}>QA Checklist</button>
           <div style={{flex:1}}/>
           {(view==="personas"||view==="persona-detail"||view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows")&&(
             <button onClick={function(){var t=(view==="personas"||view==="persona-detail")?"personas":(view==="mapping"||view==="lifecycle")?"mapping":(view==="affinity")?"affinity":(view==="flows")?"flows":"journeys";_shareReport(t);}} disabled={_reportSharing} title="Share a public read-only report" style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:700,border:"none",cursor:_reportSharing?"wait":"pointer",background:_reportSharing?"#888":"rgba(255,0,119,0.18)",color:_reportSharing?C.grey6:C.pink,flexShrink:0,transition:"background 0.15s"}} onMouseEnter={function(e){if(!_reportSharing)(e.currentTarget as HTMLElement).style.background="rgba(255,0,119,0.28)";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.background=_reportSharing?"#888":"rgba(255,0,119,0.18)";}}><Share2 size={13}/>{_reportSharing?"Sharing…":"Share report"}</button>
@@ -4489,6 +4662,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} verticals={verticals} setVerticals={setVerticals} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards} wireframeRules={wireframeRules} setWireframeRules={setWireframeRules} clientList={clientList} setClientList={setClientList} caseStudies={caseStudies} setCaseStudies={setCaseStudies} setView={setView} asanaPat={asanaPat} setAsanaPat={setAsanaPat} asanaProjectId={asanaProjectId} setAsanaProjectId={setAsanaProjectId}/>}
         {view==="landing"&&<LandingPage setView={setView}/>}
         {view==="guide"&&<GuidePage/>}
+        {view==="qa-checklist"&&<QAChecklistPage qaChecklist={qaChecklist} setQaChecklist={setQaChecklist}/>}
         {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData} onAddRec={function(action,pageUrl){var pageObj=pages.find(function(p){return p.url===pageUrl;});var newAction=Object.assign({},action,{status:"todo"});var existing=auditData.find(function(p){return p.url===pageUrl;});if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}}} onRemoveRec={function(actionId,pageUrl){setAuditData(function(prev){return prev.map(function(p){return p.url!==pageUrl?p:Object.assign({},p,{actions:(p.actions||[]).filter(function(a:any){return a.id!==actionId;})});});});}} lovedComponents={lovedComponents} onLoveComponent={function(lc){setLovedComponents(function(prev){return (prev as any[]).concat([lc]);});}} onUnloveComponent={function(id){setLovedComponents(function(prev){return (prev as any[]).filter(function(lc:any){return lc.id!==id;});});}} personas={personas} wireframeRules={wireframeRules} pages={pages} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}}/>}
       </div>
       {view==="feedback"&&<FeedbackPage feedback={feedback} onDeleteFeedback={function(id){setFeedback(function(prev){return(prev as any[]).filter(function(f){return f.id!==id;});});if(_user)deleteDoc(doc(_db,"users",_user.uid,"feedback",id)).catch(function(){});}} onSubmit={function(entry){var full=Object.assign({},entry,{user:_user?_user.email:""});setFeedback(function(prev){return prev.concat([full]);});if(_user)setDoc(doc(_db,"users",_user.uid,"feedback",full.id),full).catch(function(){});}} onEditFeedback={function(id,newText){setFeedback(function(prev){return(prev as any[]).map(function(f){return f.id===id?Object.assign({},f,{feedback:newText}):f;});});if(_user){var entry=(feedback as any[]).find(function(f){return f.id===id;});if(entry)setDoc(doc(_db,"users",_user.uid,"feedback",id),Object.assign({},entry,{feedback:newText})).catch(function(){});}}}/>}
