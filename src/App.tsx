@@ -4356,6 +4356,9 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
   var [expandedItems,setExpandedItems]=useState<Record<string,boolean>>({});
   var [ccFg,setCcFg]=useState("#101720");
   var [ccBg,setCcBg]=useState("#FFFFFF");
+  var [ccScanning,setCcScanning]=useState(false);
+  var [ccScanColors,setCcScanColors]=useState<{textColors:string[],bgColors:string[]}|null>(null);
+  var [ccScanError,setCcScanError]=useState<string|null>(null);
   var [showNewForm,setShowNewForm]=useState(false);
   var [newUrl,setNewUrl]=useState("");
   var [newLabel,setNewLabel]=useState("");
@@ -4428,6 +4431,7 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
   function auditStats(p:any){var all=CATEGORIES.flatMap(function(c:any){return c.items;});var done=all.filter(function(it:any){var r=p.results[it.id];return r&&r.status!==null;}).length;var scored=all.filter(function(it:any){var r=p.results[it.id];return r&&r.status&&r.status!=="na";}).length;var passed=all.filter(function(it:any){var r=p.results[it.id];return r&&r.status==="pass";}).length;var pct=scored>0?Math.round(passed/scored*100):null;return{done,total:all.length,pct};}
   function createAudit(){if(!newUrl.trim())return;var id="qa-"+Date.now();setQaPages(function(prev:any[]){return [{id,url:newUrl.trim(),label:newLabel.trim()||newUrl.trim(),createdAt:Date.now(),results:{}},...prev];});setActiveAuditId(id);setActiveCategory("content");setExpandedItems({});setShowNewForm(false);setNewUrl("");setNewLabel("");}
   function deleteAudit(id:string,e:any){e.stopPropagation();if(!confirm("Delete this page audit?"))return;setQaPages(function(prev:any[]){return prev.filter(function(p:any){return p.id!==id;});});if(activeAuditId===id)setActiveAuditId(null);}
+  async function scanPageColors(){if(!activeAudit?.url)return;setCcScanning(true);setCcScanError(null);setCcScanColors(null);try{var r=await fetch("/api/scan-colors?url="+encodeURIComponent(activeAudit.url));var d=await r.json();if(d.error)throw new Error(d.error);setCcScanColors(d);if(d.textColors&&d.textColors[0])setCcFg(d.textColors[0]);if(d.bgColors&&d.bgColors[0])setCcBg(d.bgColors[0]);}catch(e:any){setCcScanError(e.message||"Failed to scan page");}finally{setCcScanning(false);}}
   function hexLuminance(hex:string):number|null{var m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);if(!m)return null;var ch=[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)];return ch.reduce(function(L:number,c:number,i:number){var s=c/255;return L+([0.2126,0.7152,0.0722][i])*(s<=0.04045?s/12.92:Math.pow((s+0.055)/1.055,2.4));},0);}
   function contrastRatio(fg:string,bg:string):number|null{var L1=hexLuminance(fg);var L2=hexLuminance(bg);if(L1===null||L2===null)return null;var hi=Math.max(L1,L2);var lo=Math.min(L1,L2);return Math.round(((hi+0.05)/(lo+0.05))*100)/100;}
   var allItems=CATEGORIES.flatMap(function(c){return c.items.map(function(it){return {...it,category:c.label};});});
@@ -4569,7 +4573,16 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
                       var passAA=ratio!==null&&ratio>=4.5;var passAALg=ratio!==null&&ratio>=3;var passAAA=ratio!==null&&ratio>=7;var passAAALg=ratio!==null&&ratio>=4.5;
                       var ratioColor=ratio===null?C.grey6:ratio>=7?"#22C55E":ratio>=4.5?"#22C55E":ratio>=3?"#F5A623":"#E53E3E";
                       return(<div style={{background:C.grey2,borderRadius:12,padding:"16px",marginBottom:expanded||r.notes?12:0}}>
-                        <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:12}}>Contrast Checker</div>
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}}>
+                          <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em"}}>Contrast Checker</div>
+                          <button onClick={scanPageColors} disabled={ccScanning} style={{fontSize:11,fontWeight:700,color:ccScanning?C.grey6:C.pink,background:"none",border:"1.5px solid "+(ccScanning?C.grey4:C.pink),borderRadius:6,padding:"5px 12px",cursor:ccScanning?"wait":"pointer",display:"flex",alignItems:"center",gap:5}}>{ccScanning?"Scanning…":"⟳ Scan page colours"}</button>
+                        </div>
+                        {ccScanError&&<div style={{fontSize:12,color:"#E53E3E",marginBottom:12,padding:"8px 12px",background:"#FFF0F0",borderRadius:8}}>{ccScanError}</div>}
+                        {ccScanColors&&(<div style={{marginBottom:14}}>
+                          <div style={{fontSize:11,fontWeight:600,color:C.grey7,marginBottom:6}}>Found on page — click to select</div>
+                          <div style={{marginBottom:8}}><div style={{fontSize:10,color:C.grey6,marginBottom:4}}>TEXT COLOURS</div><div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{(ccScanColors.textColors||[]).map(function(col:string){return(<button key={col} onClick={function(){setCcFg(col);}} title={col} style={{width:28,height:28,borderRadius:6,background:col,border:ccFg===col?"2.5px solid "+C.pink:"2px solid rgba(0,0,0,0.12)",cursor:"pointer",flexShrink:0,transition:"transform 0.1s"}} onMouseEnter={function(e){(e.currentTarget as HTMLElement).style.transform="scale(1.15)";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.transform="scale(1)";}}/>);})}</div></div>
+                          <div><div style={{fontSize:10,color:C.grey6,marginBottom:4}}>BACKGROUND COLOURS</div><div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{(ccScanColors.bgColors||[]).map(function(col:string){return(<button key={col} onClick={function(){setCcBg(col);}} title={col} style={{width:28,height:28,borderRadius:6,background:col,border:ccBg===col?"2.5px solid "+C.pink:"2px solid rgba(0,0,0,0.12)",cursor:"pointer",flexShrink:0,transition:"transform 0.1s"}} onMouseEnter={function(e){(e.currentTarget as HTMLElement).style.transform="scale(1.15)";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.transform="scale(1)";}}/>);})}</div></div>
+                        </div>)}
                         <div style={{display:"flex",gap:12,marginBottom:14,flexWrap:"wrap"}}>
                           {[{label:"Text colour",val:ccFg,set:setCcFg},{label:"Background",val:ccBg,set:setCcBg}].map(function(inp){return(<div key={inp.label} style={{flex:1,minWidth:140}}>
                             <div style={{fontSize:11,fontWeight:600,color:C.grey7,marginBottom:6}}>{inp.label}</div>
