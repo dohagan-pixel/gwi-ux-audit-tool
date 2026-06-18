@@ -18,7 +18,7 @@ const C = {
 };
 const FF = "Faktum, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
-type Status = "pass" | "fail" | "comment" | "na";
+type Status = "pass" | "fail" | "na";
 type Answer = { status: Status; comment?: string };
 type Answers = Record<string, Answer>;
 type Item = { id: string; text: string; group: string };
@@ -225,6 +225,19 @@ function openSized(url: string, width: number) {
   window.open(url, "_blank", feat);
 }
 
+type ToolLink = { match: RegExp; label: string; href: (url: string) => string };
+const TOOL_LINKS: ToolLink[] = [
+  {
+    match: /PageSpeed/i,
+    label: "Run PageSpeed Insights",
+    href: url => `https://pagespeed.web.dev/analysis?url=${encodeURIComponent(url)}&form_factor=mobile`,
+  },
+];
+
+function findToolLink(text: string): ToolLink | undefined {
+  return TOOL_LINKS.find(t => t.match.test(text));
+}
+
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }
@@ -237,14 +250,13 @@ type ExportMeta = {
 function buildHtml(meta: ExportMeta, answers: Answers): string {
   const enabled = meta.enabledSectionIds;
   const enabledSecs = SECTIONS.filter(s => enabled.includes(s.id));
-  let pass = 0, fail = 0, comment = 0, na = 0, total = 0;
+  let pass = 0, fail = 0, na = 0, total = 0;
   enabledSecs.forEach(s => s.items.forEach(it => {
     total++;
     const a = answers[it.id];
     if (!a || a.status === "na") na++;
     else if (a.status === "pass") pass++;
     else if (a.status === "fail") fail++;
-    else if (a.status === "comment") comment++;
   }));
   const passPct = total ? Math.round((pass / total) * 100) : 0;
 
@@ -252,11 +264,10 @@ function buildHtml(meta: ExportMeta, answers: Answers): string {
     const groups: Record<string, string[]> = {};
     enabledSecs.forEach(s => s.items.forEach(it => {
       const a = answers[it.id];
-      if (a?.status === "fail" || a?.status === "comment") {
+      if (a?.status === "fail") {
         const k = `${s.title} → ${it.group}`;
         if (!groups[k]) groups[k] = [];
-        const tag = a.status === "fail" ? "FAIL" : "REVIEW";
-        groups[k].push(`[${tag}] ${it.text}${a.comment ? ` — ${a.comment}` : ""}`);
+        groups[k].push(`${it.text}${a.comment ? ` — ${a.comment}` : ""}`);
       }
     }));
     const total = Object.values(groups).reduce((n, arr) => n + arr.length, 0);
@@ -272,33 +283,32 @@ function buildHtml(meta: ExportMeta, answers: Answers): string {
     const rows = s.items.map(it => {
       const a = answers[it.id];
       const status = a?.status ?? "na";
-      const color = status === "pass" ? C.pass : status === "fail" ? C.fail : status === "comment" ? C.pink : C.na;
+      const color = status === "pass" ? C.pass : status === "fail" ? C.fail : C.na;
       const groupRow = it.group !== prevGroup
         ? `<tr><td colspan="2" style="padding:18px 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:${C.grey7};font-weight:700">${escapeHtml(it.group)}</td></tr>`
         : "";
       prevGroup = it.group;
-      const commentBox = a?.comment
+      const noteBox = a?.comment
         ? `<div style="margin-top:6px;padding:8px 10px;background:${C.grey2};border-left:3px solid ${C.pink};font-size:13px;border-radius:4px">${escapeHtml(a.comment)}</div>`
         : "";
-      return `${groupRow}<tr><td style="width:80px;padding:10px 12px;font-weight:700;font-size:11px;letter-spacing:0.06em;color:${color};border-bottom:1px solid ${C.grey3};vertical-align:top">${status.toUpperCase()}</td><td style="padding:10px 12px;border-bottom:1px solid ${C.grey3}">${escapeHtml(it.text)}${commentBox}</td></tr>`;
+      return `${groupRow}<tr><td style="width:80px;padding:10px 12px;font-weight:700;font-size:11px;letter-spacing:0.06em;color:${color};border-bottom:1px solid ${C.grey3};vertical-align:top">${status.toUpperCase()}</td><td style="padding:10px 12px;border-bottom:1px solid ${C.grey3}">${escapeHtml(it.text)}${noteBox}</td></tr>`;
     }).join("");
     return `<section style="margin:36px 0"><h2 style="font-size:24px;letter-spacing:-0.02em"><span style="color:${C.pink}">${s.number}.</span> ${escapeHtml(s.title)}</h2><p style="color:${C.grey7};margin:6px 0 16px">${escapeHtml(s.intro)}</p><table style="width:100%;border-collapse:collapse;font-size:14px"><tbody>${rows}</tbody></table></section>`;
   }).join("");
 
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>UX QA report — ${escapeHtml(meta.pageName || meta.url)}</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font:14px/1.55 'Faktum',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:${C.ink};background:#fff;padding:48px;max-width:1100px;margin:0 auto}h1{font-size:36px;letter-spacing:-0.02em;margin:6px 0 14px}.eye{font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:${C.pink};font-weight:700}.k{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:24px 0 32px}.k .b{background:${C.grey2};padding:16px;border-radius:12px}.k .v{font-size:28px;font-weight:800;letter-spacing:-0.02em}.k .l{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:${C.grey7};margin-top:4px}</style></head><body><div class="eye">GWI · UX QA report</div><h1>${escapeHtml(meta.pageName || meta.url)}</h1><div style="font-size:13px;color:${C.grey7}"><a href="${escapeHtml(meta.url)}" style="color:${C.pink}">${escapeHtml(meta.url)}</a>${meta.reviewer ? ` · Reviewed by ${escapeHtml(meta.reviewer)}` : ""} · Finished ${escapeHtml(meta.finishedAt)}${meta.asanaLink ? ` · <a href="${escapeHtml(meta.asanaLink)}" style="color:${C.pink}">Asana</a>` : ""}</div><div class="k"><div class="b"><div class="v">${passPct}%</div><div class="l">Pass rate</div></div><div class="b"><div class="v" style="color:${C.pass}">${pass}</div><div class="l">Pass</div></div><div class="b"><div class="v" style="color:${C.fail}">${fail}</div><div class="l">Fail</div></div><div class="b"><div class="v" style="color:${C.pink}">${comment}</div><div class="l">For review</div></div><div class="b"><div class="v" style="color:${C.na}">${na}</div><div class="l">N/A · skipped</div></div></div>${issuesBlock}${sectionsHtml}<footer style="margin-top:48px;padding-top:20px;border-top:1px solid ${C.grey4};font-size:12px;color:${C.grey7}">Generated by GWI UX QA · ${escapeHtml(meta.finishedAt)}</footer></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>UX QA report — ${escapeHtml(meta.pageName || meta.url)}</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font:14px/1.55 'Faktum',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:${C.ink};background:#fff;padding:48px;max-width:1100px;margin:0 auto}h1{font-size:36px;letter-spacing:-0.02em;margin:6px 0 14px}.eye{font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:${C.pink};font-weight:700}.k{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:24px 0 32px}.k .b{background:${C.grey2};padding:16px;border-radius:12px}.k .v{font-size:28px;font-weight:800;letter-spacing:-0.02em}.k .l{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:${C.grey7};margin-top:4px}</style></head><body><div class="eye">GWI · UX QA report</div><h1>${escapeHtml(meta.pageName || meta.url)}</h1><div style="font-size:13px;color:${C.grey7}"><a href="${escapeHtml(meta.url)}" style="color:${C.pink}">${escapeHtml(meta.url)}</a>${meta.reviewer ? ` · Reviewed by ${escapeHtml(meta.reviewer)}` : ""} · Finished ${escapeHtml(meta.finishedAt)}${meta.asanaLink ? ` · <a href="${escapeHtml(meta.asanaLink)}" style="color:${C.pink}">Asana</a>` : ""}</div><div class="k"><div class="b"><div class="v">${passPct}%</div><div class="l">Pass rate</div></div><div class="b"><div class="v" style="color:${C.pass}">${pass}</div><div class="l">Pass</div></div><div class="b"><div class="v" style="color:${C.fail}">${fail}</div><div class="l">Fail</div></div><div class="b"><div class="v" style="color:${C.na}">${na}</div><div class="l">N/A · skipped</div></div></div>${issuesBlock}${sectionsHtml}<footer style="margin-top:48px;padding-top:20px;border-top:1px solid ${C.grey4};font-size:12px;color:${C.grey7}">Generated by GWI UX QA · ${escapeHtml(meta.finishedAt)}</footer></body></html>`;
 }
 
 function buildMarkdown(meta: ExportMeta, answers: Answers): string {
   const enabled = meta.enabledSectionIds;
   const enabledSecs = SECTIONS.filter(s => enabled.includes(s.id));
-  let pass = 0, fail = 0, comment = 0, na = 0, total = 0;
+  let pass = 0, fail = 0, na = 0, total = 0;
   enabledSecs.forEach(s => s.items.forEach(it => {
     total++;
     const a = answers[it.id];
     if (!a || a.status === "na") na++;
     else if (a.status === "pass") pass++;
     else if (a.status === "fail") fail++;
-    else if (a.status === "comment") comment++;
   }));
   const passPct = total ? Math.round((pass / total) * 100) : 0;
   const lines: string[] = [];
@@ -308,7 +318,7 @@ function buildMarkdown(meta: ExportMeta, answers: Answers): string {
   if (meta.asanaLink) lines.push(`- **Asana:** ${meta.asanaLink}`);
   lines.push(`- **Started:** ${meta.startedAt}`);
   lines.push(`- **Finished:** ${meta.finishedAt}`, "");
-  lines.push(`**Pass rate: ${passPct}%** · ${pass} pass · ${fail} fail · ${comment} for review · ${na} n/a · ${total} total`, "");
+  lines.push(`**Pass rate: ${passPct}%** · ${pass} pass · ${fail} fail · ${na} n/a · ${total} total`, "");
   enabledSecs.forEach(s => {
     lines.push(`## ${s.number}. ${s.title}`, `_${s.intro}_`, "");
     let prev: string | null = null;
@@ -316,7 +326,7 @@ function buildMarkdown(meta: ExportMeta, answers: Answers): string {
       if (it.group !== prev) { lines.push(`### ${it.group}`); prev = it.group; }
       const a = answers[it.id];
       const status = (a?.status ?? "na").toUpperCase();
-      const tag = status === "PASS" ? "✓" : status === "FAIL" ? "✗" : status === "COMMENT" ? "✎" : "—";
+      const tag = status === "PASS" ? "✓" : status === "FAIL" ? "✗" : "—";
       lines.push(`- ${tag} **${status}** — ${it.text}`);
       if (a?.comment) lines.push(`  > ${a.comment.replace(/\n/g, " ")}`);
     });
@@ -344,8 +354,7 @@ export function QAWalkthroughPage() {
 
   const passCount = items.filter(it => answers[it.id]?.status === "pass").length;
   const failCount = items.filter(it => answers[it.id]?.status === "fail").length;
-  const commentCount = items.filter(it => answers[it.id]?.status === "comment").length;
-  const naCount = total - passCount - failCount - commentCount;
+  const naCount = total - passCount - failCount;
   const passPct = total ? Math.round((passCount / total) * 100) : 0;
   const progress = phase === "done" ? 100 : phase === "intro" ? 0 : phase === "sections" ? 5 : total ? Math.round((cur / total) * 100) : 0;
 
@@ -366,14 +375,9 @@ export function QAWalkthroughPage() {
     if (!q) return;
     setAnswers(prev => {
       const existing = prev[q.id];
-      const status = existing?.status ?? "comment";
+      const status: Status = existing?.status ?? "fail";
       return { ...prev, [q.id]: { status, comment: v } };
     });
-  }
-  function setCommentMode() {
-    if (!q) return;
-    setAnswers(prev => ({ ...prev, [q.id]: { status: "comment", comment: prev[q.id]?.comment ?? "" } }));
-    setTimeout(() => taRef.current?.focus(), 30);
   }
   function nextQ() { if (cur < total - 1) setCur(cur + 1); else finish(); }
   function prevQ() { if (cur > 0) setCur(cur - 1); }
@@ -387,7 +391,6 @@ export function QAWalkthroughPage() {
       if (tag === "TEXTAREA" || tag === "INPUT") return;
       if (e.key === "p" || e.key === "P") setAnswer("pass");
       else if (e.key === "f" || e.key === "F") setAnswer("fail");
-      else if (e.key === "c" || e.key === "C") setCommentMode();
       else if (e.key === "ArrowRight" || e.key === "Enter") nextQ();
       else if (e.key === "ArrowLeft") prevQ();
     };
@@ -432,7 +435,7 @@ export function QAWalkthroughPage() {
   const cur_a = q ? answers[q.id] : undefined;
   const cur_status = cur_a?.status;
   const cur_comment = cur_a?.comment ?? "";
-  const commentVisible = cur_status === "comment" || cur_status === "fail" || cur_comment.length > 0;
+  const notesVisible = cur_status === "pass" || cur_status === "fail" || cur_comment.length > 0;
 
   return (
     <div style={{ background: C.grey1, minHeight: "100%", overflow: "auto", fontFamily: FF, color: C.ink }}>
@@ -556,37 +559,56 @@ export function QAWalkthroughPage() {
               <div style={{ fontSize: "clamp(22px, 3.2vw, 28px)", fontWeight: 700, lineHeight: 1.3, letterSpacing: "-0.015em", margin: "4px 0 16px" }}>{q.text}</div>
 
               {(() => {
+                if (!url.trim()) return null;
                 const w = extractViewportWidth(q.text);
-                if (!w || !url.trim()) return null;
+                const tool = findToolLink(q.text);
+                if (!w && !tool) return null;
                 return (
-                  <div style={{ marginBottom: 20 }}>
-                    <button type="button" onClick={() => openSized(url, w)}
-                            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 10, border: `1px solid ${C.pink}`, background: C.pinkBg, color: C.pink, fontFamily: FF, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M21 14v7H3V3h7"/>
-                      </svg>
-                      Open {url} at {w}px →
-                    </button>
-                    <div style={{ fontSize: 11, color: C.grey5, marginTop: 6, letterSpacing: "0.04em" }}>
-                      Opens in a sized popup window ({w} × {heightFor(w)}px). Resize manually if your browser overrides.
-                    </div>
+                  <div style={{ marginBottom: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+                    {w && (
+                      <div>
+                        <button type="button" onClick={() => openSized(url, w)}
+                                style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 10, border: `1px solid ${C.pink}`, background: C.pinkBg, color: C.pink, fontFamily: FF, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M21 14v7H3V3h7"/>
+                          </svg>
+                          Open {url} at {w}px →
+                        </button>
+                        <div style={{ fontSize: 11, color: C.grey5, marginTop: 6, letterSpacing: "0.04em" }}>
+                          Opens in a sized popup window ({w} × {heightFor(w)}px). Resize manually if your browser overrides.
+                        </div>
+                      </div>
+                    )}
+                    {tool && (
+                      <div>
+                        <a href={tool.href(url)} target="_blank" rel="noreferrer"
+                           style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 10, border: `1px solid ${C.pink}`, background: C.pinkBg, color: C.pink, fontFamily: FF, fontSize: 13, fontWeight: 700, textDecoration: "none", cursor: "pointer" }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M21 14v7H3V3h7"/>
+                          </svg>
+                          {tool.label} →
+                        </a>
+                        <div style={{ fontSize: 11, color: C.grey5, marginTop: 6, letterSpacing: "0.04em" }}>
+                          Opens pagespeed.web.dev in a new tab with your URL pre-filled (mobile profile).
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
                 {([
                   { key: "pass" as Status, label: "Pass", icon: "✓", short: "P", color: C.pass },
                   { key: "fail" as Status, label: "Fail", icon: "✗", short: "F", color: C.fail },
-                  { key: "comment" as Status, label: "Comment", icon: "✎", short: "C", color: C.pink },
                 ]).map(opt => {
                   const sel = cur_status === opt.key;
                   return (
                     <button key={opt.key} type="button"
-                            onClick={() => opt.key === "comment" ? setCommentMode() : setAnswer(opt.key)}
+                            onClick={() => setAnswer(opt.key)}
                             style={{
                               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                              background: sel ? (opt.key === "pass" ? "#ECF8F1" : opt.key === "fail" ? "#FBECEE" : C.pinkBg) : C.white,
+                              background: sel ? (opt.key === "pass" ? "#ECF8F1" : "#FBECEE") : C.white,
                               border: `1px solid ${sel ? opt.color : C.grey4}`, borderRadius: 12, padding: "22px 16px",
                               cursor: "pointer", fontFamily: FF, transition: "all 0.15s",
                             }}>
@@ -602,12 +624,12 @@ export function QAWalkthroughPage() {
                 })}
               </div>
 
-              {commentVisible && (
+              {notesVisible && (
                 <div style={{ marginTop: 16 }}>
                   <label style={labelStyle}>
-                    {cur_status === "fail" ? "Why is it failing? (optional)" : "What needs review?"}
+                    {cur_status === "fail" ? "Why is it failing? (optional)" : "Any notes? (optional)"}
                   </label>
-                  <textarea ref={taRef} placeholder="Describe what's wrong, where, and what the fix looks like."
+                  <textarea ref={taRef} placeholder={cur_status === "fail" ? "Describe what's wrong, where, and what the fix looks like." : "Anything worth flagging for the team."}
                             value={cur_comment} onChange={e => setCommentText(e.target.value)}
                             style={{ width: "100%", minHeight: 96, resize: "vertical", border: `1px solid ${C.grey4}`, borderRadius: 10, padding: "12px 14px", fontFamily: FF, fontSize: 14, color: C.ink, background: C.white, boxSizing: "border-box", outline: "none", lineHeight: 1.5 }}
                             onFocus={e => { e.currentTarget.style.borderColor = C.pink; e.currentTarget.style.boxShadow = `0 0 0 3px ${C.pinkBg}`; }}
@@ -626,7 +648,7 @@ export function QAWalkthroughPage() {
               </div>
 
               <div style={{ fontSize: 11, color: C.grey5, textAlign: "center", marginTop: 20, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                <Kbd>P</Kbd> pass · <Kbd>F</Kbd> fail · <Kbd>C</Kbd> comment · <Kbd>→</Kbd> next · <Kbd>←</Kbd> back
+                <Kbd>P</Kbd> pass · <Kbd>F</Kbd> fail · <Kbd>→</Kbd> next · <Kbd>←</Kbd> back
               </div>
             </>
           )}
@@ -643,12 +665,11 @@ export function QAWalkthroughPage() {
                 {reviewer && ` · Reviewed by ${reviewer}`} · Finished {finishedAt}
               </p>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, margin: "24px 0 32px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, margin: "24px 0 32px" }}>
                 {[
                   { v: `${passPct}%`, l: "Pass rate", color: C.ink },
                   { v: passCount, l: "Pass", color: C.pass },
                   { v: failCount, l: "Fail", color: C.fail },
-                  { v: commentCount, l: "For review", color: C.pink },
                   { v: naCount, l: "N/A · skipped", color: C.na },
                 ].map((k, i) => (
                   <div key={i} style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 12, padding: 16 }}>
@@ -669,7 +690,7 @@ export function QAWalkthroughPage() {
               </div>
 
               {(() => {
-                const issues = ALL_ITEMS.filter(it => enabledSections.includes(it.sectionId) && (answers[it.id]?.status === "fail" || answers[it.id]?.status === "comment"));
+                const issues = ALL_ITEMS.filter(it => enabledSections.includes(it.sectionId) && answers[it.id]?.status === "fail");
                 if (!issues.length) return null;
                 return (
                   <div style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 16, padding: 28, marginBottom: 20 }}>
@@ -677,12 +698,10 @@ export function QAWalkthroughPage() {
                     <ul style={{ listStyle: "none", padding: 0 }}>
                       {issues.map(it => {
                         const a = answers[it.id];
-                        const tag = a?.status === "fail" ? "FAIL" : "REVIEW";
-                        const tagColor = a?.status === "fail" ? C.fail : C.pink;
                         return (
                           <li key={it.id} style={{ padding: "12px 0", borderBottom: `1px solid ${C.grey3}`, fontSize: 14 }}>
                             <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, marginBottom: 4, color: C.grey7 }}>
-                              <span style={{ color: tagColor }}>{tag}</span> · {it.sectionTitle} → {it.group}
+                              <span style={{ color: C.fail }}>FAIL</span> · {it.sectionTitle} → {it.group}
                             </div>
                             <div>{it.text}</div>
                             {a?.comment && (
