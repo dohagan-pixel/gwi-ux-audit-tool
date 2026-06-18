@@ -239,9 +239,14 @@ function findToolLink(text: string): ToolLink | undefined {
 
 type ScanResult = {
   rootPx: number;
-  h1: { count: number; sizes: number[]; hero: number | null };
-  h2: { sizes: number[]; dominant: number | null };
-  body: { sizes: number[]; smallest: number | null };
+  h1: { count: number; sizes: number[]; hero: number | null; families: string[]; weights: number[] };
+  h2: { sizes: number[]; dominant: number | null; families: string[]; weights: number[] };
+  body: { sizes: number[]; smallest: number | null; families: string[]; weights: number[] };
+  fontFamilies: {
+    all: { name: string; count: number }[];
+    brandedOther: { name: string; count: number }[];
+    hasFaktum: boolean;
+  };
 };
 
 type ScannerCheck = { itemId: string; label: string; run: (d: ScanResult) => { pass: boolean; detail: string } };
@@ -284,6 +289,56 @@ const SCANNERS: ScannerCheck[] = [
       const n = d.h1.count;
       const ok = n === 1;
       return { pass: ok, detail: `Page contains ${n} <h1> tag${n === 1 ? "" : "s"}. ${ok ? "Exactly one — good." : n === 0 ? "Missing — every page should have one." : "More than one — fix the hierarchy."}` };
+    },
+  },
+  {
+    itemId: "design.type-faces.1",
+    label: "Scan font-families used",
+    run: d => {
+      const others = d.fontFamilies.brandedOther;
+      if (!d.fontFamilies.hasFaktum && !others.length) {
+        return { pass: false, detail: "Scanner couldn't find any font-family declarations." };
+      }
+      if (others.length === 0) {
+        return { pass: true, detail: `Only Faktum (or system fallbacks) declared across the page. No other branded typefaces detected.` };
+      }
+      const list = others.slice(0, 4).map(f => f.name).join(", ");
+      return { pass: false, detail: `Non-Faktum branded font${others.length === 1 ? "" : "s"} found: ${list}.` };
+    },
+  },
+  {
+    itemId: "design.type-faces.2",
+    label: "Scan H1 font-weight",
+    run: d => {
+      const weights = d.h1.weights;
+      const fams = d.h1.families;
+      const heaviest = weights.length ? Math.max(...weights) : null;
+      const familyOk = !fams.length || fams.some(f => /faktum/i.test(f));
+      if (heaviest == null) return { pass: false, detail: "No font-weight declaration found on h1." };
+      const weightOk = heaviest === 700 || heaviest === 800;
+      const pass = weightOk && familyOk;
+      const famNote = fams.length ? `family: ${[...new Set(fams)].join(", ")}` : "family inherits from page";
+      return { pass, detail: `H1 heaviest declared weight: ${heaviest} (${famNote}). ${weightOk ? "Matches Bold/ExtraBold." : "Not 700 or 800."}` };
+    },
+  },
+  {
+    itemId: "design.type-faces.3",
+    label: "Scan H2 font-weight",
+    run: d => {
+      const weights = d.h2.weights;
+      if (!weights.length) return { pass: false, detail: "No font-weight declaration found on h2." };
+      const has700 = weights.includes(700);
+      return { pass: has700, detail: `H2 declared weights: ${[...new Set(weights)].join(", ")}. ${has700 ? "Includes 700 (Bold)." : "No 700 (Bold) declaration."}` };
+    },
+  },
+  {
+    itemId: "design.type-faces.5",
+    label: "Scan body font-weight",
+    run: d => {
+      const weights = d.body.weights;
+      if (!weights.length) return { pass: true, detail: "No explicit body font-weight — defaults to 400 (Regular), which is correct." };
+      const has400 = weights.includes(400);
+      return { pass: has400, detail: `Body declared weights: ${[...new Set(weights)].join(", ")}. ${has400 ? "Includes 400 (Regular)." : "Missing 400 — body may be using a heavier or lighter weight."}` };
     },
   },
 ];

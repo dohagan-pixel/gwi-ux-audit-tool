@@ -152,19 +152,153 @@ function findFontSizesFor(css: string, target: 'h1' | 'h2' | 'body', rootPx: num
   return out;
 }
 
+// Strip @font-face blocks so their `font-family: 'Faktum'` declarations don't get counted as usage.
+function stripFontFaceBlocks(css: string): string {
+  let out = '';
+  let i = 0;
+  while (i < css.length) {
+    if (/^@font-face/i.test(css.slice(i, i + 11))) {
+      const braceStart = css.indexOf('{', i);
+      if (braceStart < 0) break;
+      let depth = 1, j = braceStart + 1;
+      while (j < css.length && depth > 0) {
+        if (css[j] === '{') depth++;
+        else if (css[j] === '}') depth--;
+        j++;
+      }
+      i = j;
+    } else {
+      out += css[i];
+      i++;
+    }
+  }
+  return out;
+}
+
+function collectCssVariables(css: string): Record<string, string> {
+  const vars: Record<string, string> = {};
+  const ruleRe = /([^{}]+)\{([^{}]+)\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = ruleRe.exec(css)) !== null) {
+    const sels = m[1].split(',').map(s => s.trim().toLowerCase());
+    if (!sels.some(s => s === ':root' || s === 'html' || s === 'body' || s === '*')) continue;
+    const declRe = /--([a-z0-9-]+)\s*:\s*([^;}]+)/gi;
+    let dm: RegExpExecArray | null;
+    while ((dm = declRe.exec(m[2])) !== null) {
+      vars[dm[1].toLowerCase()] = dm[2].trim();
+    }
+  }
+  return vars;
+}
+
+function resolveVarRefs(value: string, vars: Record<string, string>, depth = 0): string {
+  if (depth > 4) return value;
+  return value.replace(/var\s*\(\s*--([a-z0-9-]+)(?:\s*,\s*([^)]+))?\s*\)/gi, (_, name, fallback) => {
+    const v = vars[name.toLowerCase()];
+    if (v) return resolveVarRefs(v, vars, depth + 1);
+    if (fallback) return resolveVarRefs(fallback, vars, depth + 1);
+    return '';
+  });
+}
+
+const SYSTEM_FAMILIES = new Set([
+  'sans-serif', 'serif', 'monospace', 'system-ui', 'ui-sans-serif', 'ui-serif',
+  'ui-monospace', 'cursive', 'fantasy', 'math', 'emoji', 'fangsong',
+  'inherit', 'initial', 'unset', 'revert', 'currentcolor',
+  'arial', 'helvetica', 'helvetica neue', 'times', 'times new roman', 'georgia',
+  'verdana', 'tahoma', 'trebuchet ms', 'courier', 'courier new', 'lucida grande',
+  'segoe ui', 'menlo', 'monaco', 'consolas', '-apple-system', 'blinkmacsystemfont',
+  'sf pro', 'sf pro text', 'sf pro display', 'san francisco',
+]);
+
+function parseFontFamilyList(raw: string): string[] {
+  // Split on top-level commas (font-family has no nested parens for families)
+  const items = raw.split(',').map(s => s.trim().replace(/^['"]|['"]$/g, '').toLowerCase());
+  return items.filter(Boolean);
+}
+
+function isSystemFamily(name: string): boolean {
+  return SYSTEM_FAMILIES.has(name);
+}
+
+function findFontFamilies(css: string, vars: Record<string, string>) {
+  const primaryUses = new Map<string, number>(); // primary family → count
+  const perTarget: Record<'h1' | 'h2' | 'body', string[]> = { h1: [], h2: [], body: [] };
+  const ruleRe = /([^{}]+)\{([^{}]+)\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = ruleRe.exec(css)) !== null) {
+    const selectors = m[1].split(',').map(s => s.trim()).filter(Boolean);
+    const ffDecl = m[2].match(/font-family\s*:\s*([^;}]+)/i);
+    const ffShorthand = !ffDecl ? m[2].match(/(?<!-)font\s*:\s*([^;}]+)/i) : null;
+    let raw = ffDecl ? ffDecl[1] : ffShorthand ? ffShorthand[1] : null;
+    if (!raw) continue;
+    raw = resolveVarRefs(raw, vars).trim();
+    // For shorthand `font: italic 700 16px/1.2 Faktum, sans-serif` — take the part after the last size/line-height
+    if (ffShorthand && !ffDecl) {
+      const afterSize = raw.split(/\d+(?:px|rem|em|%)(?:\s*\/\s*[^\s,]+)?/).pop();
+      if (afterSize) raw = afterSize.trim();
+    }
+    const families = parseFontFamilyList(raw);
+    if (!families.length) continue;
+    const primary = families[0];
+    if (!primary) continue;
+    primaryUses.set(primary, (primaryUses.get(primary) || 0) + 1);
+    for (const target of ['h1', 'h2', 'body'] as const) {
+      if (selectors.some(s => selectorTargets(s, target))) {
+        perTarget[target].push(primary);
+      }
+    }
+  }
+  const families = [...primaryUses.entries()].sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
+  return { families, perTarget };
+}
+
+function weightToNumber(v: string): number | null {
+  const t = v.trim().toLowerCase();
+  if (/^\d+$/.test(t)) return parseInt(t, 10);
+  if (t === 'normal') return 400;
+  if (t === 'bold') return 700;
+  if (t === 'lighter') return 300;
+  if (t === 'bolder') return 700;
+  return null;
+}
+
+function findFontWeights(css: string, vars: Record<string, string>): Record<'h1' | 'h2' | 'body', number[]> {
+  const out: Record<'h1' | 'h2' | 'body', number[]> = { h1: [], h2: [], body: [] };
+  const ruleRe = /([^{}]+)\{([^{}]+)\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = ruleRe.exec(css)) !== null) {
+    const selectors = m[1].split(',').map(s => s.trim()).filter(Boolean);
+    const fwDecl = m[2].match(/font-weight\s*:\s*([^;}]+)/i);
+    if (!fwDecl) continue;
+    const raw = resolveVarRefs(fwDecl[1], vars).trim();
+    const w = weightToNumber(raw);
+    if (w == null) continue;
+    for (const target of ['h1', 'h2', 'body'] as const) {
+      if (selectors.some(s => selectorTargets(s, target))) {
+        out[target].push(w);
+      }
+    }
+  }
+  return out;
+}
+
 function countH1Tags(html: string): number {
   return (html.match(/<h1[\s>]/gi) || []).length;
 }
 
 async function scanTypography(url: string) {
   const { html, css: rawCss } = await fetchAllCss(url);
-  const desktopCss = stripMediaQueries(rawCss);
+  const desktopCss = stripMediaQueries(stripFontFaceBlocks(rawCss));
   const rootPx = findRootPx(desktopCss);
+  const cssVars = collectCssVariables(desktopCss);
 
   const h1Sizes = findFontSizesFor(desktopCss, 'h1', rootPx);
   const h2Sizes = findFontSizesFor(desktopCss, 'h2', rootPx);
   const bodySizes = findFontSizesFor(desktopCss, 'body', rootPx);
   const h1Count = countH1Tags(html);
+  const fontFamilies = findFontFamilies(desktopCss, cssVars);
+  const fontWeights = findFontWeights(desktopCss, cssVars);
 
   // Pick the largest h1 (likely hero) and smallest body size (worst case for the min-16 check)
   const heroH1 = h1Sizes.length ? Math.max(...h1Sizes) : null;
@@ -173,9 +307,14 @@ async function scanTypography(url: string) {
 
   return {
     rootPx,
-    h1: { count: h1Count, sizes: h1Sizes, hero: heroH1 },
-    h2: { sizes: h2Sizes, dominant: dominantH2 },
-    body: { sizes: bodySizes, smallest: bodyPx },
+    h1: { count: h1Count, sizes: h1Sizes, hero: heroH1, families: fontFamilies.perTarget.h1, weights: fontWeights.h1 },
+    h2: { sizes: h2Sizes, dominant: dominantH2, families: fontFamilies.perTarget.h2, weights: fontWeights.h2 },
+    body: { sizes: bodySizes, smallest: bodyPx, families: fontFamilies.perTarget.body, weights: fontWeights.body },
+    fontFamilies: {
+      all: fontFamilies.families,
+      brandedOther: fontFamilies.families.filter(f => !isSystemFamily(f.name) && !/faktum/i.test(f.name)),
+      hasFaktum: fontFamilies.families.some(f => /faktum/i.test(f.name)),
+    },
   };
 }
 
