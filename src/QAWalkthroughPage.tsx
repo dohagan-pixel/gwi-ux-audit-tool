@@ -201,6 +201,30 @@ const ALL_ITEMS: (Item & { sectionId: string; sectionTitle: string; sectionNumbe
   s => s.items.map(it => ({ ...it, sectionId: s.id, sectionTitle: s.title, sectionNumber: s.number }))
 );
 
+function extractViewportWidth(text: string): number | null {
+  const m = text.match(/(\d{3,4})\s*px/i);
+  if (!m) return null;
+  const w = parseInt(m[1], 10);
+  if (w < 200 || w > 4000) return null;
+  return w;
+}
+
+function heightFor(width: number): number {
+  if (width >= 1800) return 1000;
+  if (width >= 1400) return 900;
+  if (width >= 1000) return 800;
+  if (width >= 600) return 700;
+  return Math.round(width * 2.05);
+}
+
+function openSized(url: string, width: number) {
+  const height = heightFor(width);
+  const left = Math.max(0, Math.round((window.screen.availWidth - width) / 2));
+  const top = Math.max(0, Math.round((window.screen.availHeight - height) / 2));
+  const feat = `popup=yes,resizable=yes,scrollbars=yes,width=${width},height=${height},left=${left},top=${top}`;
+  window.open(url, "_blank", feat);
+}
+
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }
@@ -529,7 +553,26 @@ export function QAWalkthroughPage() {
                 <span style={{ fontSize: 12, color: C.grey5, fontWeight: 600 }}>{cur + 1} / {total}</span>
               </div>
               <div style={{ fontSize: 13, color: C.grey7, margin: "12px 0 4px" }}>{q.group}</div>
-              <div style={{ fontSize: "clamp(22px, 3.2vw, 28px)", fontWeight: 700, lineHeight: 1.3, letterSpacing: "-0.015em", margin: "4px 0 24px" }}>{q.text}</div>
+              <div style={{ fontSize: "clamp(22px, 3.2vw, 28px)", fontWeight: 700, lineHeight: 1.3, letterSpacing: "-0.015em", margin: "4px 0 16px" }}>{q.text}</div>
+
+              {(() => {
+                const w = extractViewportWidth(q.text);
+                if (!w || !url.trim()) return null;
+                return (
+                  <div style={{ marginBottom: 20 }}>
+                    <button type="button" onClick={() => openSized(url, w)}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 10, border: `1px solid ${C.pink}`, background: C.pinkBg, color: C.pink, fontFamily: FF, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M21 14v7H3V3h7"/>
+                      </svg>
+                      Open {url} at {w}px →
+                    </button>
+                    <div style={{ fontSize: 11, color: C.grey5, marginTop: 6, letterSpacing: "0.04em" }}>
+                      Opens in a sized popup window ({w} × {heightFor(w)}px). Resize manually if your browser overrides.
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 8 }}>
                 {([
