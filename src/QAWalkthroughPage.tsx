@@ -55,7 +55,6 @@ const SECTIONS: Section[] = [
       { id: "design.figma.1", group: "Figma-to-Webflow fidelity", text: "The staged build matches the approved Figma design — reviewed side by side at 1440px desktop" },
       { id: "design.figma.2", group: "Figma-to-Webflow fidelity", text: "No components, colours, or type styles have drifted from the Figma source during build" },
       { id: "design.figma.3", group: "Figma-to-Webflow fidelity", text: "Any deviations from the Figma are intentional and have been flagged and approved before QA" },
-      { id: "design.figma.4", group: "Figma-to-Webflow fidelity", text: "Webflow classes and styles are named consistently and do not introduce one-off overrides" },
       { id: "design.type-faces.1", group: "Typography — typeface & weights", text: "All type is set in Faktum — no system fonts, no substitutions anywhere in the build" },
       { id: "design.type-faces.2", group: "Typography — typeface & weights", text: "Hero headlines use Faktum ExtraBold (800) or Bold (700)" },
       { id: "design.type-faces.3", group: "Typography — typeface & weights", text: "Section headings use Faktum Bold (700)" },
@@ -238,6 +237,61 @@ function findToolLink(text: string): ToolLink | undefined {
   return TOOL_LINKS.find(t => t.match.test(text));
 }
 
+type ScanResult = {
+  rootPx: number;
+  h1: { count: number; sizes: number[]; hero: number | null };
+  h2: { sizes: number[]; dominant: number | null };
+  body: { sizes: number[]; smallest: number | null };
+};
+
+type ScannerCheck = { itemId: string; label: string; run: (d: ScanResult) => { pass: boolean; detail: string } };
+
+const SCANNERS: ScannerCheck[] = [
+  {
+    itemId: "design.type-sizing.1",
+    label: "Scan H1 font-size",
+    run: d => {
+      const h = d.h1.hero;
+      if (h == null) return { pass: false, detail: "Scanner couldn't find a declared font-size for h1 in the page's CSS." };
+      const ok = h >= 52 && h <= 60;
+      return { pass: ok, detail: `Largest declared h1 font-size is ${h}px. ${ok ? "In the 52–60px range." : "Outside the 52–60px range."}` };
+    },
+  },
+  {
+    itemId: "design.type-sizing.2",
+    label: "Scan H2 font-size",
+    run: d => {
+      const h = d.h2.dominant;
+      if (h == null) return { pass: false, detail: "Scanner couldn't find a declared font-size for h2 in the page's CSS." };
+      const ok = h >= 32 && h <= 36;
+      return { pass: ok, detail: `Largest declared h2 font-size is ${h}px. ${ok ? "In the 32–36px range." : "Outside the 32–36px range."}` };
+    },
+  },
+  {
+    itemId: "design.type-sizing.3",
+    label: "Scan body font-size",
+    run: d => {
+      const b = d.body.smallest;
+      if (b == null) return { pass: false, detail: "Scanner couldn't find a declared body font-size." };
+      const ok = b >= 16;
+      return { pass: ok, detail: `Smallest declared body font-size is ${b}px. ${ok ? "Meets the 16px minimum." : "Below the 16px minimum."}` };
+    },
+  },
+  {
+    itemId: "design.type-sizing.8",
+    label: "Count H1 tags",
+    run: d => {
+      const n = d.h1.count;
+      const ok = n === 1;
+      return { pass: ok, detail: `Page contains ${n} <h1> tag${n === 1 ? "" : "s"}. ${ok ? "Exactly one — good." : n === 0 ? "Missing — every page should have one." : "More than one — fix the hierarchy."}` };
+    },
+  },
+];
+
+function findScanner(itemId: string): ScannerCheck | undefined {
+  return SCANNERS.find(s => s.itemId === itemId);
+}
+
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }
@@ -347,6 +401,10 @@ export function QAWalkthroughPage() {
   const [startedAt, setStartedAt] = useState("");
   const [finishedAt, setFinishedAt] = useState("");
   const taRef = useRef<HTMLTextAreaElement | null>(null);
+  const [scanData, setScanData] = useState<ScanResult | null>(null);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanResults, setScanResults] = useState<Record<string, { pass: boolean; detail: string }>>({});
 
   const items = useMemo(() => ALL_ITEMS.filter(it => enabledSections.includes(it.sectionId)), [enabledSections]);
   const total = items.length;
@@ -362,6 +420,30 @@ export function QAWalkthroughPage() {
 
   function goHome() {
     setPhase("intro"); setCur(0); setAnswers({}); setStartedAt(""); setFinishedAt("");
+    setScanData(null); setScanError(null); setScanResults({});
+  }
+
+  async function runScanner(scanner: ScannerCheck) {
+    if (!url.trim() || !q) return;
+    setScanError(null);
+    setScanLoading(true);
+    try {
+      let data = scanData;
+      if (!data) {
+        const r = await fetch(`/api/scan-typography?url=${encodeURIComponent(url)}`);
+        const j = await r.json();
+        if (!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
+        data = j as ScanResult;
+        setScanData(data);
+      }
+      const result = scanner.run(data);
+      setScanResults(prev => ({ ...prev, [scanner.itemId]: result }));
+      setAnswers(prev => ({ ...prev, [q.id]: { status: result.pass ? "pass" : "fail", comment: `Checked by scanner — ${result.detail}` } }));
+    } catch (e: any) {
+      setScanError(e?.message || "Scanner failed.");
+    } finally {
+      setScanLoading(false);
+    }
   }
   function startQuestions() {
     if (!enabledSections.length) return;
@@ -562,9 +644,34 @@ export function QAWalkthroughPage() {
                 if (!url.trim()) return null;
                 const w = extractViewportWidth(q.text);
                 const tool = findToolLink(q.text);
-                if (!w && !tool) return null;
+                const scanner = findScanner(q.id);
+                const scanRes = scanResults[q.id];
+                if (!w && !tool && !scanner) return null;
                 return (
                   <div style={{ marginBottom: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+                    {scanner && (
+                      <div>
+                        <button type="button" onClick={() => runScanner(scanner)} disabled={scanLoading}
+                                style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 10, border: `1px solid ${C.pink}`, background: scanLoading ? C.grey2 : C.pinkBg, color: C.pink, fontFamily: FF, fontSize: 13, fontWeight: 700, cursor: scanLoading ? "wait" : "pointer" }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                          </svg>
+                          {scanLoading ? "Scanning…" : scanRes ? "Re-run scanner" : scanner.label}
+                        </button>
+                        {scanRes && (
+                          <div style={{ marginTop: 8, padding: "10px 12px", borderRadius: 8, border: `1px solid ${scanRes.pass ? C.pass : C.fail}`, background: scanRes.pass ? "#ECF8F1" : "#FBECEE", fontSize: 13 }}>
+                            <strong style={{ color: scanRes.pass ? C.pass : C.fail }}>{scanRes.pass ? "✓ Passed" : "✗ Failed"}</strong>
+                            <span style={{ color: C.grey7 }}> — {scanRes.detail}</span>
+                          </div>
+                        )}
+                        {scanError && (
+                          <div style={{ marginTop: 8, padding: "8px 12px", borderRadius: 8, background: "#FBECEE", color: C.fail, fontSize: 12 }}>{scanError}</div>
+                        )}
+                        <div style={{ fontSize: 11, color: C.grey5, marginTop: 6, letterSpacing: "0.04em" }}>
+                          Best-effort static check — reads declared CSS, can't fully resolve runtime values. Override manually if it looks wrong.
+                        </div>
+                      </div>
+                    )}
                     {w && (
                       <div>
                         <button type="button" onClick={() => openSized(url, w)}
