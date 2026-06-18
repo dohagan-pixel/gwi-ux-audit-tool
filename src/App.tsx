@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Fragment } from "react";
 import { buildWireframePrompt, WIREFRAME_PROMPT_VERSION, WIREFRAME_PROMPT_DESCRIPTION } from "./wireframePrompt";
 
 import{initializeApp}from'firebase/app';
@@ -4364,64 +4364,154 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
   var [newLabel,setNewLabel]=useState("");
   const CATEGORIES=[
     {id:"content",label:"Content",items:[
-      {id:"qc-c1",text:"Value proposition is clear within 5 seconds of landing"},
-      {id:"qc-c2",text:"CTAs are specific, action-oriented, and use first-person language"},
-      {id:"qc-c3",text:"Copy is free of jargon and accessible to the target audience"},
-      {id:"qc-c4",text:"Error messages are human, helpful, and non-technical"},
-      {id:"qc-c5",text:"Content is scannable — headers, bullets, and concise paragraphs"},
-      {id:"qc-c6",text:"Tone of voice is consistent across all pages"},
-      {id:"qc-c7",text:"Form labels are clear and positioned above their inputs"},
-      {id:"qc-c8",text:"Images and media are relevant, high quality, and on-brand"},
-      {id:"qc-c9",text:"Page titles are descriptive and unique per page"},
-      {id:"qc-c10",text:"Empty states and zero-data screens have helpful, guiding copy"},
+      {id:"content.clarity.1",group:"Clarity & objectives",text:"The page has a single, clear primary objective traceable back to the agreed brief"},
+      {id:"content.clarity.2",group:"Clarity & objectives",text:"The hero headline communicates the core value proposition immediately — without needing to scroll"},
+      {id:"content.clarity.3",group:"Clarity & objectives",text:"The page addresses the intended user type — not a generic audience"},
+      {id:"content.clarity.4",group:"Clarity & objectives",text:"CTAs are specific and action-oriented — not 'Learn more' or 'Click here' in isolation"},
+      {id:"content.clarity.5",group:"Clarity & objectives",text:"There is one dominant CTA per section — secondary actions are visually subordinate"},
+      {id:"content.clarity.6",group:"Clarity & objectives",text:"The KPI defined in the brief is traceable from the page as built — the right tracking events fire"},
+      {id:"content.hierarchy.1",group:"Content hierarchy",text:"The most important content appears highest on the page"},
+      {id:"content.hierarchy.2",group:"Content hierarchy",text:"Content is structured for scanning — headings, subheadings, and short paragraphs throughout"},
+      {id:"content.hierarchy.3",group:"Content hierarchy",text:"No key message is buried below the fold without an anchor or signpost above it"},
+      {id:"content.hierarchy.4",group:"Content hierarchy",text:"Social proof (case studies, logos, stats) is positioned to support conversion moments — not just present"},
+      {id:"content.hierarchy.5",group:"Content hierarchy",text:"Content sections flow logically from top to bottom — the page tells a coherent story"},
+      {id:"content.copy.1",group:"Copy",text:"Copy is free of jargon the target persona would not recognise"},
+      {id:"content.copy.2",group:"Copy",text:"No placeholder text, draft labels, or internal notes are visible in the staged build"},
+      {id:"content.copy.3",group:"Copy",text:"All stats and data claims are accurate and sourced where required"},
+      {id:"content.copy.4",group:"Copy",text:"Headings are in sentence case — not Title Case or ALL CAPS"},
+      {id:"content.copy.5",group:"Copy",text:"Contractions are used where appropriate (it's, you're, we've) in line with GWI tone of voice"},
+      {id:"content.copy.6",group:"Copy",text:"Copy is confident and direct — no hedging language ('could help', 'might be', 'potentially')"},
     ]},
     {id:"design",label:"Design & Typography",items:[
-      {id:"qc-d1",text:"Clear visual hierarchy exists on every page"},
-      {id:"qc-d2",text:"Body text is at least 16px and legible at a glance"},
-      {id:"qc-d3",text:"Line height is comfortable (1.4–1.6) and aids readability"},
-      {id:"qc-d4",text:"Colour contrast meets WCAG AA — at least 4.5:1 for body text"},
-      {id:"qc-d5",text:"Design is consistent with brand guidelines throughout"},
-      {id:"qc-d6",text:"Interactive elements are visually distinct from non-interactive ones"},
-      {id:"qc-d7",text:"Whitespace is used consistently and intentionally"},
-      {id:"qc-d8",text:"Icons are used consistently and labelled where needed"},
-      {id:"qc-d9",text:"Grid and layout system is consistent across pages"},
-      {id:"qc-d10",text:"Loading states and skeleton screens are designed"},
+      {id:"design.figma.1",group:"Figma-to-Webflow fidelity",text:"The staged build matches the approved Figma design — reviewed side by side at 1440px desktop"},
+      {id:"design.figma.2",group:"Figma-to-Webflow fidelity",text:"No components, colours, or type styles have drifted from the Figma source during build"},
+      {id:"design.figma.3",group:"Figma-to-Webflow fidelity",text:"Any deviations from the Figma are intentional and have been flagged and approved before QA"},
+      {id:"design.figma.4",group:"Figma-to-Webflow fidelity",text:"Webflow classes and styles are named consistently and do not introduce one-off overrides"},
+      {id:"design.type-faces.1",group:"Typography — typeface & weights",text:"All type is set in Faktum — no system fonts, no substitutions anywhere in the build"},
+      {id:"design.type-faces.2",group:"Typography — typeface & weights",text:"Hero headlines use Faktum ExtraBold (800) or Bold (700)"},
+      {id:"design.type-faces.3",group:"Typography — typeface & weights",text:"Section headings use Faktum Bold (700)"},
+      {id:"design.type-faces.4",group:"Typography — typeface & weights",text:"UI labels, navigation items, and CTA text use Faktum SemiBold (600)"},
+      {id:"design.type-faces.5",group:"Typography — typeface & weights",text:"Body copy uses Faktum Regular (400) — Light weight is not used at small sizes"},
+      {id:"design.type-faces.6",group:"Typography — typeface & weights",text:"Italic variants are used intentionally and sparingly — not as a substitute for hierarchy"},
+      {id:"design.type-sizing.1",group:"Typography — sizing & spacing",text:"Hero H1 sits within the 52–60px range on desktop"},
+      {id:"design.type-sizing.2",group:"Typography — sizing & spacing",text:"Section H2 sits within the 32–36px range on desktop"},
+      {id:"design.type-sizing.3",group:"Typography — sizing & spacing",text:"Body copy is a minimum of 16px — no smaller type used for primary content"},
+      {id:"design.type-sizing.4",group:"Typography — sizing & spacing",text:"Line height is approximately 1.2 for display type and 1.65–1.7 for body copy"},
+      {id:"design.type-sizing.5",group:"Typography — sizing & spacing",text:"Headlines use tight tracking (negative letter-spacing) — not default browser tracking"},
+      {id:"design.type-sizing.6",group:"Typography — sizing & spacing",text:"Line length does not exceed 75 characters in body copy columns"},
+      {id:"design.type-sizing.7",group:"Typography — sizing & spacing",text:"Heading hierarchy is logical and unbroken (H1 → H2 → H3) — no levels skipped"},
+      {id:"design.type-sizing.8",group:"Typography — sizing & spacing",text:"There is only one H1 per page"},
+      {id:"design.colour-brand.1",group:"Colour — brand usage",text:"Hot Pink (#FF0077) is present as the primary brand colour and is not overused or diluted"},
+      {id:"design.colour-brand.2",group:"Colour — brand usage",text:"Hot Pink is not used as a large background fill across full-width sections"},
+      {id:"design.colour-brand.3",group:"Colour — brand usage",text:"Black (#000000 / Off Black #101720) and white (#FFFFFF) are the primary supporting colours"},
+      {id:"design.colour-brand.4",group:"Colour — brand usage",text:"Secondary colours (Violet #5461C8, Blue #007CB6, Purple #963CBD, Teal #008291) are used as accents only — not competing with Hot Pink"},
+      {id:"design.colour-brand.5",group:"Colour — brand usage",text:"Action Green (#00FF88) is used only on CTAs where maximum contrast is needed — one instance per screen maximum, never decorative"},
+      {id:"design.colour-brand.6",group:"Colour — brand usage",text:"The pink scale is used appropriately for hover states, highlights, tags, and data callouts"},
+      {id:"design.colour-brand.7",group:"Colour — brand usage",text:"The grey scale is used for body text, borders, backgrounds, and structural UI — not applied decoratively"},
+      {id:"design.colour-brand.8",group:"Colour — brand usage",text:"Error states use #DA3441, success states #008851, warning states #F6C26D — no ad hoc colours"},
+      {id:"design.colour-brand.9",group:"Colour — brand usage",text:"No off-brand or one-off colours appear anywhere in the build"},
+      {id:"qc-d4",group:"Colour — contrast",text:"White text on Hot Pink background follows the standard CTA pattern"},
+      {id:"design.colour-contrast.2",group:"Colour — contrast",text:"Text contrast meets WCAG AA minimum — 4.5:1 for body text, 3:1 for large text (verified with Stark)"},
+      {id:"design.colour-contrast.3",group:"Colour — contrast",text:"No text appears over an image or background that causes it to fail contrast"},
+      {id:"design.colour-contrast.4",group:"Colour — contrast",text:"Information is not conveyed by colour alone — there is always a secondary visual indicator"},
+      {id:"design.layout.1",group:"Layout & spacing",text:"Spacing is consistent — components use design system tokens, not one-off Webflow overrides"},
+      {id:"design.layout.2",group:"Layout & spacing",text:"The page does not feel cluttered — white space is used deliberately between sections and elements"},
+      {id:"design.layout.3",group:"Layout & spacing",text:"Visual hierarchy guides the eye clearly from headline through body copy to CTA"},
+      {id:"design.layout.4",group:"Layout & spacing",text:"All content is aligned to the grid — no elements sitting outside the layout column"},
+      {id:"design.layout.5",group:"Layout & spacing",text:"Sections are clearly delineated — the page does not read as one continuous unbroken block"},
+      {id:"design.layout.6",group:"Layout & spacing",text:"Body copy blocks are not centre-aligned — centre alignment is only used in short display contexts"},
+      {id:"design.layout.7",group:"Layout & spacing",text:"The page has been reviewed at 1280px (primary desktop target per GA4), 1920px (secondary), and 1440px"},
+      {id:"design.layout.8",group:"Layout & spacing",text:"The page has been reviewed at 100% zoom and reduced zoom to check overall composition and proportion"},
+      {id:"design.buttons.1",group:"Buttons & interactive elements",text:"Button sizes are consistent across the page — no rogue oversized or undersized instances"},
+      {id:"design.buttons.2",group:"Buttons & interactive elements",text:"Button hierarchy is clear — primary, secondary, and tertiary styles are visually distinct"},
+      {id:"design.buttons.3",group:"Buttons & interactive elements",text:"CTA labels are consistent — the same action is not labelled differently in different places on the same page"},
+      {id:"design.buttons.4",group:"Buttons & interactive elements",text:"All buttons and interactive elements have a visible hover state in the Webflow build"},
+      {id:"design.buttons.5",group:"Buttons & interactive elements",text:"Links in body copy are visually distinct from surrounding text"},
+      {id:"design.buttons.6",group:"Buttons & interactive elements",text:"No button is styled to look like a link, or vice versa, without clear intent"},
+      {id:"design.buttons.7",group:"Buttons & interactive elements",text:"Any HubSpot-embedded CTAs or forms match the button style and hierarchy of the surrounding page"},
+      {id:"design.imagery-format.1",group:"Imagery — format & quality",text:"All illustrations and icons are SVG — no PNG or JPG used for scalable graphics"},
+      {id:"design.imagery-format.2",group:"Imagery — format & quality",text:"Photographic images use WebP format and are compressed appropriately for web"},
+      {id:"design.imagery-format.3",group:"Imagery — format & quality",text:"No raster images (PNG/JPG) are used where an SVG equivalent exists"},
+      {id:"design.imagery-format.4",group:"Imagery — format & quality",text:"All images are high resolution — no blurring, pixelation, or compression artefacts visible at any viewport"},
+      {id:"design.imagery-format.5",group:"Imagery — format & quality",text:"Images are not stretched, squashed, or awkwardly cropped in the Webflow build"},
+      {id:"design.imagery-format.6",group:"Imagery — format & quality",text:"SVG files are clean — no embedded raster data, no unnecessary metadata, optimised file size"},
+      {id:"design.imagery-brand.1",group:"Imagery — brand & content",text:"Illustrations are from the approved GWI illustration library and are consistent in style"},
+      {id:"design.imagery-brand.2",group:"Imagery — brand & content",text:"Illustrations and images feel like they belong to the page — not stock-photo generic"},
+      {id:"design.imagery-brand.3",group:"Imagery — brand & content",text:"No text is embedded in any image or illustration — all text is live HTML"},
+      {id:"design.imagery-brand.4",group:"Imagery — brand & content",text:"Hero images and key visuals do not obscure or compete with headline copy"},
+      {id:"design.imagery-brand.5",group:"Imagery — brand & content",text:"Decorative images have empty alt text (\"\") and are marked as presentational"},
+      {id:"design.iconography.1",group:"Iconography",text:"Icons are from the approved GWI icon set and are exported as SVG"},
+      {id:"design.iconography.2",group:"Iconography",text:"Icon style is consistent across the page — no mixing of filled, outlined, or different-weight styles"},
+      {id:"design.iconography.3",group:"Iconography",text:"Icons are used to support meaning — not as decoration or filler"},
+      {id:"design.iconography.4",group:"Iconography",text:"Icons used alongside text are vertically aligned and proportionally sized"},
+      {id:"design.logo.1",group:"Logo",text:"The correct logo variant is used for its background — Default on light, On Black on dark"},
+      {id:"design.logo.2",group:"Logo",text:"The logo has correct clear space on all sides (equal to the height of the i-dot)"},
+      {id:"design.logo.3",group:"Logo",text:"The logo is not stretched, skewed, rotated, recoloured, or modified in any way"},
+      {id:"design.logo.4",group:"Logo",text:"The Hot Pink dot on the i is intact and the correct colour (#FF0077)"},
+      {id:"design.components.1",group:"Component consistency",text:"All components used are from the GWI Webflow design system — no one-off or bespoke components introduced without sign-off"},
+      {id:"design.components.2",group:"Component consistency",text:"Components are used as intended in the design system — no misuse of a pattern for a different purpose"},
+      {id:"design.components.3",group:"Component consistency",text:"Any new components introduced follow design system token structure and naming conventions"},
+      {id:"design.components.4",group:"Component consistency",text:"The page does not introduce visual patterns that conflict with or would confuse the wider system"},
+      {id:"design.components.5",group:"Component consistency",text:"HubSpot-embedded modules (forms, CTAs, dynamic content) are styled to be visually seamless with the surrounding Webflow page"},
+      {id:"design.visual-quality.1",group:"Visual quality",text:"No visual inconsistencies visible at 100% zoom — no misaligned elements, ragged spacing, or unintended overlaps"},
+      {id:"design.visual-quality.2",group:"Visual quality",text:"Dark and light sections transition cleanly — no unintended colour bleed or gap between sections"},
+      {id:"design.visual-quality.3",group:"Visual quality",text:"All borders and dividers are consistent in weight and colour across the page"},
+      {id:"design.visual-quality.4",group:"Visual quality",text:"Shadows and elevation are consistent and follow design system usage — not applied ad hoc in Webflow"},
+      {id:"design.visual-quality.5",group:"Visual quality",text:"Loading states, empty states, and any conditional content have been checked and look intentional"},
+      {id:"design.visual-quality.6",group:"Visual quality",text:"The build has been checked in Chrome, Firefox, and Safari at desktop width"},
     ]},
     {id:"navigation",label:"Navigation & Structure",items:[
-      {id:"qc-n1",text:"Primary navigation is visible and immediately understandable"},
-      {id:"qc-n2",text:"Users can reach their goal within 3 clicks from any page"},
-      {id:"qc-n3",text:"Current page or section is clearly indicated (active state)"},
-      {id:"qc-n4",text:"Information architecture reflects user mental models"},
-      {id:"qc-n5",text:"Breadcrumbs are used on deep pages where helpful"},
-      {id:"qc-n6",text:"Search (if present) returns relevant and well-ranked results"},
-      {id:"qc-n7",text:"404 and error pages are helpful with clear recovery actions"},
-      {id:"qc-n8",text:"External links are clearly indicated and open in a new tab"},
-      {id:"qc-n9",text:"Footer is well-organised and provides useful navigation"},
-      {id:"qc-n10",text:"Navigation labels are descriptive — not clever or vague"},
+      {id:"navigation.context.1",group:"Page context",text:"The page title and URL are descriptive and match the page's purpose — confirmed with SEO (Caleb) where relevant"},
+      {id:"navigation.context.2",group:"Page context",text:"The user can tell where they are within the site structure from the page alone"},
+      {id:"navigation.context.3",group:"Page context",text:"The global navigation correctly reflects the current section with an active state"},
+      {id:"navigation.context.4",group:"Page context",text:"Breadcrumbs are present and correct where the page sits deep in the hierarchy"},
+      {id:"navigation.journeys.1",group:"Onward journeys",text:"The page has at least one clear next step appropriate for the intended user type"},
+      {id:"navigation.journeys.2",group:"Onward journeys",text:"Related content or pages are surfaced and relevant — not generic or templated filler"},
+      {id:"navigation.journeys.3",group:"Onward journeys",text:"No dead ends — every exit from the page leads somewhere intentional"},
+      {id:"navigation.errors.1",group:"Error states",text:"Any HubSpot forms on the page validate in real time with clear, specific error messages"},
+      {id:"navigation.errors.2",group:"Error states",text:"404 and error states for any linked content are handled gracefully"},
     ]},
-    {id:"accessibility",label:"Accessibility & Compliance",items:[
-      {id:"qc-a1",text:"All images have appropriate, descriptive alt text"},
-      {id:"qc-a2",text:"Keyboard navigation is fully functional across all interactions"},
-      {id:"qc-a3",text:"Focus states are visible on all interactive elements"},
-      {id:"qc-a4",text:"Colour is not the only means of conveying information"},
-      {id:"qc-a5",text:"Form errors are clearly associated with their input fields"},
-      {id:"qc-a6",text:"ARIA attributes are used correctly where native HTML is insufficient"},
-      {id:"qc-a7",text:"Text can be resized to 200% without loss of content or functionality"},
-      {id:"qc-a8",text:"Video and audio content has captions or transcripts"},
-      {id:"qc-a9",text:"Site meets WCAG 2.1 AA standards overall"},
-      {id:"qc-a10",text:"Cookie and privacy policy is accessible and up to date"},
+    {id:"accessibility",label:"Accessibility",items:[
+      {id:"accessibility.contrast.1",group:"Colour & contrast",text:"Text contrast meets WCAG AA — 4.5:1 for body, 3:1 for large text — checked with Stark plugin"},
+      {id:"accessibility.contrast.2",group:"Colour & contrast",text:"Information is not conveyed by colour alone — always a secondary visual indicator present"},
+      {id:"accessibility.contrast.3",group:"Colour & contrast",text:"Interactive elements are distinguishable without relying on colour alone"},
+      {id:"accessibility.markup.1",group:"Content & markup",text:"All images have descriptive alt text — decorative images have empty alt (\"\") in Webflow settings"},
+      {id:"accessibility.markup.2",group:"Content & markup",text:"Heading structure is correct and logical for screen readers — one H1, no levels skipped"},
+      {id:"accessibility.markup.3",group:"Content & markup",text:"All links have descriptive labels — not 'click here' or 'read more' used without surrounding context"},
+      {id:"accessibility.markup.4",group:"Content & markup",text:"Videos include captions where present on the page"},
+      {id:"accessibility.keyboard.1",group:"Interaction & keyboard",text:"All interactive elements are keyboard accessible — tested by tabbing through the staged page"},
+      {id:"accessibility.keyboard.2",group:"Interaction & keyboard",text:"Focus order follows a logical reading sequence through the page"},
+      {id:"accessibility.keyboard.3",group:"Interaction & keyboard",text:"Focus states are visible on all interactive elements — Webflow default not suppressed in CSS"},
+      {id:"accessibility.keyboard.4",group:"Interaction & keyboard",text:"Touch targets are a minimum of 44x44px on mobile — checked in responsive preview"},
     ]},
-    {id:"mobile",label:"Mobile Responsiveness",items:[
-      {id:"qc-m1",text:"Layout is fully functional at 320px screen width and above"},
-      {id:"qc-m2",text:"Touch targets are at least 44×44px"},
-      {id:"qc-m3",text:"Mobile navigation is clear and usable"},
-      {id:"qc-m4",text:"Forms are easy to complete on a mobile device"},
-      {id:"qc-m5",text:"Text is readable without needing to zoom"},
-      {id:"qc-m6",text:"Images are appropriately scaled for mobile screens"},
-      {id:"qc-m7",text:"No horizontal scrolling occurs on any page"},
-      {id:"qc-m8",text:"Page loads in under 3 seconds on a mobile connection"},
-      {id:"qc-m9",text:"Modals and overlays are usable on mobile screens"},
-      {id:"qc-m10",text:"Hover-only interactions are replaced with mobile-friendly alternatives"},
+    {id:"mobile",label:"Responsiveness & Device QA",items:[
+      {id:"mobile.desktop-breakpoints.1",group:"Desktop — primary breakpoints",text:"Page reviewed at 1280px wide — the most common resolution on GWI.com (828k active users)"},
+      {id:"mobile.desktop-breakpoints.2",group:"Desktop — primary breakpoints",text:"Page reviewed at 1920px wide — second most common desktop resolution (63k active users)"},
+      {id:"mobile.desktop-breakpoints.3",group:"Desktop — primary breakpoints",text:"Page reviewed at 1440px wide — fourth most common and a common design reference (25k active users)"},
+      {id:"mobile.desktop-breakpoints.4",group:"Desktop — primary breakpoints",text:"Page reviewed at 800px wide — notably high traffic at 48k users, check nothing breaks at this width"},
+      {id:"mobile.desktop-breakpoints.5",group:"Desktop — primary breakpoints",text:"No content is hidden, clipped, or overlapping at any desktop breakpoint"},
+      {id:"mobile.desktop-breakpoints.6",group:"Desktop — primary breakpoints",text:"All content is readable and well-proportioned at 1280px — the page is not designed only for wide viewports"},
+      {id:"mobile.desktop-browser.1",group:"Desktop — browser QA",text:"Tested in Chrome — dominant browser for GWI.com traffic"},
+      {id:"mobile.desktop-browser.2",group:"Desktop — browser QA",text:"Tested in Safari — second most common browser, especially for macOS users (142k active users on Mac)"},
+      {id:"mobile.desktop-browser.3",group:"Desktop — browser QA",text:"Tested in Edge — third most common browser in GWI.com data"},
+      {id:"mobile.desktop-browser.4",group:"Desktop — browser QA",text:"No rendering inconsistencies between browsers — fonts, spacing, and layout are consistent"},
+      {id:"mobile.mobile-breakpoints.1",group:"Mobile layout — breakpoints",text:"Page renders correctly at 390px (iPhone 14/15 standard — primary iOS target)"},
+      {id:"mobile.mobile-breakpoints.2",group:"Mobile layout — breakpoints",text:"Page renders correctly at 375px (iPhone SE / older iOS — still widely used)"},
+      {id:"mobile.mobile-breakpoints.3",group:"Mobile layout — breakpoints",text:"Page renders correctly at 360px (standard Android viewport)"},
+      {id:"mobile.mobile-breakpoints.4",group:"Mobile layout — breakpoints",text:"No content is hidden, clipped, or overlapping at any mobile breakpoint"},
+      {id:"mobile.mobile-breakpoints.5",group:"Mobile layout — breakpoints",text:"Column stacking order on mobile follows a logical content hierarchy — not just automatic Webflow reflow"},
+      {id:"mobile.mobile-breakpoints.6",group:"Mobile layout — breakpoints",text:"SVGs and images scale correctly on mobile — no stretching, pixelation, or cropping issues"},
+      {id:"mobile.mobile-breakpoints.7",group:"Mobile layout — breakpoints",text:"Typography scales appropriately — hero display type does not overwhelm the mobile viewport"},
+      {id:"mobile.mobile-breakpoints.8",group:"Mobile layout — breakpoints",text:"Horizontal scrolling does not occur at any mobile breakpoint"},
+      {id:"mobile.mobile-interaction.1",group:"Mobile interaction",text:"All CTAs and interactive elements are easily tappable — 44px minimum touch target, no mis-tap risk"},
+      {id:"mobile.mobile-interaction.2",group:"Mobile interaction",text:"Hover-state-only interactions have a tap or touch equivalent on mobile"},
+      {id:"mobile.mobile-interaction.3",group:"Mobile interaction",text:"HubSpot-embedded forms and modules are fully functional and usable on mobile"},
+      {id:"mobile.mobile-interaction.4",group:"Mobile interaction",text:"Page tested on an actual iOS device (not only Webflow or browser responsive preview)"},
+      {id:"mobile.mobile-interaction.5",group:"Mobile interaction",text:"Page tested on an actual Android device where possible"},
+      {id:"mobile.performance.1",group:"Performance",text:"SVG files are optimised — no bloated file sizes that impact mobile load time"},
+      {id:"mobile.performance.2",group:"Performance",text:"Photographic images are compressed and served at appropriate sizes for mobile"},
+      {id:"mobile.performance.3",group:"Performance",text:"No layout shift occurs as the page loads — Core Web Vitals CLS score checked via PageSpeed Insights"},
+      {id:"mobile.performance.4",group:"Performance",text:"Mobile PageSpeed score is acceptable — target above 70"},
     ]},
   ];
   var activeAudit:any=qaPages.find(function(p:any){return p.id===activeAuditId;})||null;
@@ -4452,7 +4542,7 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
         <div style={{background:C.black,borderRadius:20,padding:isMobile?"24px":"36px 40px",marginBottom:28}}>
           <div style={{fontSize:12,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>UX Heuristic Evaluation</div>
           <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
-            <div><h1 style={{color:C.white,fontSize:isMobile?24:30,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:"-0.02em"}}>QA Checklist</h1><p style={{color:C.grey6,fontSize:14,lineHeight:1.7,margin:0,maxWidth:500}}>Run a structured heuristic audit on any page. Each audit scores 50 criteria across 5 categories and generates a prioritised roadmap.</p></div>
+            <div><h1 style={{color:C.white,fontSize:isMobile?24:30,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:"-0.02em"}}>QA Checklist</h1><p style={{color:C.grey6,fontSize:14,lineHeight:1.7,margin:0,maxWidth:500}}>Run a structured heuristic audit on any page. Each audit scores 140 GWI Website Delivery criteria across 5 categories and generates a prioritised roadmap.</p></div>
             <button onClick={function(){setShowNewForm(true);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:10,padding:"12px 20px",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>+ Start new QA test</button>
           </div>
         </div>
@@ -4557,8 +4647,12 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           {activeCat.items.map(function(item,idx){
             var r=getResult(item.id);var statusCfg=r.status?STATUS_CFG[r.status]:null;var expanded=expandedItems[item.id];var needsSeverity=r.status==="fail"||r.status==="partial";
+            var prev=idx>0?activeCat.items[idx-1]:null;
+            var showGroup=(item as any).group&&(!prev||(prev as any).group!==(item as any).group);
             return(
-              <div key={item.id} style={{background:C.white,borderRadius:12,padding:"16px 20px",border:"1.5px solid "+(statusCfg?statusCfg.border:C.grey4),transition:"border-color 0.2s"}}>
+              <Fragment key={item.id}>
+              {showGroup&&<div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em",marginTop:idx===0?0:12,marginBottom:2,paddingLeft:4}}>{(item as any).group}</div>}
+              <div style={{background:C.white,borderRadius:12,padding:"16px 20px",border:"1.5px solid "+(statusCfg?statusCfg.border:C.grey4),transition:"border-color 0.2s"}}>
                 <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
                   <div style={{fontSize:12,fontWeight:700,color:C.grey6,marginTop:3,minWidth:20,flexShrink:0}}>{idx+1}</div>
                   <div style={{flex:1}}>
@@ -4606,6 +4700,7 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
                   </div>
                 </div>
               </div>
+              </Fragment>
             );
           })}
         </div>
