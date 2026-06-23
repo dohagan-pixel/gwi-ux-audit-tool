@@ -4462,8 +4462,8 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
       {isMobile?(
         <MobileNav view={view} setView={setView}/>
       ):(
-        <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,padding:"0 20px",height:52,display:"flex",alignItems:"center",gap:4,position:"fixed",top:0,left:0,right:0,zIndex:100,boxSizing:"border-box"}}>
-          <img src="/gwi-logo-on-black.svg" alt="GWI" height={22} style={{cursor:"pointer",display:"block",flexShrink:0,marginRight:24}} onClick={function(){setView("dashboard");}}/>
+        <div style={{background:"#FFFFFF",borderBottom:"1px solid #E6ECF7",padding:"0 24px",height:56,display:"flex",alignItems:"center",gap:4,position:"fixed",top:0,left:0,right:0,zIndex:100,boxSizing:"border-box"}}>
+          <img src="/gwi-logo.svg" alt="GWI" height={22} style={{cursor:"pointer",display:"block",flexShrink:0,marginRight:24}} onClick={function(){setView("dashboard");}}/>
           <button onClick={function(){setView("dashboard");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="dashboard"?C.pink:"transparent",color:view==="dashboard"?C.white:C.grey7,flexShrink:0}}>Home</button>
           <button onClick={function(){setView("summary");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:(view==="summary"||view==="generated-audits")?C.pink:"transparent",color:(view==="summary"||view==="generated-audits")?C.white:C.grey7,flexShrink:0}}>UX Audit</button>
           <button onClick={function(){setView("audit");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="audit"?C.pink:"transparent",color:view==="audit"?C.white:C.grey7,flexShrink:0}}>Recommendations</button>
@@ -4479,7 +4479,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
           <UserMenu user={_user} onSignOut={function(){fbSignOut(_auth);}} onSettings={function(){setView("settings");}} onFeedbackPage={function(){setView("feedback");}} onGuide={function(){setView("guide");}} activeView={view}/>
         </div>
       )}
-      <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column",paddingTop:isMobile?0:52}}>
+      <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column",paddingTop:isMobile?0:56}}>
         {view==="dashboard"&&<PlatformHome setView={setView} reviewerName={_user?(_user.displayName||""):""} auditCount={(generatedAudits||[]).length}/>}
         {view==="personas"&&<PersonasDash personas={personas} setView={setView} goToPersona={goToPersona}/>}
         {view==="persona-detail"&&<PersonasPage personas={personas} journeys={journeys} setView={setView} setActivePersonaForJourney={setActivePersonaForJourney} goToJourney={goToJourney} initialPersonaId={activePersonaId}/>}
