@@ -946,8 +946,7 @@ export function QAWalkthroughPage() {
                     return (
                       <div key={s.id} style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 14, padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
                         <div>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
-                            <span style={{ display: "inline-flex", alignItems: "center", padding: "3px 10px", borderRadius: 99, background: C.grey2, color: C.grey7, fontWeight: 700, fontSize: 11, letterSpacing: "0.04em" }}>{s.number}</span>
+                          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-start", marginBottom: 8 }}>
                             <span style={{ display: "inline-flex", alignItems: "center", padding: "3px 10px", borderRadius: 99, background: pill.bg, color: pill.fg, border: `1px solid ${pill.border}`, fontWeight: 700, fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" }}>{pill.label}</span>
                           </div>
                           <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 6 }}>{s.title}</h3>
