@@ -551,7 +551,7 @@ function fmtAgo(ts: number): string {
 export function QAWalkthroughPage() {
   const initialAudits = useMemo(loadAudits, []);
   const [audits, setAudits] = useState<Audit[]>(initialAudits);
-  const [phase, setPhase] = useState<"list" | "intro" | "audit" | "questions">(initialAudits.length ? "list" : "intro");
+  const [phase, setPhase] = useState<"list" | "intro" | "audit" | "questions">("list");
   const [activeAuditId, setActiveAuditId] = useState<string | null>(null);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [cur, setCur] = useState(0);
