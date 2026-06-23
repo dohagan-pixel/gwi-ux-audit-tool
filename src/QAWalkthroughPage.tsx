@@ -1165,54 +1165,63 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                     if (explicit !== "approved") menu.push({ label: "Mark as approved", action: () => setSectionStatus(s.id, "approved") });
                     if (explicit !== "revisit") menu.push({ label: "Mark as needs revisit", action: () => setSectionStatus(s.id, "revisit") });
                     if (explicit) menu.push({ label: explicit === "approved" ? "Clear approval" : "Clear revisit", action: () => setSectionStatus(s.id, explicit) });
+                    const passPct = ss.total ? ((ss.pass + ss.na) / ss.total) * 100 : 0;
+                    const flagPct = ss.total ? (ss.fail / ss.total) * 100 : 0;
                     return (
-                      <div key={s.id} style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 14, padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
-                        <div>
-                          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-start", marginBottom: 8, position: "relative" }} data-section-menu>
-                            <button type="button" onClick={() => setOpenSectionMenu(menuOpen ? null : s.id)}
-                                    style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 8px 3px 10px", borderRadius: 99, background: pill.bg, color: pill.fg, border: `1px solid ${pill.border}`, fontWeight: 700, fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer", fontFamily: FF }}>
-                              {pill.label}
-                              <span style={{ fontSize: 10, opacity: 0.7 }}>▾</span>
-                            </button>
-                            {menuOpen && (
-                              <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.08)", padding: 4, minWidth: 200, zIndex: 10 }}>
-                                {menu.map((m, i) => (
-                                  <button key={i} type="button"
-                                          onClick={() => { m.action(); setOpenSectionMenu(null); }}
-                                          style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", borderRadius: 6, border: "none", background: "transparent", color: C.ink, fontFamily: FF, fontSize: 13, fontWeight: 500, cursor: "pointer" }}
-                                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.grey2; }}
-                                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-                                    {m.label}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          <h3 style={{ fontSize: 27, fontWeight: 700, letterSpacing: "-0.02em", marginBottom: 6 }}>{s.title}</h3>
-                          <p style={{ fontSize: 12, color: C.grey7, lineHeight: 1.5, margin: 0 }}>{s.intro}</p>
+                      <div key={s.id} style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div style={{ display: "flex", justifyContent: "flex-start", position: "relative" }} data-section-menu>
+                          <button type="button" onClick={() => setOpenSectionMenu(menuOpen ? null : s.id)}
+                                  style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "5px 12px", borderRadius: 99, background: pill.bg, color: pill.fg, fontWeight: 700, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer", fontFamily: FF, border: "none" }}>
+                            <span style={{ width: 7, height: 7, borderRadius: "50%", background: pill.fg }} />
+                            {pill.label}
+                            <span style={{ fontSize: 9, opacity: 0.6 }}>▾</span>
+                          </button>
+                          {menuOpen && (
+                            <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.08)", padding: 4, minWidth: 200, zIndex: 10 }}>
+                              {menu.map((m, i) => (
+                                <button key={i} type="button"
+                                        onClick={() => { m.action(); setOpenSectionMenu(null); }}
+                                        style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", borderRadius: 6, border: "none", background: "transparent", color: C.ink, fontFamily: FF, fontSize: 13, fontWeight: 500, cursor: "pointer" }}
+                                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.grey2; }}
+                                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+                                  {m.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
-                        <div style={{ display: "flex", gap: 16, alignItems: "flex-end" }}>
+                        <div>
+                          <h3 style={{ fontSize: 27, fontWeight: 700, letterSpacing: "-0.02em", marginBottom: 10 }}>{s.title}</h3>
+                          <p style={{ fontSize: 13, color: C.grey7, lineHeight: 1.55, margin: 0, minHeight: 40 }}>{s.intro}</p>
+                        </div>
+
+                        <div style={{ display: "flex", height: 4, borderRadius: 99, overflow: "hidden", background: C.grey3 }} aria-hidden>
+                          <div style={{ width: `${passPct}%`, background: C.pass, transition: "width 0.4s" }} />
+                          <div style={{ width: `${flagPct}%`, background: C.fail, transition: "width 0.4s" }} />
+                        </div>
+
+                        <div style={{ display: "flex", gap: 20, alignItems: "flex-end" }}>
                           <div>
-                            <div style={{ fontSize: 18, fontWeight: 800, color: C.ink, lineHeight: 1 }}>{ss.answered}<span style={{ color: C.grey5, fontSize: 12 }}>/{ss.total}</span></div>
-                            <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 3 }}>Answered</div>
+                            <div style={{ fontSize: 20, fontWeight: 800, color: C.ink, lineHeight: 1, letterSpacing: "-0.02em" }}>{ss.answered}<span style={{ color: C.grey5, fontSize: 13 }}>/{ss.total}</span></div>
+                            <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Answered</div>
                           </div>
                           {(ss.pass + ss.na) > 0 && (
                             <div>
-                              <div style={{ fontSize: 18, fontWeight: 800, color: C.pass, lineHeight: 1 }}>{ss.pass + ss.na}</div>
-                              <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 3 }}>Pass</div>
+                              <div style={{ fontSize: 20, fontWeight: 800, color: C.pass, lineHeight: 1, letterSpacing: "-0.02em" }}>{ss.pass + ss.na}</div>
+                              <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Pass</div>
                             </div>
                           )}
                           {ss.fail > 0 && (
                             <div>
-                              <div style={{ fontSize: 18, fontWeight: 800, color: C.fail, lineHeight: 1 }}>{ss.fail}</div>
-                              <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 3 }}>Flag</div>
+                              <div style={{ fontSize: 20, fontWeight: 800, color: C.fail, lineHeight: 1, letterSpacing: "-0.02em" }}>{ss.fail}</div>
+                              <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Flag</div>
                             </div>
                           )}
                         </div>
 
                         <button onClick={() => openSection(s.id, ctaMode)}
-                                style={{ ...btnPrimary, ...btnSmall, width: "100%", justifyContent: "center", marginTop: "auto" }}>
+                                style={{ ...btnPrimary, width: "100%", justifyContent: "center", marginTop: "auto" }}>
                           {ctaLabel}
                         </button>
                       </div>
