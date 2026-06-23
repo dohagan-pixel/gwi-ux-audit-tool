@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, Fragment } from "react";
 import { buildWireframePrompt, WIREFRAME_PROMPT_VERSION, WIREFRAME_PROMPT_DESCRIPTION } from "./wireframePrompt";
 import { QAWalkthroughPage, type Audit as QAAudit } from "./QAWalkthroughPage";
 import { SharedQAReport } from "./SharedQAReport";
+import { PlatformHome } from "./v2/PlatformHome";
 
 import{initializeApp}from'firebase/app';
 import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut as fbSignOut,onAuthStateChanged,sendPasswordResetEmail,confirmPasswordReset,GoogleAuthProvider,signInWithPopup}from'firebase/auth';
@@ -4463,7 +4464,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
       ):(
         <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,padding:"0 20px",height:52,display:"flex",alignItems:"center",gap:4,position:"fixed",top:0,left:0,right:0,zIndex:100,boxSizing:"border-box"}}>
           <img src="/gwi-logo-on-black.svg" alt="GWI" height={22} style={{cursor:"pointer",display:"block",flexShrink:0,marginRight:24}} onClick={function(){setView("dashboard");}}/>
-          <button onClick={function(){setView("dashboard");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="dashboard"?C.pink:"transparent",color:view==="dashboard"?C.white:C.grey7,flexShrink:0}}>Dashboard</button>
+          <button onClick={function(){setView("dashboard");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="dashboard"?C.pink:"transparent",color:view==="dashboard"?C.white:C.grey7,flexShrink:0}}>Home</button>
           <button onClick={function(){setView("summary");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:(view==="summary"||view==="generated-audits")?C.pink:"transparent",color:(view==="summary"||view==="generated-audits")?C.white:C.grey7,flexShrink:0}}>UX Audit</button>
           <button onClick={function(){setView("audit");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="audit"?C.pink:"transparent",color:view==="audit"?C.white:C.grey7,flexShrink:0}}>Recommendations</button>
           <button onClick={function(){setView("wireframes");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="wireframes"?C.pink:"transparent",color:view==="wireframes"?C.white:C.grey7,flexShrink:0}}>Wireframes</button>
@@ -4479,7 +4480,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         </div>
       )}
       <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column",paddingTop:isMobile?0:52}}>
-        {view==="dashboard"&&<Dashboard personas={personas} auditData={auditData} setView={setView} onFeedback={function(){setShowFeedbackModal(true);}}/>}
+        {view==="dashboard"&&<PlatformHome setView={setView} reviewerName={_user?(_user.displayName||""):""} auditCount={(generatedAudits||[]).length}/>}
         {view==="personas"&&<PersonasDash personas={personas} setView={setView} goToPersona={goToPersona}/>}
         {view==="persona-detail"&&<PersonasPage personas={personas} journeys={journeys} setView={setView} setActivePersonaForJourney={setActivePersonaForJourney} goToJourney={goToJourney} initialPersonaId={activePersonaId}/>}
         {view==="mapping"&&<MappingDash setView={setView}/>}
