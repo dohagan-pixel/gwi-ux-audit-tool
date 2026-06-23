@@ -449,7 +449,8 @@ export function buildHtml(meta: ExportMeta, answers: Answers): string {
     const rows = s.items.map(it => {
       const a = answers[it.id];
       const status = a?.status ?? "na";
-      const color = status === "pass" ? C.pass : status === "fail" ? C.fail : C.na;
+      const color = status === "pass" || status === "na" ? C.pass : status === "fail" ? C.fail : C.na;
+      const label = status === "na" ? "Pass · N/A" : status.toUpperCase();
       const groupRow = it.group !== prevGroup
         ? `<tr><td colspan="2" style="padding:18px 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:${C.grey7};font-weight:700">${escapeHtml(it.group)}</td></tr>`
         : "";
@@ -457,7 +458,7 @@ export function buildHtml(meta: ExportMeta, answers: Answers): string {
       const noteBox = a?.comment
         ? `<div style="margin-top:6px;padding:8px 10px;background:${C.grey2};border-left:3px solid ${C.pink};font-size:13px;border-radius:4px">${escapeHtml(a.comment)}</div>`
         : "";
-      return `${groupRow}<tr><td style="width:80px;padding:10px 12px;font-weight:700;font-size:11px;letter-spacing:0.06em;color:${color};border-bottom:1px solid ${C.grey3};vertical-align:top">${status.toUpperCase()}</td><td style="padding:10px 12px;border-bottom:1px solid ${C.grey3}">${escapeHtml(it.text)}${noteBox}</td></tr>`;
+      return `${groupRow}<tr><td style="width:90px;padding:10px 12px;font-weight:700;font-size:11px;letter-spacing:0.06em;color:${color};border-bottom:1px solid ${C.grey3};vertical-align:top">${escapeHtml(label)}</td><td style="padding:10px 12px;border-bottom:1px solid ${C.grey3}">${escapeHtml(it.text)}${noteBox}</td></tr>`;
     }).join("");
     return `<section style="margin:36px 0"><h2 style="font-size:24px;letter-spacing:-0.02em"><span style="color:${C.pink}">${s.number}.</span> ${escapeHtml(s.title)}</h2><p style="color:${C.grey7};margin:6px 0 16px">${escapeHtml(s.intro)}</p><table style="width:100%;border-collapse:collapse;font-size:14px"><tbody>${rows}</tbody></table></section>`;
   }).join("");

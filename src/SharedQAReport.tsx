@@ -208,7 +208,8 @@ export function SharedQAReport({ shareId }: { shareId: string }) {
                     {s.items.map(it => {
                       const ans = (audit.answers as Answers)[it.id];
                       const status = ans?.status ?? "—";
-                      const color = status === "pass" ? C.pass : status === "fail" ? C.fail : C.na;
+                      const color = status === "pass" || status === "na" ? C.pass : status === "fail" ? C.fail : C.na;
+                      const label = status === "na" ? "Pass · N/A" : typeof status === "string" ? status : "—";
                       const groupRow = it.group !== prevGroup ? (
                         <tr key={it.id + "-grp"}>
                           <td colSpan={2} style={{ padding: "14px 16px 4px", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: C.grey7, fontWeight: 700, borderBottom: `1px solid ${C.grey3}` }}>{it.group}</td>
@@ -219,7 +220,7 @@ export function SharedQAReport({ shareId }: { shareId: string }) {
                         <>
                           {groupRow}
                           <tr key={it.id}>
-                            <td style={{ width: 80, padding: "12px 16px", fontWeight: 700, fontSize: 11, letterSpacing: "0.06em", color, borderBottom: `1px solid ${C.grey3}`, verticalAlign: "top", textTransform: "uppercase" }}>{typeof status === "string" ? status : "—"}</td>
+                            <td style={{ width: 90, padding: "12px 16px", fontWeight: 700, fontSize: 11, letterSpacing: "0.06em", color, borderBottom: `1px solid ${C.grey3}`, verticalAlign: "top", textTransform: "uppercase" }}>{label}</td>
                             <td style={{ padding: "12px 16px", borderBottom: `1px solid ${C.grey3}` }}>
                               {it.text}
                               {ans?.comment && (
