@@ -1203,7 +1203,7 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
 
                         <div style={{ display: "flex", gap: 20, alignItems: "flex-end" }}>
                           <div>
-                            <div style={{ fontSize: 26, fontWeight: 800, color: C.ink, lineHeight: 1, letterSpacing: "-0.03em" }}>{ss.answered}<span style={{ color: C.grey5, fontSize: 15 }}>/{ss.total}</span></div>
+                            <div style={{ fontSize: 26, fontWeight: 800, color: C.ink, lineHeight: 1, letterSpacing: "-0.03em" }}>{ss.answered}<span style={{ color: C.grey5 }}>/{ss.total}</span></div>
                             <div style={{ fontSize: 10, fontWeight: 600, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Answered</div>
                           </div>
                           {(ss.pass + ss.na) > 0 && (
