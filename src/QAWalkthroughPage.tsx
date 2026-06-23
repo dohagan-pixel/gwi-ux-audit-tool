@@ -1,19 +1,21 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 
+// Palette aligned to the V2 design tokens (src/v2/theme.ts) so the QA
+// module is pixel-consistent with the platform home.
 const C = {
   pink: "#FF0077",
   pinkBg: "#FFE8EE",
   pass: "#008851",
   fail: "#DA3441",
-  na: "#7989A6",
-  ink: "#101720",
+  na: "#6B7A99",
+  ink: "#0E1116",
   inkSoft: "#2A3447",
   grey7: "#526482",
   grey5: "#ABB8CF",
-  grey4: "#CED9EB",
-  grey3: "#DFE7F5",
-  grey2: "#EBF1FB",
-  grey1: "#F7FAFF",
+  grey4: "#D7E0F0",
+  grey3: "#E6ECF7",
+  grey2: "#EFF3FA",
+  grey1: "#F6F8FC",
   white: "#FFFFFF",
 };
 const FF = "Faktum, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
