@@ -75,7 +75,6 @@ export const SECTIONS: Section[] = [
       { id: "design.figma.1", group: "Figma-to-Webflow fidelity", text: "The staged build matches the approved Figma design — reviewed side by side at 1440px desktop" },
       { id: "design.figma.2", group: "Figma-to-Webflow fidelity", text: "No components, colours, or type styles have drifted from the Figma source during build" },
       { id: "design.figma.3", group: "Figma-to-Webflow fidelity", text: "Any deviations from the Figma are intentional and have been flagged and approved before QA" },
-      { id: "design.colour-brand.1", group: "Colour — brand usage", text: "Hot Pink (#FF0077) is present as the primary brand colour and is not overused or diluted" },
       { id: "design.colour-brand.2", group: "Colour — brand usage", text: "Hot Pink is not used as a large background fill across full-width sections" },
       { id: "design.colour-brand.3", group: "Colour — brand usage", text: "Black (#000000 / Off Black #101720) and white (#FFFFFF) are the primary supporting colours" },
       { id: "design.colour-brand.4", group: "Colour — brand usage", text: "Secondary colours (Violet #5461C8, Blue #007CB6, Purple #963CBD, Teal #008291) are used as accents only — not competing with Hot Pink" },

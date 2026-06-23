@@ -4402,7 +4402,6 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
       {id:"design.type-sizing.6",group:"Typography — sizing & spacing",text:"Line length does not exceed 75 characters in body copy columns"},
       {id:"design.type-sizing.7",group:"Typography — sizing & spacing",text:"Heading hierarchy is logical and unbroken (H1 → H2 → H3) — no levels skipped"},
       {id:"design.type-sizing.8",group:"Typography — sizing & spacing",text:"There is only one H1 per page"},
-      {id:"design.colour-brand.1",group:"Colour — brand usage",text:"Hot Pink (#FF0077) is present as the primary brand colour and is not overused or diluted"},
       {id:"design.colour-brand.2",group:"Colour — brand usage",text:"Hot Pink is not used as a large background fill across full-width sections"},
       {id:"design.colour-brand.3",group:"Colour — brand usage",text:"Black (#000000 / Off Black #101720) and white (#FFFFFF) are the primary supporting colours"},
       {id:"design.colour-brand.4",group:"Colour — brand usage",text:"Secondary colours (Violet #5461C8, Blue #007CB6, Purple #963CBD, Teal #008291) are used as accents only — not competing with Hot Pink"},
@@ -4543,7 +4542,7 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
         <div style={{background:C.black,borderRadius:20,padding:isMobile?"24px":"36px 40px",marginBottom:28}}>
           <div style={{fontSize:12,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>UX Heuristic Evaluation</div>
           <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
-            <div><h1 style={{color:C.white,fontSize:isMobile?24:30,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:"-0.02em"}}>QA Checklist</h1><p style={{color:C.grey6,fontSize:14,lineHeight:1.7,margin:0,maxWidth:500}}>Run a structured heuristic audit on any page. Each audit scores 139 GWI Website Delivery criteria across 5 categories and generates a prioritised roadmap.</p></div>
+            <div><h1 style={{color:C.white,fontSize:isMobile?24:30,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:"-0.02em"}}>QA Checklist</h1><p style={{color:C.grey6,fontSize:14,lineHeight:1.7,margin:0,maxWidth:500}}>Run a structured heuristic audit on any page. Each audit scores 138 GWI Website Delivery criteria across 5 categories and generates a prioritised roadmap.</p></div>
             <button onClick={function(){setShowNewForm(true);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:10,padding:"12px 20px",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>+ Start new QA test</button>
           </div>
         </div>
