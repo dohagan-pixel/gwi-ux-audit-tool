@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, Fragment } from "react";
 import { buildWireframePrompt, WIREFRAME_PROMPT_VERSION, WIREFRAME_PROMPT_DESCRIPTION } from "./wireframePrompt";
-import { QAWalkthroughPage } from "./QAWalkthroughPage";
+import { QAWalkthroughPage, type Audit as QAAudit } from "./QAWalkthroughPage";
+import { SharedQAReport } from "./SharedQAReport";
 
 import{initializeApp}from'firebase/app';
 import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut as fbSignOut,onAuthStateChanged,sendPasswordResetEmail,confirmPasswordReset,GoogleAuthProvider,signInWithPopup}from'firebase/auth';
@@ -4796,6 +4797,8 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
   }
   var _qp=new URLSearchParams(window.location.search);
   if(_qp.get('mode')==='resetPassword'&&_qp.get('oobCode'))return(<ConfirmResetScreen oobCode={_qp.get('oobCode')!}/>);
+  var _qaSharePath=window.location.pathname.match(/^\/share\/qa\/([a-z0-9]+)$/);
+  if(_qaSharePath)return(<SharedQAReport shareId={_qaSharePath[1]}/>);
   var _sharePath=window.location.pathname.match(/^\/share\/([a-z0-9]+)$/);
   if(_sharePath)return(<SharePage shareId={_sharePath[1]}/>);
   var _reportPath=window.location.pathname.match(/^\/report\/([a-z0-9]+)$/);
@@ -4857,7 +4860,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="landing"&&<LandingPage setView={setView}/>}
         {view==="guide"&&<GuidePage/>}
         {view==="qa-checklist"&&<QAChecklistPage qaPages={qaPages} setQaPages={setQaPages}/>}
-        {view==="qa-walkthrough"&&<QAWalkthroughPage/>}
+        {view==="qa-walkthrough"&&<QAWalkthroughPage publishShare={async function(audit:QAAudit){var shareId=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,10);await setDoc(doc(_db,'sharedReports',shareId),{kind:'qa-walkthrough',audit:audit,createdAt:Date.now()});return shareId;}}/>}
         {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData} onAddRec={function(action,pageUrl){var pageObj=pages.find(function(p){return p.url===pageUrl;});var newAction=Object.assign({},action,{status:"todo"});var existing=auditData.find(function(p){return p.url===pageUrl;});if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}}} onRemoveRec={function(actionId,pageUrl){setAuditData(function(prev){return prev.map(function(p){return p.url!==pageUrl?p:Object.assign({},p,{actions:(p.actions||[]).filter(function(a:any){return a.id!==actionId;})});});});}} lovedComponents={lovedComponents} onLoveComponent={function(lc){setLovedComponents(function(prev){return (prev as any[]).concat([lc]);});}} onUnloveComponent={function(id){setLovedComponents(function(prev){return (prev as any[]).filter(function(lc:any){return lc.id!==id;});});}} personas={personas} wireframeRules={wireframeRules} pages={pages} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}}/>}
       </div>
       {view==="feedback"&&<FeedbackPage feedback={feedback} onDeleteFeedback={function(id){setFeedback(function(prev){return(prev as any[]).filter(function(f){return f.id!==id;});});if(_user)deleteDoc(doc(_db,"users",_user.uid,"feedback",id)).catch(function(){});}} onSubmit={function(entry){var full=Object.assign({},entry,{user:_user?_user.email:""});setFeedback(function(prev){return prev.concat([full]);});if(_user)setDoc(doc(_db,"users",_user.uid,"feedback",full.id),full).catch(function(){});}} onEditFeedback={function(id,newText){setFeedback(function(prev){return(prev as any[]).map(function(f){return f.id===id?Object.assign({},f,{feedback:newText}):f;});});if(_user){var entry=(feedback as any[]).find(function(f){return f.id===id;});if(entry)setDoc(doc(_db,"users",_user.uid,"feedback",id),Object.assign({},entry,{feedback:newText})).catch(function(){});}}}/>}

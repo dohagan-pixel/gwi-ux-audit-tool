@@ -19,12 +19,12 @@ const C = {
 const FF = "Faktum, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
 type Status = "pass" | "fail" | "na";
-type Answer = { status: Status; comment?: string };
-type Answers = Record<string, Answer>;
+export type Answer = { status: Status; comment?: string };
+export type Answers = Record<string, Answer>;
 type Item = { id: string; text: string; group: string };
 type Section = { id: string; number: number; title: string; intro: string; items: Item[] };
 
-const SECTIONS: Section[] = [
+export const SECTIONS: Section[] = [
   {
     id: "content", number: 1, title: "Content",
     intro: "Does the page say the right things, in the right order, for the right user?",
@@ -357,12 +357,12 @@ function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }
 
-type ExportMeta = {
+export type ExportMeta = {
   url: string; pageName: string; reviewer: string; asanaLink: string;
   startedAt: string; finishedAt: string; enabledSectionIds: string[];
 };
 
-function buildHtml(meta: ExportMeta, answers: Answers): string {
+export function buildHtml(meta: ExportMeta, answers: Answers): string {
   const enabled = meta.enabledSectionIds;
   const enabledSecs = SECTIONS.filter(s => enabled.includes(s.id));
   let pass = 0, fail = 0, na = 0, total = 0;
@@ -463,7 +463,7 @@ function buildMarkdown(meta: ExportMeta, answers: Answers): string {
 type SectionStatus = "approved" | "revisit";
 type SectionStatuses = Record<string, SectionStatus>;
 
-type Audit = {
+export type Audit = {
   id: string;
   url: string;
   pageName: string;
@@ -508,7 +508,7 @@ function newAuditId(): string {
   return "qa-" + Math.random().toString(36).slice(2, 9) + "-" + Date.now().toString(36);
 }
 
-function statsForAudit(a: Audit) {
+export function statsForAudit(a: Audit) {
   const items = ALL_ITEMS.filter(it => a.enabledSectionIds.includes(it.sectionId));
   let pass = 0, fail = 0, na = 0;
   for (const it of items) {
@@ -525,7 +525,7 @@ function statsForAudit(a: Audit) {
   return { pass, fail, na, total, answered, passPct };
 }
 
-function statsForSection(a: Audit, sectionId: string) {
+export function statsForSection(a: Audit, sectionId: string) {
   const sec = SECTIONS.find(s => s.id === sectionId);
   if (!sec) return { pass: 0, fail: 0, na: 0, total: 0, answered: 0, passPct: 0 };
   let pass = 0, fail = 0, na = 0;
@@ -562,7 +562,7 @@ const STATUS_PILL: Record<DerivedStatus, { label: string; bg: string; fg: string
   revisit: { label: "Needs revisit", bg: "#FFF6E8", fg: "#7A4F00", border: "#F5A623" },
 };
 
-function fmtAgo(ts: number): string {
+export function fmtAgo(ts: number): string {
   const diff = Date.now() - ts;
   if (diff < 60_000) return "just now";
   if (diff < 3600_000) return `${Math.floor(diff / 60_000)} min ago`;
@@ -575,7 +575,7 @@ function fmtAgo(ts: number): string {
 // Component
 // ─────────────────────────────────────────────────────────────────────────
 
-export function QAWalkthroughPage() {
+export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Audit) => Promise<string> } = {}) {
   const initialAudits = useMemo(loadAudits, []);
   const [audits, setAudits] = useState<Audit[]>(initialAudits);
   const [phase, setPhase] = useState<"list" | "intro" | "audit" | "questions">("list");
@@ -593,6 +593,9 @@ export function QAWalkthroughPage() {
   const [scanLoading, setScanLoading] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanResults, setScanResults] = useState<Record<string, { pass: boolean; detail: string }>>({});
+  const [sharing, setSharing] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const activeAudit = useMemo(() => audits.find(a => a.id === activeAuditId) || null, [audits, activeAuditId]);
   const activeSection = activeSectionId ? SECTIONS.find(s => s.id === activeSectionId) || null : null;
@@ -713,6 +716,26 @@ export function QAWalkthroughPage() {
     }
   }
 
+  async function shareAudit(audit: Audit) {
+    if (!publishShare) { setShareError("Sharing is not configured."); return; }
+    setShareError(null);
+    setSharing(true);
+    try {
+      const shareId = await publishShare(audit);
+      const url = `${window.location.origin}/share/qa/${shareId}`;
+      await navigator.clipboard?.writeText(url).catch(() => {});
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2500);
+      window.open(url, "_blank", "noopener");
+    } catch (e: any) {
+      setShareError(e?.message || "Couldn't publish the share link.");
+    } finally {
+      setSharing(false);
+    }
+  }
+
+  // Kept for reference; not currently wired in the UI.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function downloadReport(audit: Audit, format: "html" | "md") {
     const meta: ExportMeta = {
       url: audit.url,
@@ -915,8 +938,11 @@ export function QAWalkthroughPage() {
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <button onClick={() => downloadReport(a, "html")} style={{ ...btnGhost, ...btnSmall }}>↓ HTML</button>
-                      <button onClick={() => downloadReport(a, "md")} style={{ ...btnGhost, ...btnSmall }}>↓ Markdown</button>
+                      <button onClick={() => shareAudit(a)} disabled={sharing}
+                              style={{ ...btnPrimary, ...btnSmall, opacity: sharing ? 0.6 : 1, cursor: sharing ? "wait" : "pointer" }}>
+                        {sharing ? "Publishing…" : shareCopied ? "✓ Link copied" : "Share report →"}
+                      </button>
+                      {shareError && <span style={{ fontSize: 12, color: C.fail, alignSelf: "center" }}>{shareError}</span>}
                     </div>
                   </div>
 
