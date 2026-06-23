@@ -4387,7 +4387,6 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
       {id:"design.figma.1",group:"Figma-to-Webflow fidelity",text:"The staged build matches the approved Figma design — reviewed side by side at 1440px desktop"},
       {id:"design.figma.2",group:"Figma-to-Webflow fidelity",text:"No components, colours, or type styles have drifted from the Figma source during build"},
       {id:"design.figma.3",group:"Figma-to-Webflow fidelity",text:"Any deviations from the Figma are intentional and have been flagged and approved before QA"},
-      {id:"design.figma.4",group:"Figma-to-Webflow fidelity",text:"Webflow classes and styles are named consistently and do not introduce one-off overrides"},
       {id:"design.type-faces.1",group:"Typography — typeface & weights",text:"All type is set in Faktum — no system fonts, no substitutions anywhere in the build"},
       {id:"design.type-faces.2",group:"Typography — typeface & weights",text:"Hero headlines use Faktum ExtraBold (800) or Bold (700)"},
       {id:"design.type-faces.3",group:"Typography — typeface & weights",text:"Section headings use Faktum Bold (700)"},
@@ -4543,7 +4542,7 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
         <div style={{background:C.black,borderRadius:20,padding:isMobile?"24px":"36px 40px",marginBottom:28}}>
           <div style={{fontSize:12,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>UX Heuristic Evaluation</div>
           <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
-            <div><h1 style={{color:C.white,fontSize:isMobile?24:30,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:"-0.02em"}}>QA Checklist</h1><p style={{color:C.grey6,fontSize:14,lineHeight:1.7,margin:0,maxWidth:500}}>Run a structured heuristic audit on any page. Each audit scores 140 GWI Website Delivery criteria across 5 categories and generates a prioritised roadmap.</p></div>
+            <div><h1 style={{color:C.white,fontSize:isMobile?24:30,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:"-0.02em"}}>QA Checklist</h1><p style={{color:C.grey6,fontSize:14,lineHeight:1.7,margin:0,maxWidth:500}}>Run a structured heuristic audit on any page. Each audit scores 139 GWI Website Delivery criteria across 5 categories and generates a prioritised roadmap.</p></div>
             <button onClick={function(){setShowNewForm(true);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:10,padding:"12px 20px",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>+ Start new QA test</button>
           </div>
         </div>
