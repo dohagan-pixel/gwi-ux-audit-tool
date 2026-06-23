@@ -138,9 +138,8 @@ export function SharedQAReport({ shareId }: { shareId: string }) {
           {audit.asanaLink && (<> · <a href={audit.asanaLink} target="_blank" rel="noreferrer" style={{ color: C.pink, textDecoration: "none" }}>Asana task</a></>)}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, margin: "32px 0 40px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, margin: "32px 0 40px" }}>
           {[
-            { v: stats.answered === 0 ? "—" : `${stats.passPct}%`, l: "Pass rate", color: C.ink },
             { v: stats.pass + stats.na, l: "Pass", color: C.pass },
             { v: stats.fail, l: "Flag", color: C.fail },
             { v: `${stats.answered}/${stats.total}`, l: "Answered", color: C.ink },
