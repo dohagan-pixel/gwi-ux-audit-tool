@@ -49,12 +49,9 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    id: "design", number: 2, title: "Design & Typography",
-    intro: "Does the staged Webflow build match the approved Figma and hold up under scrutiny?",
+    id: "typography", number: 2, title: "Typography",
+    intro: "Faktum, sizing, hierarchy — does the type live up to the brand?",
     items: [
-      { id: "design.figma.1", group: "Figma-to-Webflow fidelity", text: "The staged build matches the approved Figma design — reviewed side by side at 1440px desktop" },
-      { id: "design.figma.2", group: "Figma-to-Webflow fidelity", text: "No components, colours, or type styles have drifted from the Figma source during build" },
-      { id: "design.figma.3", group: "Figma-to-Webflow fidelity", text: "Any deviations from the Figma are intentional and have been flagged and approved before QA" },
       { id: "design.type-faces.1", group: "Typography — typeface & weights", text: "All type is set in Faktum — no system fonts, no substitutions anywhere in the build" },
       { id: "design.type-faces.2", group: "Typography — typeface & weights", text: "Hero headlines use Faktum ExtraBold (800) or Bold (700)" },
       { id: "design.type-faces.3", group: "Typography — typeface & weights", text: "Section headings use Faktum Bold (700)" },
@@ -69,6 +66,15 @@ const SECTIONS: Section[] = [
       { id: "design.type-sizing.6", group: "Typography — sizing & spacing", text: "Line length does not exceed 75 characters in body copy columns" },
       { id: "design.type-sizing.7", group: "Typography — sizing & spacing", text: "Heading hierarchy is logical and unbroken (H1 → H2 → H3) — no levels skipped" },
       { id: "design.type-sizing.8", group: "Typography — sizing & spacing", text: "There is only one H1 per page" },
+    ],
+  },
+  {
+    id: "design", number: 3, title: "Design",
+    intro: "Does the staged Webflow build match the approved Figma and hold up under scrutiny?",
+    items: [
+      { id: "design.figma.1", group: "Figma-to-Webflow fidelity", text: "The staged build matches the approved Figma design — reviewed side by side at 1440px desktop" },
+      { id: "design.figma.2", group: "Figma-to-Webflow fidelity", text: "No components, colours, or type styles have drifted from the Figma source during build" },
+      { id: "design.figma.3", group: "Figma-to-Webflow fidelity", text: "Any deviations from the Figma are intentional and have been flagged and approved before QA" },
       { id: "design.colour-brand.1", group: "Colour — brand usage", text: "Hot Pink (#FF0077) is present as the primary brand colour and is not overused or diluted" },
       { id: "design.colour-brand.2", group: "Colour — brand usage", text: "Hot Pink is not used as a large background fill across full-width sections" },
       { id: "design.colour-brand.3", group: "Colour — brand usage", text: "Black (#000000 / Off Black #101720) and white (#FFFFFF) are the primary supporting colours" },
@@ -130,7 +136,7 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    id: "navigation", number: 3, title: "Navigation & Structure",
+    id: "navigation", number: 4, title: "Navigation & Structure",
     intro: "Can users find what they need and understand where they are?",
     items: [
       { id: "navigation.context.1", group: "Page context", text: "The page title and URL are descriptive and match the page's purpose — confirmed with SEO (Caleb) where relevant" },
@@ -145,7 +151,7 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    id: "accessibility", number: 4, title: "Accessibility",
+    id: "accessibility", number: 5, title: "Accessibility",
     intro: "Does the page meet WCAG 2.1 AA as a minimum?",
     items: [
       { id: "accessibility.contrast.1", group: "Colour & contrast", text: "Text contrast meets WCAG AA — 4.5:1 for body, 3:1 for large text — checked with Stark plugin" },
@@ -162,7 +168,7 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    id: "responsive", number: 5, title: "Responsiveness & Device QA",
+    id: "responsive", number: 6, title: "Responsiveness & Device QA",
     intro: "92.5% of GWI.com traffic is desktop — but mobile (7.2%) still requires a full check. Primary desktop resolution is 1280x1200, not 1440px.",
     items: [
       { id: "mobile.desktop-breakpoints.1", group: "Desktop — primary breakpoints", text: "Page reviewed at 1280px wide — the most common resolution on GWI.com (828k active users)" },
@@ -478,7 +484,18 @@ function loadAudits(): Audit[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    // Migration: split of Design & Typography into two sections. Older audits had
+    // only "design" enabled; add "typography" so the new card shows up for them.
+    return parsed.map((a: Audit) => {
+      if (a.enabledSectionIds?.includes("design") && !a.enabledSectionIds.includes("typography")) {
+        const idx = a.enabledSectionIds.indexOf("design");
+        const next = [...a.enabledSectionIds];
+        next.splice(idx, 0, "typography");
+        return { ...a, enabledSectionIds: next };
+      }
+      return a;
+    });
   } catch { return []; }
 }
 
