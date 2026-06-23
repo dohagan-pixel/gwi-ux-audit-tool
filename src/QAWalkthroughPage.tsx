@@ -638,6 +638,7 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
   const [phase, setPhase] = useState<"list" | "intro" | "audit" | "questions">("list");
   const [activeAuditId, setActiveAuditId] = useState<string | null>(null);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  const [reviewMode, setReviewMode] = useState(false);
   const [cur, setCur] = useState(0);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -657,7 +658,16 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
 
   const activeAudit = useMemo(() => audits.find(a => a.id === activeAuditId) || null, [audits, activeAuditId]);
   const activeSection = activeSectionId ? SECTIONS.find(s => s.id === activeSectionId) || null : null;
-  const items = activeSection ? activeSection.items : [];
+  const items = useMemo(() => {
+    if (!activeSection) return [];
+    if (!reviewMode || !activeAudit) return activeSection.items;
+    // Review mode: surface flagged items first, then everything else in declared order.
+    return [...activeSection.items].sort((a, b) => {
+      const aFlagged = activeAudit.answers[a.id]?.status === "fail" ? 0 : 1;
+      const bFlagged = activeAudit.answers[b.id]?.status === "fail" ? 0 : 1;
+      return aFlagged - bFlagged;
+    });
+  }, [activeSection, reviewMode, activeAudit]);
   const total = items.length;
   const q = items[cur];
 
@@ -738,13 +748,14 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
     setScanResults({}); setScanData(null); setScanError(null);
     setPhase("audit");
   }
-  function openSection(sectionId: string) {
+  function openSection(sectionId: string, mode: "start" | "continue" | "review" = "continue") {
     setActiveSectionId(sectionId);
+    setReviewMode(mode === "review");
     setCur(0);
     setPhase("questions");
   }
   function backToList() { setActiveAuditId(null); setActiveSectionId(null); setPhase("list"); }
-  function backToAudit() { setActiveSectionId(null); setPhase("audit"); }
+  function backToAudit() { setActiveSectionId(null); setReviewMode(false); setPhase("audit"); }
 
   function setAnswer(status: Status) {
     if (!q || !activeAudit) return;
@@ -1107,7 +1118,7 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                         </div>
 
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: "auto" }}>
-                          <button onClick={() => openSection(s.id)} style={{ ...btnPrimary, ...btnSmall, flex: 1, justifyContent: "center" }}>
+                          <button onClick={() => openSection(s.id, ss.answered === 0 ? "start" : ss.answered >= ss.total ? "review" : "continue")} style={{ ...btnPrimary, ...btnSmall, flex: 1, justifyContent: "center" }}>
                             {ss.answered === 0 ? "Start →" : ss.answered >= ss.total ? "Review →" : "Continue →"}
                           </button>
                           <button onClick={() => setSectionStatus(s.id, "approved")} title="Mark approved"
