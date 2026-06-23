@@ -471,30 +471,30 @@ function JourneySummaryPanel({personaId,journeys,setView,setActivePersonaForJour
 }
 
 function PageWrap({children,isMobile}){
-  return(<div style={{background:C.grey2,height:"100%",overflow:"auto",padding:isMobile?"20px 16px 0":"40px 32px 0"}}><div style={{maxWidth:920,margin:"0 auto",paddingBottom:80}}>{children}</div></div>);
+  return(<div style={{background:"#F6F8FC",height:"100%",overflow:"auto",padding:isMobile?"24px 16px 0":"48px 32px 0"}}><div style={{maxWidth:1120,margin:"0 auto",paddingBottom:96}}>{children}</div></div>);
 }
 
 function BlackHero({eyebrow,title,desc,children,why,right}){
   var [showWhy,setShowWhy]=useState(false);
   var textCol=(
     <>
-      {eyebrow&&<div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>{eyebrow}</div>}
-      <h1 style={{color:C.white,fontSize:26,fontWeight:800,margin:"0 0 8px",lineHeight:1.2}}>{title}</h1>
-      {desc&&<p style={{color:C.grey6,fontSize:15,lineHeight:1.7,margin:children?"0 0 16px":0}}>{desc}</p>}
+      {eyebrow&&<div style={{display:"inline-flex",alignItems:"center",gap:8,fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.14em",marginBottom:14}}><span style={{width:6,height:6,borderRadius:"50%",background:C.pink}}/>{eyebrow}</div>}
+      <h1 style={{color:C.black,fontSize:"clamp(30px,4vw,40px)",fontWeight:800,margin:"0 0 10px",lineHeight:1.06,letterSpacing:"-0.03em"}}>{title}</h1>
+      {desc&&<p style={{color:C.grey8,fontSize:17,lineHeight:1.6,margin:children?"0 0 20px":0,maxWidth:640}}>{desc}</p>}
       {children}
     </>
   );
   return(
-    <div style={{background:C.black,borderRadius:16,padding:"28px 32px",marginBottom:24,position:"relative"}}>
+    <div style={{paddingBottom:28,marginBottom:28,borderBottom:"1px solid "+C.grey4,position:"relative"}}>
       {why&&(<>
-        <button onClick={function(){setShowWhy(true);}} style={{position:"absolute",top:16,right:16,background:"transparent",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.3)",fontSize:18,lineHeight:1,padding:4}} onMouseEnter={function(e){e.currentTarget.style.color="rgba(255,255,255,0.8)";}} onMouseLeave={function(e){e.currentTarget.style.color="rgba(255,255,255,0.3)";}}>&#9432;</button>
+        <button onClick={function(){setShowWhy(true);}} title="Why is this here?" style={{position:"absolute",top:2,right:0,background:"transparent",border:"none",cursor:"pointer",color:C.grey6,fontSize:18,lineHeight:1,padding:4}} onMouseEnter={function(e){e.currentTarget.style.color=C.pink;}} onMouseLeave={function(e){e.currentTarget.style.color=C.grey6;}}>&#9432;</button>
         {showWhy&&(
-          <div style={{position:"fixed",inset:0,background:"rgba(16,23,32,0.75)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:24}} onClick={function(){setShowWhy(false);}}>
-            <div style={{background:C.white,borderRadius:16,padding:"32px 36px",maxWidth:520,width:"100%"}} onClick={function(e){e.stopPropagation();}}>
+          <div style={{position:"fixed",inset:0,background:"rgba(16,23,32,0.55)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:24}} onClick={function(){setShowWhy(false);}}>
+            <div style={{background:C.white,borderRadius:16,padding:"32px 36px",maxWidth:520,width:"100%",boxShadow:"0 12px 40px rgba(14,17,22,0.18)"}} onClick={function(e){e.stopPropagation();}}>
               <div style={{fontSize:11,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Why is this section here?</div>
               <h2 style={{fontSize:20,fontWeight:800,color:C.black,margin:"0 0 16px"}}>{title}</h2>
-              <p style={{fontSize:14,color:C.grey7,lineHeight:1.75,margin:"0 0 24px"}}>{why}</p>
-              <button onClick={function(){setShowWhy(false);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Got it</button>
+              <p style={{fontSize:14,color:C.grey8,lineHeight:1.75,margin:"0 0 24px"}}>{why}</p>
+              <button onClick={function(){setShowWhy(false);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:99,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Got it</button>
             </div>
           </div>
         )}
@@ -502,7 +502,7 @@ function BlackHero({eyebrow,title,desc,children,why,right}){
       {right?(
         <div style={{display:"flex",alignItems:"center",gap:0,flexWrap:"wrap"}}>
           <div style={{flex:1,minWidth:220}}>{textCol}</div>
-          <div style={{flexShrink:0,paddingLeft:36,borderLeft:"1px solid rgba(255,255,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center"}}>{right}</div>
+          <div style={{flexShrink:0,paddingLeft:36,marginLeft:36,borderLeft:"1px solid "+C.grey4,display:"flex",alignItems:"center",justifyContent:"center"}}>{right}</div>
         </div>
       ):textCol}
     </div>
@@ -1951,13 +1951,13 @@ function FeedbackPage({feedback,onDeleteFeedback,onSubmit,onEditFeedback}){
       <BlackHero eyebrow="Team input" title="Feedback" desc="Ratings and notes from the team — everything submitted through the feedback form lives here." right={ratingItems.length>0?(
         <div style={{textAlign:"center",padding:"0 8px"}}>
           <div style={{display:"flex",alignItems:"baseline",justifyContent:"center",gap:6,marginBottom:10}}>
-            <span style={{fontSize:44,fontWeight:800,color:C.white,lineHeight:1}}>{avgRating.toFixed(1)}</span>
-            <span style={{fontSize:14,color:"rgba(255,255,255,0.35)"}}>/ 5</span>
+            <span style={{fontSize:44,fontWeight:800,color:C.black,lineHeight:1}}>{avgRating.toFixed(1)}</span>
+            <span style={{fontSize:14,color:C.grey6}}>/ 5</span>
           </div>
           <div style={{display:"flex",gap:4,justifyContent:"center",marginBottom:6}}>
-            {[1,2,3,4,5].map(function(n){var filled=n<=Math.round(avgRating);return(<Star key={n} size={20} fill={filled?C.pink:"none"} stroke={filled?C.pink:"rgba(255,255,255,0.2)"} strokeWidth={1.5}/>);})}
+            {[1,2,3,4,5].map(function(n){var filled=n<=Math.round(avgRating);return(<Star key={n} size={20} fill={filled?C.pink:"none"} stroke={filled?C.pink:C.grey5} strokeWidth={1.5}/>);})}
           </div>
-          <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",fontWeight:500}}>from {ratingItems.length} rating{ratingItems.length===1?"":"s"}</div>
+          <div style={{fontSize:12,color:C.grey7,fontWeight:500}}>from {ratingItems.length} rating{ratingItems.length===1?"":"s"}</div>
         </div>
       ):undefined}/>
       <div style={{marginBottom:20}}>
@@ -2436,17 +2436,17 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
         </div>
       )}
       <BlackHero eyebrow="AI-powered" title="UX Audit" desc="Generate a UX audit directly in the app, or build a tailored prompt to copy into Claude for deeper analysis." why="This is where everything comes together.">
-        <button onClick={onViewGenerated} style={{background:"transparent",color:C.white,border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>View current audits</button>
+        <button onClick={onViewGenerated} style={{background:"transparent",color:C.black,border:"1.5px solid "+C.grey5,borderRadius:99,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}} onMouseEnter={function(e){e.currentTarget.style.borderColor=C.black;}} onMouseLeave={function(e){e.currentTarget.style.borderColor=C.grey5;}}>View current audits</button>
       </BlackHero>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
         <div style={{width:32,height:32,borderRadius:"50%",background:C.white,border:"2px solid "+C.pink,color:C.black,fontSize:14,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center"}}>1</div>
         <div style={{fontSize:16,fontWeight:800,color:C.black}}>Select a page to audit</div>
       </div>
-      <div style={{background:C.black,borderRadius:16,padding:isMobile?"20px":"24px 28px",marginBottom:24}}>
-        <select value={selectedPage} onChange={function(e){setSelectedPage(e.target.value);setGeneratedPrompt("");setNudge(null);}} style={{width:"100%",padding:"12px 14px",border:"1.5px solid "+(selectedPage?C.pink:C.grey7),borderRadius:8,fontSize:13,background:"rgba(255,255,255,0.06)",color:selectedPage?C.white:C.grey6,cursor:"pointer",boxSizing:"border-box",appearance:"none",backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23FF0077' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",backgroundRepeat:"no-repeat",backgroundPosition:"right 12px center"}}>
-          <option value="" style={{background:C.offBlack}}>Select a page</option>
-          <option value="all" style={{background:C.offBlack}}>All pages (site-wide audit)</option>
-          {visiblePages.map(function(p){return <option key={p.url} value={p.url} style={{background:C.offBlack}}>{p.label} ({p.url.replace("https://gwi.ai","gwi.ai").replace("https://trust.gwi.com","trust.gwi.com")})</option>;})}
+      <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:16,padding:isMobile?"20px":"24px 28px",marginBottom:24}}>
+        <select value={selectedPage} onChange={function(e){setSelectedPage(e.target.value);setGeneratedPrompt("");setNudge(null);}} style={{width:"100%",padding:"12px 14px",border:"1.5px solid "+(selectedPage?C.pink:C.grey4),borderRadius:10,fontSize:14,background:C.white,color:selectedPage?C.black:C.grey7,cursor:"pointer",boxSizing:"border-box",appearance:"none",backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23FF0077' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",backgroundRepeat:"no-repeat",backgroundPosition:"right 12px center"}}>
+          <option value="">Select a page</option>
+          <option value="all">All pages (site-wide audit)</option>
+          {visiblePages.map(function(p){return <option key={p.url} value={p.url}>{p.label} ({p.url.replace("https://gwi.ai","gwi.ai").replace("https://trust.gwi.com","trust.gwi.com")})</option>;})}
         </select>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
@@ -2470,16 +2470,16 @@ function SummaryPage({personas,stages,pages,journeys,onAuditGenerated,onViewGene
         </div>
       </div>
       {generatedPrompt&&!showModal&&(
-        <div style={{background:C.black,borderRadius:14,padding:24,marginBottom:24}}>
+        <div style={{background:C.white,border:"1px solid "+C.grey4,borderRadius:14,padding:24,marginBottom:24}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}}>
-            <div style={{fontSize:13,fontWeight:700,color:C.white}}>Generated prompt</div>
-            <button onClick={function(){setEditingPrompt(!editingPrompt);}} style={{background:"transparent",color:C.white,border:"1px solid "+C.grey7,borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{editingPrompt?"Done editing":"Edit instruction"}</button>
+            <div style={{fontSize:13,fontWeight:700,color:C.black}}>Generated prompt</div>
+            <button onClick={function(){setEditingPrompt(!editingPrompt);}} style={{background:"transparent",color:C.black,border:"1px solid "+C.grey5,borderRadius:99,padding:"6px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{editingPrompt?"Done editing":"Edit instruction"}</button>
           </div>
-          {editingPrompt&&<textarea value={promptInstruction} onChange={function(e){setPromptInstruction(e.target.value);}} rows={4} style={{width:"100%",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,padding:"10px 14px",fontSize:13,color:C.white,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box",marginBottom:12}}/>}
-          <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:16,marginBottom:12,maxHeight:240,overflow:"auto"}}>
-            <p style={{fontSize:12,color:C.grey5,lineHeight:1.7,margin:0,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>{generatedPrompt}</p>
+          {editingPrompt&&<textarea value={promptInstruction} onChange={function(e){setPromptInstruction(e.target.value);}} rows={4} style={{width:"100%",background:"#F6F8FC",border:"1px solid "+C.grey4,borderRadius:8,padding:"10px 14px",fontSize:13,color:C.black,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box",marginBottom:12}}/>}
+          <div style={{background:"#F6F8FC",border:"1px solid "+C.grey4,borderRadius:10,padding:16,marginBottom:12,maxHeight:240,overflow:"auto"}}>
+            <p style={{fontSize:12,color:C.grey8,lineHeight:1.7,margin:0,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>{generatedPrompt}</p>
           </div>
-          <button onClick={handleCopy} style={{width:"100%",background:copied?"#00A86B":C.white,color:copied?C.white:C.black,border:"none",borderRadius:8,padding:"12px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>{copied?"Copied to clipboard":"Copy to clipboard"}</button>
+          <button onClick={handleCopy} style={{width:"100%",background:copied?C.pink:C.black,color:C.white,border:"none",borderRadius:99,padding:"12px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>{copied?"Copied to clipboard":"Copy to clipboard"}</button>
         </div>
       )}
       <DataAccordion personas={personas} stages={stages} journeys={journeys} isMobile={isMobile} clientList={clientList} caseStudies={caseStudies}/>
