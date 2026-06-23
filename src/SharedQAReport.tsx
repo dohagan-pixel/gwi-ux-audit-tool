@@ -141,7 +141,7 @@ export function SharedQAReport({ shareId }: { shareId: string }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, margin: "32px 0 40px" }}>
           {[
             { v: stats.answered === 0 ? "—" : `${stats.passPct}%`, l: "Pass rate", color: C.ink },
-            { v: stats.pass, l: "Pass", color: C.pass },
+            { v: stats.pass + stats.na, l: "Pass", color: C.pass },
             { v: stats.fail, l: "Fail", color: C.fail },
             { v: `${stats.answered}/${stats.total}`, l: "Answered", color: C.ink },
           ].map((k, i) => (

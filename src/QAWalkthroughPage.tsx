@@ -1048,7 +1048,7 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
                     {[
                       { v: stats.answered === 0 ? "—" : `${stats.passPct}%`, l: "Pass rate", color: C.ink },
-                      { v: stats.pass, l: "Pass", color: C.pass },
+                      { v: stats.pass + stats.na, l: "Pass", color: C.pass },
                       { v: stats.fail, l: "Fail", color: C.fail },
                       { v: `${stats.answered}/${stats.total}`, l: "Answered", color: C.ink },
                     ].map((k, i) => (
@@ -1083,9 +1083,9 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                             <div style={{ fontSize: 18, fontWeight: 800, color: C.ink, lineHeight: 1 }}>{ss.answered}<span style={{ color: C.grey5, fontSize: 12 }}>/{ss.total}</span></div>
                             <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 3 }}>Answered</div>
                           </div>
-                          {ss.pass > 0 && (
+                          {(ss.pass + ss.na) > 0 && (
                             <div>
-                              <div style={{ fontSize: 18, fontWeight: 800, color: C.pass, lineHeight: 1 }}>{ss.pass}</div>
+                              <div style={{ fontSize: 18, fontWeight: 800, color: C.pass, lineHeight: 1 }}>{ss.pass + ss.na}</div>
                               <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 3 }}>Pass</div>
                             </div>
                           )}
