@@ -655,6 +655,7 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
   const [shareError, setShareError] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
   const [autoScanCount, setAutoScanCount] = useState<number | null>(null);
+  const [editingSettings, setEditingSettings] = useState(false);
 
   const activeAudit = useMemo(() => audits.find(a => a.id === activeAuditId) || null, [audits, activeAuditId]);
   const activeSection = activeSectionId ? SECTIONS.find(s => s.id === activeSectionId) || null : null;
@@ -746,7 +747,28 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
     setActiveSectionId(null);
     setCur(0);
     setScanResults({}); setScanData(null); setScanError(null);
+    setEditingSettings(false);
     setPhase("audit");
+  }
+
+  function startEditSettings() {
+    if (!activeAudit) return;
+    setDraftUrl(activeAudit.url);
+    setDraftPageName(activeAudit.pageName);
+    setDraftReviewer(activeAudit.reviewer);
+    setDraftAsana(activeAudit.asanaLink);
+    setEditingSettings(true);
+  }
+  function saveEditedSettings() {
+    if (!activeAudit) return;
+    if (!draftUrl.trim()) return;
+    updateActiveAudit({
+      url: draftUrl.trim(),
+      pageName: draftPageName.trim(),
+      reviewer: draftReviewer.trim(),
+      asanaLink: draftAsana.trim(),
+    });
+    setEditingSettings(false);
   }
   function openSection(sectionId: string, mode: "start" | "continue" | "review" = "continue") {
     setActiveSectionId(sectionId);
@@ -1031,22 +1053,66 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.pink }} />
                         Audit
                       </span>
-                      <h1 style={{ fontSize: "clamp(24px, 3.5vw, 32px)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.1, marginBottom: 6 }}>{a.pageName || a.url}</h1>
-                      <a href={a.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: C.pink, textDecoration: "none" }}>{a.url}</a>
-                      <div style={{ fontSize: 12, color: C.grey7, marginTop: 8 }}>
-                        {a.reviewer && <>Reviewed by {a.reviewer} · </>}Updated {fmtAgo(a.updatedAt)}
-                      </div>
+                      {editingSettings ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 4 }}>
+                          <div>
+                            <label style={labelStyle}>Page / project name</label>
+                            <input value={draftPageName} onChange={e => setDraftPageName(e.target.value)} style={inputStyle}
+                                   onFocus={e => { e.currentTarget.style.borderColor = C.pink; }} onBlur={e => { e.currentTarget.style.borderColor = C.grey4; }} />
+                          </div>
+                          <div>
+                            <label style={labelStyle}>Staged URL</label>
+                            <input value={draftUrl} onChange={e => setDraftUrl(e.target.value)} style={inputStyle}
+                                   onFocus={e => { e.currentTarget.style.borderColor = C.pink; }} onBlur={e => { e.currentTarget.style.borderColor = C.grey4; }} />
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                            <div>
+                              <label style={labelStyle}>Reviewer</label>
+                              <input value={draftReviewer} onChange={e => setDraftReviewer(e.target.value)} style={inputStyle}
+                                     onFocus={e => { e.currentTarget.style.borderColor = C.pink; }} onBlur={e => { e.currentTarget.style.borderColor = C.grey4; }} />
+                            </div>
+                            <div>
+                              <label style={labelStyle}>Asana link</label>
+                              <input value={draftAsana} onChange={e => setDraftAsana(e.target.value)} style={inputStyle} placeholder="https://app.asana.com/…"
+                                     onFocus={e => { e.currentTarget.style.borderColor = C.pink; }} onBlur={e => { e.currentTarget.style.borderColor = C.grey4; }} />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <h1 style={{ fontSize: "clamp(24px, 3.5vw, 32px)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.1, marginBottom: 6 }}>{a.pageName || a.url}</h1>
+                          <a href={a.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: C.pink, textDecoration: "none" }}>{a.url}</a>
+                          <div style={{ fontSize: 12, color: C.grey7, marginTop: 8 }}>
+                            {a.reviewer && <>Reviewed by {a.reviewer} · </>}Updated {fmtAgo(a.updatedAt)}
+                            {a.asanaLink && (<> · <a href={a.asanaLink} target="_blank" rel="noreferrer" style={{ color: C.pink, textDecoration: "none" }}>Asana task</a></>)}
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <button onClick={() => autoScanAndApply(a.id, a.url)} disabled={scanLoading}
-                              style={{ ...btnGhost, ...btnSmall, opacity: scanLoading ? 0.6 : 1, cursor: scanLoading ? "wait" : "pointer" }}>
-                        {scanLoading ? "Scanning…" : "↻ Re-scan page"}
-                      </button>
-                      <button onClick={() => shareAudit(a)} disabled={sharing}
-                              style={{ ...btnPrimary, ...btnSmall, opacity: sharing ? 0.6 : 1, cursor: sharing ? "wait" : "pointer" }}>
-                        {sharing ? "Publishing…" : shareCopied ? "✓ Link copied" : "Share report →"}
-                      </button>
-                      {shareError && <span style={{ fontSize: 12, color: C.fail, alignSelf: "center" }}>{shareError}</span>}
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
+                      {editingSettings ? (
+                        <>
+                          <button onClick={() => setEditingSettings(false)} style={{ ...btnGhost, ...btnSmall }}>Cancel</button>
+                          <button onClick={saveEditedSettings} disabled={!draftUrl.trim()}
+                                  style={{ ...btnPrimary, ...btnSmall, opacity: draftUrl.trim() ? 1 : 0.4, cursor: draftUrl.trim() ? "pointer" : "not-allowed" }}>
+                            Save changes
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={startEditSettings} title="Edit audit settings"
+                                  style={{ ...btnGhost, ...btnSmall }}>✎ Edit</button>
+                          <button onClick={() => autoScanAndApply(a.id, a.url)} disabled={scanLoading}
+                                  style={{ ...btnGhost, ...btnSmall, opacity: scanLoading ? 0.6 : 1, cursor: scanLoading ? "wait" : "pointer" }}>
+                            {scanLoading ? "Scanning…" : "↻ Re-scan page"}
+                          </button>
+                          <button onClick={() => shareAudit(a)} disabled={sharing}
+                                  style={{ ...btnPrimary, ...btnSmall, opacity: sharing ? 0.6 : 1, cursor: sharing ? "wait" : "pointer" }}>
+                            {sharing ? "Publishing…" : shareCopied ? "✓ Link copied" : "Share report →"}
+                          </button>
+                          {shareError && <span style={{ fontSize: 12, color: C.fail, alignSelf: "center" }}>{shareError}</span>}
+                        </>
+                      )}
                     </div>
                   </div>
 
