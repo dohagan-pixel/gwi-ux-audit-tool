@@ -142,7 +142,7 @@ export function SharedQAReport({ shareId }: { shareId: string }) {
           {[
             { v: stats.answered === 0 ? "—" : `${stats.passPct}%`, l: "Pass rate", color: C.ink },
             { v: stats.pass + stats.na, l: "Pass", color: C.pass },
-            { v: stats.fail, l: "Fail", color: C.fail },
+            { v: stats.fail, l: "Flag", color: C.fail },
             { v: `${stats.answered}/${stats.total}`, l: "Answered", color: C.ink },
           ].map((k, i) => (
             <div key={i} style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 12, padding: 18 }}>
@@ -171,8 +171,8 @@ export function SharedQAReport({ shareId }: { shareId: string }) {
           }
           return (
             <section style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 14, padding: "24px 28px", marginBottom: 32 }}>
-              <h2 style={{ fontSize: 22, letterSpacing: "-0.02em", marginBottom: 6 }}>Issues to log <span style={{ color: C.fail }}>({fails.length})</span></h2>
-              <p style={{ color: C.grey7, fontSize: 13, margin: "0 0 18px" }}>Every Fail logged in this audit. Add these to the sprint backlog.</p>
+              <h2 style={{ fontSize: 22, letterSpacing: "-0.02em", marginBottom: 6 }}>Flagged items <span style={{ color: C.fail }}>({fails.length})</span></h2>
+              <p style={{ color: C.grey7, fontSize: 13, margin: "0 0 18px" }}>Every flagged item in this audit. Add these to the sprint backlog.</p>
               {Object.entries(byGroup).map(([k, items]) => (
                 <div key={k} style={{ marginBottom: 14 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: C.fail, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{k}</div>
@@ -199,7 +199,7 @@ export function SharedQAReport({ shareId }: { shareId: string }) {
             <section key={s.id} style={{ marginBottom: 40 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 4 }}>
                 <h2 style={{ fontSize: 26, letterSpacing: "-0.02em", margin: 0 }}>{s.title}</h2>
-                <span style={{ fontSize: 12, color: C.grey7 }}>{ss.pass} pass · {ss.fail} fail · {ss.na} n/a</span>
+                <span style={{ fontSize: 12, color: C.grey7 }}>{ss.pass + ss.na} pass · {ss.fail} flag</span>
               </div>
               <p style={{ color: C.grey7, margin: "0 0 14px", fontSize: 14 }}>{s.intro}</p>
               <div style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 12, overflow: "hidden" }}>
@@ -209,7 +209,7 @@ export function SharedQAReport({ shareId }: { shareId: string }) {
                       const ans = (audit.answers as Answers)[it.id];
                       const status = ans?.status ?? "—";
                       const color = status === "pass" || status === "na" ? C.pass : status === "fail" ? C.fail : C.na;
-                      const label = status === "na" ? "Pass · N/A" : typeof status === "string" ? status : "—";
+                      const label = status === "na" ? "Pass · N/A" : status === "fail" ? "Flag" : typeof status === "string" ? status : "—";
                       const groupRow = it.group !== prevGroup ? (
                         <tr key={it.id + "-grp"}>
                           <td colSpan={2} style={{ padding: "14px 16px 4px", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: C.grey7, fontWeight: 700, borderBottom: `1px solid ${C.grey3}` }}>{it.group}</td>
