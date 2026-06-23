@@ -960,7 +960,6 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                     const stats = statsForAudit(a);
                     const approvedCount = Object.values(a.sectionStatuses).filter(s => s === "approved").length;
                     const revisitCount = Object.values(a.sectionStatuses).filter(s => s === "revisit").length;
-                    const scoreColor = stats.answered === 0 ? C.grey5 : stats.passPct >= 80 ? C.pass : stats.passPct >= 60 ? "#F5A623" : C.fail;
                     return (
                       <div key={a.id} onClick={() => openAudit(a.id)}
                            style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 14, padding: 22, cursor: "pointer", position: "relative", transition: "border-color 0.15s, box-shadow 0.15s" }}
@@ -970,19 +969,13 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                         <div style={{ fontSize: 12, color: C.grey7, marginBottom: 16, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.url}</div>
                         <div style={{ display: "flex", gap: 18, alignItems: "flex-end", marginBottom: 12 }}>
                           <div>
-                            <div style={{ fontSize: 24, fontWeight: 800, color: scoreColor, lineHeight: 1, letterSpacing: "-0.02em" }}>{stats.answered === 0 ? "—" : `${stats.passPct}%`}</div>
-                            <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Pass rate</div>
-                          </div>
-                          <div>
                             <div style={{ fontSize: 24, fontWeight: 800, color: C.ink, lineHeight: 1, letterSpacing: "-0.02em" }}>{stats.answered}<span style={{ fontSize: 14, color: C.grey5 }}>/{stats.total}</span></div>
                             <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Answered</div>
                           </div>
-                          {stats.fail > 0 && (
-                            <div>
-                              <div style={{ fontSize: 24, fontWeight: 800, color: C.fail, lineHeight: 1, letterSpacing: "-0.02em" }}>{stats.fail}</div>
-                              <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Flags</div>
-                            </div>
-                          )}
+                          <div>
+                            <div style={{ fontSize: 24, fontWeight: 800, color: stats.fail > 0 ? C.fail : C.grey5, lineHeight: 1, letterSpacing: "-0.02em" }}>{stats.fail}</div>
+                            <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Flags</div>
+                          </div>
                         </div>
                         {(approvedCount > 0 || revisitCount > 0) && (
                           <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
