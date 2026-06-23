@@ -651,7 +651,6 @@ function Dashboard({personas,auditData,setView,onFeedback}){
     {icon:<Map size={24}/>,label:"Journeys",desc:"Shows the real path from first visit to sign-up to activation.",cta:"Explore journeys",action:function(){setView("mapping");}},
     {icon:<BarChart2 size={24}/>,label:"Analytics",desc:"Proof of what is happening on-page — where attention goes and what is killing conversion.",cta:"Open analytics",action:function(){setView("analytics");}},
     {icon:<Cog size={24}/>,label:"Settings",desc:"Keeps the framework flexible as priorities shift.",cta:"Edit settings",action:function(){setView("settings");}},
-    {icon:<List size={24}/>,label:"QA Checklist",desc:"A structured heuristic evaluation across Content, Design, Navigation, Accessibility, and Mobile — scored and summarised with a prioritised roadmap.",cta:"Run a QA audit",action:function(){setView("qa-checklist");}},
     {icon:<MessageSquare size={24}/>,label:"Feedback",desc:"Share what's working, what's not, and what you'd like to see next — your input shapes the roadmap.",cta:"Leave feedback",action:function(){if(onFeedback)onFeedback();}},
   ];
   return(
@@ -4350,359 +4349,9 @@ function SharePage({shareId}:{shareId:string}){
   );
 }
 
-function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function}){
-  var isMobile=useWidth()<768;
-  var [activeAuditId,setActiveAuditId]=useState<string|null>(null);
-  var [activeCategory,setActiveCategory]=useState("content");
-  var [showReport,setShowReport]=useState(false);
-  var [expandedItems,setExpandedItems]=useState<Record<string,boolean>>({});
-  var [ccFg,setCcFg]=useState("#101720");
-  var [ccBg,setCcBg]=useState("#FFFFFF");
-  var [ccScanning,setCcScanning]=useState(false);
-  var [ccScanColors,setCcScanColors]=useState<{textColors:string[],bgColors:string[]}|null>(null);
-  var [ccScanError,setCcScanError]=useState<string|null>(null);
-  var [showNewForm,setShowNewForm]=useState(false);
-  var [newUrl,setNewUrl]=useState("");
-  var [newLabel,setNewLabel]=useState("");
-  const CATEGORIES=[
-    {id:"content",label:"Content",items:[
-      {id:"content.clarity.1",group:"Clarity & objectives",text:"The page has a single, clear primary objective traceable back to the agreed brief"},
-      {id:"content.clarity.2",group:"Clarity & objectives",text:"The hero headline communicates the core value proposition immediately — without needing to scroll"},
-      {id:"content.clarity.3",group:"Clarity & objectives",text:"The page addresses the intended user type — not a generic audience"},
-      {id:"content.clarity.4",group:"Clarity & objectives",text:"CTAs are specific and action-oriented — not 'Learn more' or 'Click here' in isolation"},
-      {id:"content.clarity.5",group:"Clarity & objectives",text:"There is one dominant CTA per section — secondary actions are visually subordinate"},
-      {id:"content.clarity.6",group:"Clarity & objectives",text:"The KPI defined in the brief is traceable from the page as built — the right tracking events fire"},
-      {id:"content.hierarchy.1",group:"Content hierarchy",text:"The most important content appears highest on the page"},
-      {id:"content.hierarchy.2",group:"Content hierarchy",text:"Content is structured for scanning — headings, subheadings, and short paragraphs throughout"},
-      {id:"content.hierarchy.3",group:"Content hierarchy",text:"No key message is buried below the fold without an anchor or signpost above it"},
-      {id:"content.hierarchy.4",group:"Content hierarchy",text:"Social proof (case studies, logos, stats) is positioned to support conversion moments — not just present"},
-      {id:"content.hierarchy.5",group:"Content hierarchy",text:"Content sections flow logically from top to bottom — the page tells a coherent story"},
-      {id:"content.copy.1",group:"Copy",text:"Copy is free of jargon the target persona would not recognise"},
-      {id:"content.copy.2",group:"Copy",text:"No placeholder text, draft labels, or internal notes are visible in the staged build"},
-      {id:"content.copy.3",group:"Copy",text:"All stats and data claims are accurate and sourced where required"},
-      {id:"content.copy.4",group:"Copy",text:"Headings are in sentence case — not Title Case or ALL CAPS"},
-      {id:"content.copy.5",group:"Copy",text:"Contractions are used where appropriate (it's, you're, we've) in line with GWI tone of voice"},
-      {id:"content.copy.6",group:"Copy",text:"Copy is confident and direct — no hedging language ('could help', 'might be', 'potentially')"},
-    ]},
-    {id:"design",label:"Design & Typography",items:[
-      {id:"design.figma.2",group:"Figma-to-Webflow fidelity",text:"No components, colours, or type styles have drifted from the Figma source during build"},
-      {id:"design.figma.3",group:"Figma-to-Webflow fidelity",text:"Any deviations from the Figma are intentional and have been flagged and approved before QA"},
-      {id:"design.type-faces.1",group:"Typography — typeface & weights",text:"All type is set in Faktum — no system fonts, no substitutions anywhere in the build"},
-      {id:"design.type-faces.2",group:"Typography — typeface & weights",text:"Hero headlines use Faktum ExtraBold (800) or Bold (700)"},
-      {id:"design.type-faces.3",group:"Typography — typeface & weights",text:"Section headings use Faktum Bold (700)"},
-      {id:"design.type-faces.4",group:"Typography — typeface & weights",text:"UI labels, navigation items, and CTA text use Faktum SemiBold (600)"},
-      {id:"design.type-faces.5",group:"Typography — typeface & weights",text:"Body copy uses Faktum Regular (400) — Light weight is not used at small sizes"},
-      {id:"design.type-faces.6",group:"Typography — typeface & weights",text:"Italic variants are used intentionally and sparingly — not as a substitute for hierarchy"},
-      {id:"design.type-sizing.1",group:"Typography — sizing & spacing",text:"Hero H1 sits within the 52–60px range on desktop"},
-      {id:"design.type-sizing.2",group:"Typography — sizing & spacing",text:"Section H2 sits within the 32–36px range on desktop"},
-      {id:"design.type-sizing.3",group:"Typography — sizing & spacing",text:"Body copy is a minimum of 16px — no smaller type used for primary content"},
-      {id:"design.type-sizing.4",group:"Typography — sizing & spacing",text:"Line height is approximately 1.2 for display type and 1.65–1.7 for body copy"},
-      {id:"design.type-sizing.5",group:"Typography — sizing & spacing",text:"Headlines use tight tracking (negative letter-spacing) — not default browser tracking"},
-      {id:"design.type-sizing.6",group:"Typography — sizing & spacing",text:"Line length does not exceed 75 characters in body copy columns"},
-      {id:"design.type-sizing.7",group:"Typography — sizing & spacing",text:"Heading hierarchy is logical and unbroken (H1 → H2 → H3) — no levels skipped"},
-      {id:"design.type-sizing.8",group:"Typography — sizing & spacing",text:"There is only one H1 per page"},
-      {id:"design.colour-brand.2",group:"Colour — brand usage",text:"Hot Pink is not used as a large background fill across full-width sections"},
-      {id:"design.colour-brand.3",group:"Colour — brand usage",text:"Black (#000000 / Off Black #101720) and white (#FFFFFF) are the primary supporting colours"},
-      {id:"design.colour-brand.4",group:"Colour — brand usage",text:"Secondary colours (Violet #5461C8, Blue #007CB6, Purple #963CBD, Teal #008291) are used as accents only — not competing with Hot Pink"},
-      {id:"design.colour-brand.5",group:"Colour — brand usage",text:"Action Green (#00FF88) is used only on CTAs where maximum contrast is needed — one instance per screen maximum, never decorative"},
-      {id:"design.colour-brand.6",group:"Colour — brand usage",text:"The pink scale is used appropriately for hover states, highlights, tags, and data callouts"},
-      {id:"design.colour-brand.7",group:"Colour — brand usage",text:"The grey scale is used for body text, borders, backgrounds, and structural UI — not applied decoratively"},
-      {id:"design.colour-brand.8",group:"Colour — brand usage",text:"Error states use #DA3441, success states #008851, warning states #F6C26D — no ad hoc colours"},
-      {id:"design.colour-brand.9",group:"Colour — brand usage",text:"No off-brand or one-off colours appear anywhere in the build"},
-      {id:"design.colour-contrast.1",group:"Colour — contrast",text:"White text on Hot Pink background follows the standard CTA pattern"},
-      {id:"design.colour-contrast.2",group:"Colour — contrast",text:"Text contrast meets WCAG AA minimum — 4.5:1 for body text, 3:1 for large text (verified with Stark)"},
-      {id:"design.colour-contrast.3",group:"Colour — contrast",text:"No text appears over an image or background that causes it to fail contrast"},
-      {id:"design.colour-contrast.4",group:"Colour — contrast",text:"Information is not conveyed by colour alone — there is always a secondary visual indicator"},
-      {id:"design.layout.1",group:"Layout & spacing",text:"Spacing is consistent — components use design system tokens, not one-off Webflow overrides"},
-      {id:"design.layout.2",group:"Layout & spacing",text:"The page does not feel cluttered — white space is used deliberately between sections and elements"},
-      {id:"design.layout.3",group:"Layout & spacing",text:"Visual hierarchy guides the eye clearly from headline through body copy to CTA"},
-      {id:"design.layout.4",group:"Layout & spacing",text:"All content is aligned to the grid — no elements sitting outside the layout column"},
-      {id:"design.layout.5",group:"Layout & spacing",text:"Sections are clearly delineated — the page does not read as one continuous unbroken block"},
-      {id:"design.layout.6",group:"Layout & spacing",text:"Body copy blocks are not centre-aligned — centre alignment is only used in short display contexts"},
-      {id:"design.buttons.1",group:"Buttons & interactive elements",text:"Button sizes are consistent across the page — no rogue oversized or undersized instances"},
-      {id:"design.buttons.2",group:"Buttons & interactive elements",text:"Button hierarchy is clear — primary, secondary, and tertiary styles are visually distinct"},
-      {id:"design.buttons.3",group:"Buttons & interactive elements",text:"CTA labels are consistent — the same action is not labelled differently in different places on the same page"},
-      {id:"design.buttons.4",group:"Buttons & interactive elements",text:"All buttons and interactive elements have a visible hover state in the Webflow build"},
-      {id:"design.buttons.5",group:"Buttons & interactive elements",text:"Links in body copy are visually distinct from surrounding text"},
-      {id:"design.buttons.7",group:"Buttons & interactive elements",text:"Any HubSpot-embedded CTAs or forms match the button style and hierarchy of the surrounding page"},
-      {id:"design.imagery-format.1",group:"Imagery — format & quality",text:"All illustrations and icons are SVG — no PNG or JPG used for scalable graphics"},
-      {id:"design.imagery-format.2",group:"Imagery — format & quality",text:"Photographic images use WebP format and are compressed appropriately for web"},
-      {id:"design.imagery-format.3",group:"Imagery — format & quality",text:"No raster images (PNG/JPG) are used where an SVG equivalent exists"},
-      {id:"design.imagery-format.4",group:"Imagery — format & quality",text:"All images are high resolution — no blurring, pixelation, or compression artefacts visible at any viewport"},
-      {id:"design.imagery-format.5",group:"Imagery — format & quality",text:"Images are not stretched, squashed, or awkwardly cropped in the Webflow build"},
-      {id:"design.imagery-format.6",group:"Imagery — format & quality",text:"SVG files are clean — no embedded raster data, no unnecessary metadata, optimised file size"},
-      {id:"design.imagery-brand.1",group:"Imagery — brand & content",text:"Illustrations are from the approved GWI illustration library and are consistent in style"},
-      {id:"design.imagery-brand.2",group:"Imagery — brand & content",text:"Illustrations and images feel like they belong to the page — not stock-photo generic"},
-      {id:"design.imagery-brand.4",group:"Imagery — brand & content",text:"Hero images and key visuals do not obscure or compete with headline copy"},
-      {id:"design.imagery-brand.5",group:"Imagery — brand & content",text:"Decorative images have empty alt text (\"\") and are marked as presentational"},
-      {id:"design.iconography.1",group:"Iconography",text:"Icons are from the approved GWI icon set and are exported as SVG"},
-      {id:"design.iconography.2",group:"Iconography",text:"Icon style is consistent across the page — no mixing of filled, outlined, or different-weight styles"},
-      {id:"design.iconography.3",group:"Iconography",text:"Icons are used to support meaning — not as decoration or filler"},
-      {id:"design.iconography.4",group:"Iconography",text:"Icons used alongside text are vertically aligned and proportionally sized"},
-      {id:"design.logo.1",group:"Logo",text:"The correct logo variant is used for its background — Default on light, On Black on dark"},
-      {id:"design.logo.3",group:"Logo",text:"The logo is not stretched, skewed, rotated, recoloured, or modified in any way"},
-      {id:"design.components.1",group:"Component consistency",text:"All components used are from the GWI Webflow design system — no one-off or bespoke components introduced without sign-off"},
-      {id:"design.components.2",group:"Component consistency",text:"Components are used as intended in the design system — no misuse of a pattern for a different purpose"},
-      {id:"design.components.3",group:"Component consistency",text:"Any new components introduced follow design system token structure and naming conventions"},
-      {id:"design.components.4",group:"Component consistency",text:"The page does not introduce visual patterns that conflict with or would confuse the wider system"},
-      {id:"design.components.5",group:"Component consistency",text:"HubSpot-embedded modules (forms, CTAs, dynamic content) are styled to be visually seamless with the surrounding Webflow page"},
-      {id:"design.visual-quality.2",group:"Visual quality",text:"Dark and light sections transition cleanly — no unintended colour bleed or gap between sections"},
-      {id:"design.visual-quality.3",group:"Visual quality",text:"All borders and dividers are consistent in weight and colour across the page"},
-      {id:"design.visual-quality.4",group:"Visual quality",text:"Shadows and elevation are consistent and follow design system usage — not applied ad hoc in Webflow"},
-      {id:"design.visual-quality.6",group:"Visual quality",text:"The build has been checked in Chrome, Firefox, and Safari at desktop width"},
-    ]},
-    {id:"navigation",label:"Navigation & Structure",items:[
-      {id:"navigation.context.1",group:"Page context",text:"The page title and URL are descriptive and match the page's purpose — confirmed with SEO (Caleb) where relevant"},
-      {id:"navigation.context.2",group:"Page context",text:"The user can tell where they are within the site structure from the page alone"},
-      {id:"navigation.context.3",group:"Page context",text:"The global navigation correctly reflects the current section with an active state"},
-      {id:"navigation.context.4",group:"Page context",text:"Breadcrumbs are present and correct where the page sits deep in the hierarchy"},
-      {id:"navigation.journeys.1",group:"Onward journeys",text:"The page has at least one clear next step appropriate for the intended user type"},
-      {id:"navigation.journeys.2",group:"Onward journeys",text:"Related content or pages are surfaced and relevant — not generic or templated filler"},
-      {id:"navigation.journeys.3",group:"Onward journeys",text:"No dead ends — every exit from the page leads somewhere intentional"},
-      {id:"navigation.errors.1",group:"Error states",text:"Any HubSpot forms on the page validate in real time with clear, specific error messages"},
-      {id:"navigation.errors.2",group:"Error states",text:"404 and error states for any linked content are handled gracefully"},
-    ]},
-    {id:"accessibility",label:"Accessibility",items:[
-      {id:"accessibility.contrast.1",group:"Colour & contrast",text:"Text contrast meets WCAG AA — 4.5:1 for body, 3:1 for large text — checked with Stark plugin"},
-      {id:"accessibility.contrast.2",group:"Colour & contrast",text:"Information is not conveyed by colour alone — always a secondary visual indicator present"},
-      {id:"accessibility.contrast.3",group:"Colour & contrast",text:"Interactive elements are distinguishable without relying on colour alone"},
-      {id:"accessibility.markup.1",group:"Content & markup",text:"All images have descriptive alt text — decorative images have empty alt (\"\") in Webflow settings"},
-      {id:"accessibility.markup.2",group:"Content & markup",text:"Heading structure is correct and logical for screen readers — one H1, no levels skipped"},
-      {id:"accessibility.markup.3",group:"Content & markup",text:"All links have descriptive labels — not 'click here' or 'read more' used without surrounding context"},
-      {id:"accessibility.markup.4",group:"Content & markup",text:"Videos include captions where present on the page"},
-      {id:"accessibility.keyboard.1",group:"Interaction & keyboard",text:"All interactive elements are keyboard accessible — tested by tabbing through the staged page"},
-      {id:"accessibility.keyboard.2",group:"Interaction & keyboard",text:"Focus order follows a logical reading sequence through the page"},
-      {id:"accessibility.keyboard.3",group:"Interaction & keyboard",text:"Focus states are visible on all interactive elements — Webflow default not suppressed in CSS"},
-      {id:"accessibility.keyboard.4",group:"Interaction & keyboard",text:"Touch targets are a minimum of 44x44px on mobile — checked in responsive preview"},
-    ]},
-    {id:"mobile",label:"Responsiveness & Device QA",items:[
-      {id:"mobile.desktop-breakpoints.1",group:"Desktop — primary breakpoints",text:"Page reviewed at 1280px wide — the most common resolution on GWI.com (~80% of users)"},
-      {id:"mobile.desktop-breakpoints.2",group:"Desktop — primary breakpoints",text:"Page reviewed at 1920px wide — second most common desktop resolution (~6% of users)"},
-      {id:"mobile.desktop-breakpoints.3",group:"Desktop — primary breakpoints",text:"Page reviewed at 1440px wide — fourth most common and a common design reference (~2% of users)"},
-      {id:"mobile.desktop-breakpoints.4",group:"Desktop — primary breakpoints",text:"Page reviewed at 800px wide — notably high traffic at ~5% of users, check nothing breaks at this width"},
-      {id:"mobile.desktop-breakpoints.5",group:"Desktop — primary breakpoints",text:"No content is hidden, clipped, or overlapping at any desktop breakpoint"},
-      {id:"mobile.desktop-breakpoints.6",group:"Desktop — primary breakpoints",text:"All content is readable and well-proportioned at 1280px — the page is not designed only for wide viewports"},
-      {id:"mobile.desktop-browser.1",group:"Desktop — browser QA",text:"Tested in Chrome — dominant browser for GWI.com traffic"},
-      {id:"mobile.desktop-browser.2",group:"Desktop — browser QA",text:"Tested in Safari — second most common browser, especially for macOS users (~14% of users on Mac)"},
-      {id:"mobile.desktop-browser.4",group:"Desktop — browser QA",text:"No rendering inconsistencies between browsers — fonts, spacing, and layout are consistent"},
-      {id:"mobile.mobile-breakpoints.1",group:"Mobile layout — breakpoints",text:"Page renders correctly at 390px (iPhone 14/15 standard — primary iOS target)"},
-      {id:"mobile.mobile-breakpoints.2",group:"Mobile layout — breakpoints",text:"Page renders correctly at 375px (iPhone SE / older iOS — still widely used)"},
-      {id:"mobile.mobile-breakpoints.3",group:"Mobile layout — breakpoints",text:"Page renders correctly at 360px (standard Android viewport)"},
-      {id:"mobile.mobile-breakpoints.4",group:"Mobile layout — breakpoints",text:"No content is hidden, clipped, or overlapping at any mobile breakpoint"},
-      {id:"mobile.mobile-breakpoints.5",group:"Mobile layout — breakpoints",text:"Column stacking order on mobile follows a logical content hierarchy — not just automatic Webflow reflow"},
-      {id:"mobile.mobile-breakpoints.6",group:"Mobile layout — breakpoints",text:"SVGs and images scale correctly on mobile — no stretching, pixelation, or cropping issues"},
-      {id:"mobile.mobile-breakpoints.7",group:"Mobile layout — breakpoints",text:"Typography scales appropriately — hero display type does not overwhelm the mobile viewport"},
-      {id:"mobile.mobile-breakpoints.8",group:"Mobile layout — breakpoints",text:"Horizontal scrolling does not occur at any mobile breakpoint"},
-      {id:"mobile.mobile-interaction.1",group:"Mobile interaction",text:"All CTAs and interactive elements are easily tappable — 44px minimum touch target, no mis-tap risk"},
-      {id:"mobile.mobile-interaction.2",group:"Mobile interaction",text:"Hover-state-only interactions have a tap or touch equivalent on mobile"},
-      {id:"mobile.mobile-interaction.3",group:"Mobile interaction",text:"HubSpot-embedded forms and modules are fully functional and usable on mobile"},
-      {id:"mobile.mobile-interaction.4",group:"Mobile interaction",text:"Page tested on an actual iOS device (not only Webflow or browser responsive preview)"},
-      {id:"mobile.mobile-interaction.5",group:"Mobile interaction",text:"Page tested on an actual Android device where possible"},
-      {id:"mobile.performance.1",group:"Performance",text:"SVG files are optimised — no bloated file sizes that impact mobile load time"},
-      {id:"mobile.performance.2",group:"Performance",text:"Photographic images are compressed and served at appropriate sizes for mobile"},
-      {id:"mobile.performance.3",group:"Performance",text:"No layout shift occurs as the page loads — Core Web Vitals CLS score checked via PageSpeed Insights"},
-      {id:"mobile.performance.4",group:"Performance",text:"Mobile PageSpeed score is acceptable — target above 70"},
-    ]},
-  ];
-  var activeAudit:any=qaPages.find(function(p:any){return p.id===activeAuditId;})||null;
-  function getResult(id:string){var r=(activeAudit?.results)||{};return r[id]||{status:null,severity:null,notes:""};}
-  function setResult(id:string,field:string,val:any){setQaPages(function(prev:any[]){return prev.map(function(p:any){if(p.id!==activeAuditId)return p;var ex=(p.results[id])||{status:null,severity:null,notes:""};return{...p,results:{...p.results,[id]:{...ex,[field]:val}}};});});}
-  function categoryScore(cat:any,res?:any){var results=res||activeAudit?.results||{};var scored=cat.items.filter(function(it:any){var r=results[it.id];return r&&r.status&&r.status!=="na";});var passed=cat.items.filter(function(it:any){var r=results[it.id];return r&&r.status==="pass";});return scored.length>0?Math.round(passed.length/scored.length*100):null;}
-  function auditStats(p:any){var all=CATEGORIES.flatMap(function(c:any){return c.items;});var done=all.filter(function(it:any){var r=p.results[it.id];return r&&r.status!==null;}).length;var scored=all.filter(function(it:any){var r=p.results[it.id];return r&&r.status&&r.status!=="na";}).length;var passed=all.filter(function(it:any){var r=p.results[it.id];return r&&r.status==="pass";}).length;var pct=scored>0?Math.round(passed/scored*100):null;return{done,total:all.length,pct};}
-  function createAudit(){if(!newUrl.trim())return;var id="qa-"+Date.now();setQaPages(function(prev:any[]){return [{id,url:newUrl.trim(),label:newLabel.trim()||newUrl.trim(),createdAt:Date.now(),results:{}},...prev];});setActiveAuditId(id);setActiveCategory("content");setExpandedItems({});setShowNewForm(false);setNewUrl("");setNewLabel("");}
-  function deleteAudit(id:string,e:any){e.stopPropagation();if(!confirm("Delete this page audit?"))return;setQaPages(function(prev:any[]){return prev.filter(function(p:any){return p.id!==id;});});if(activeAuditId===id)setActiveAuditId(null);}
-  async function scanPageColors(){if(!activeAudit?.url)return;setCcScanning(true);setCcScanError(null);setCcScanColors(null);try{var r=await fetch("/api/scan-colors?url="+encodeURIComponent(activeAudit.url));var d=await r.json();if(d.error)throw new Error(d.error);setCcScanColors(d);if(d.textColors&&d.textColors[0])setCcFg(d.textColors[0]);if(d.bgColors&&d.bgColors[0])setCcBg(d.bgColors[0]);}catch(e:any){setCcScanError(e.message||"Failed to scan page");}finally{setCcScanning(false);}}
-  function hexLuminance(hex:string):number|null{var m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);if(!m)return null;var ch=[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)];return ch.reduce(function(L:number,c:number,i:number){var s=c/255;return L+([0.2126,0.7152,0.0722][i])*(s<=0.04045?s/12.92:Math.pow((s+0.055)/1.055,2.4));},0);}
-  function contrastRatio(fg:string,bg:string):number|null{var L1=hexLuminance(fg);var L2=hexLuminance(bg);if(L1===null||L2===null)return null;var hi=Math.max(L1,L2);var lo=Math.min(L1,L2);return Math.round(((hi+0.05)/(lo+0.05))*100)/100;}
-  var allItems=CATEGORIES.flatMap(function(c){return c.items.map(function(it){return {...it,category:c.label};});});
-  var totalItems=allItems.length;
-  var activeResults=activeAudit?.results||{};
-  var totalDone=allItems.filter(function(it){var r=activeResults[it.id];return r&&r.status!==null;}).length;
-  var totalScored=allItems.filter(function(it){var r=activeResults[it.id];return r&&r.status&&r.status!=="na";}).length;
-  var totalPassed=allItems.filter(function(it){var r=activeResults[it.id];return r&&r.status==="pass";}).length;
-  var overallPct=totalScored>0?Math.round(totalPassed/totalScored*100):null;
-  var criticalFails=allItems.filter(function(it){var r=activeResults[it.id];return r&&(r.status==="fail"||r.status==="partial")&&r.severity==="critical";});
-  var majorFails=allItems.filter(function(it){var r=activeResults[it.id];return r&&(r.status==="fail"||r.status==="partial")&&r.severity==="major";});
-  var minorFails=allItems.filter(function(it){var r=activeResults[it.id];return r&&(r.status==="fail"||r.status==="partial")&&r.severity==="minor";});
-  var activeCat=CATEGORIES.find(function(c){return c.id===activeCategory;})||CATEGORIES[0];
-  // LIST VIEW — no active audit
-  if(!activeAudit){return(
-    <div style={{background:C.grey2,height:"100%",overflow:"auto",padding:isMobile?"20px 16px":"40px 32px",fontFamily:FF}}>
-      <div style={{maxWidth:900,margin:"0 auto",paddingBottom:80}}>
-        <div style={{background:C.black,borderRadius:20,padding:isMobile?"24px":"36px 40px",marginBottom:28}}>
-          <div style={{fontSize:12,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>UX Heuristic Evaluation</div>
-          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
-            <div><h1 style={{color:C.white,fontSize:isMobile?24:30,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:"-0.02em"}}>QA Checklist</h1><p style={{color:C.grey6,fontSize:14,lineHeight:1.7,margin:0,maxWidth:500}}>Run a structured heuristic audit on any page. Each audit scores 128 GWI Website Delivery criteria across 5 categories and generates a prioritised roadmap.</p></div>
-            <button onClick={function(){setShowNewForm(true);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:10,padding:"12px 20px",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>+ Start new QA test</button>
-          </div>
-        </div>
-        {showNewForm&&(<div style={{background:C.white,borderRadius:16,padding:"24px 28px",marginBottom:20,border:"1.5px solid "+C.pink}}>
-          <div style={{fontSize:13,fontWeight:700,color:C.offBlack,marginBottom:16}}>New page audit</div>
-          <div style={{display:"flex",flexDirection:"column",gap:12}}>
-            <div><label style={{fontSize:12,fontWeight:600,color:C.grey7,display:"block",marginBottom:4}}>Page URL <span style={{color:C.pink}}>*</span></label><input value={newUrl} onChange={function(e){setNewUrl(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")createAudit();}} placeholder="https://www.gwi.com/platform" style={{width:"100%",padding:"10px 14px",borderRadius:8,border:"1.5px solid "+C.grey4,fontSize:14,fontFamily:FF,boxSizing:"border-box",outline:"none"}} onFocus={function(e){e.currentTarget.style.borderColor=C.pink;}} onBlur={function(e){e.currentTarget.style.borderColor=C.grey4;}}/></div>
-            <div><label style={{fontSize:12,fontWeight:600,color:C.grey7,display:"block",marginBottom:4}}>Label <span style={{color:C.grey6,fontWeight:400}}>(optional)</span></label><input value={newLabel} onChange={function(e){setNewLabel(e.target.value);}} placeholder="e.g. Platform page" style={{width:"100%",padding:"10px 14px",borderRadius:8,border:"1.5px solid "+C.grey4,fontSize:14,fontFamily:FF,boxSizing:"border-box",outline:"none"}} onFocus={function(e){e.currentTarget.style.borderColor=C.pink;}} onBlur={function(e){e.currentTarget.style.borderColor=C.grey4;}}/></div>
-            <div style={{display:"flex",gap:8}}><button onClick={createAudit} disabled={!newUrl.trim()} style={{flex:1,background:newUrl.trim()?C.pink:C.grey4,color:C.white,border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:newUrl.trim()?"pointer":"default"}}>Start audit</button><button onClick={function(){setShowNewForm(false);setNewUrl("");setNewLabel("");}} style={{padding:"11px 20px",borderRadius:8,border:"1px solid "+C.grey4,background:"transparent",fontSize:13,fontWeight:600,color:C.grey7,cursor:"pointer"}}>Cancel</button></div>
-          </div>
-        </div>)}
-        {qaPages.length===0&&!showNewForm&&(<div style={{background:C.white,borderRadius:16,padding:"48px 32px",textAlign:"center",border:"1px dashed "+C.grey4}}><div style={{fontSize:32,marginBottom:12}}>📋</div><div style={{fontSize:15,fontWeight:700,color:C.offBlack,marginBottom:6}}>No page audits yet</div><div style={{fontSize:14,color:C.grey7,marginBottom:20}}>Click "Start new QA test" to audit your first page.</div><button onClick={function(){setShowNewForm(true);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>+ Start new QA test</button></div>)}
-        {qaPages.length>0&&(<div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {qaPages.map(function(p:any){var stats=auditStats(p);var scoreColor=stats.pct===null?C.grey6:stats.pct>=80?"#22C55E":stats.pct>=60?"#F5A623":"#E53E3E";var critCount=CATEGORIES.flatMap(function(c:any){return c.items;}).filter(function(it:any){var r=p.results[it.id];return r&&(r.status==="fail"||r.status==="partial")&&r.severity==="critical";}).length;return(
-            <div key={p.id} onClick={function(){setActiveAuditId(p.id);setShowReport(false);setActiveCategory("content");setExpandedItems({});}} style={{background:C.white,borderRadius:14,padding:"18px 22px",border:"1px solid "+C.grey4,cursor:"pointer",transition:"box-shadow 0.15s,border-color 0.15s"}} onMouseEnter={function(e){(e.currentTarget as HTMLElement).style.boxShadow="0 4px 20px rgba(0,0,0,0.09)";(e.currentTarget as HTMLElement).style.borderColor=C.grey5;}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.boxShadow="none";(e.currentTarget as HTMLElement).style.borderColor=C.grey4;}}>
-              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:15,fontWeight:700,color:C.offBlack,marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.label||p.url}</div>
-                  <div style={{fontSize:12,color:C.grey7,marginBottom:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.url}</div>
-                  <div style={{display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:6,height:6,borderRadius:"50%",background:stats.pct===null?C.grey5:scoreColor}}/><span style={{fontSize:12,fontWeight:700,color:scoreColor}}>{stats.pct!==null?stats.pct+"%":"Not scored"}</span></div>
-                    <span style={{fontSize:12,color:C.grey7}}>{stats.done}/{stats.total} assessed</span>
-                    {critCount>0&&<span style={{fontSize:11,fontWeight:700,color:"#E53E3E",background:"#FFF0F0",padding:"2px 8px",borderRadius:99}}>{critCount} critical</span>}
-                    <span style={{fontSize:11,color:C.grey6}}>{new Date(p.createdAt).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</span>
-                  </div>
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-                  <div style={{textAlign:"right"}}><div style={{fontSize:24,fontWeight:900,color:stats.pct===null?C.grey5:scoreColor,lineHeight:1}}>{stats.pct!==null?stats.pct+"%":"—"}</div><div style={{fontSize:10,color:C.grey6,marginTop:2}}>pass rate</div></div>
-                  <button onClick={function(e:any){deleteAudit(p.id,e);}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey5,padding:"4px",borderRadius:6,transition:"color 0.15s"}} onMouseEnter={function(e){(e.currentTarget as HTMLElement).style.color="#E53E3E";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.color=C.grey5;}}><Trash2 size={15}/></button>
-                </div>
-              </div>
-            </div>
-          );})}
-        </div>)}
-      </div>
-    </div>
-  );}
-  var STATUS_CFG:any={pass:{label:"Pass",bg:"#E6F9F2",border:"#00A86B",text:"#005C3B",activeBg:"#00A86B",activeText:"#fff"},partial:{label:"Partial",bg:"#FFF8E6",border:"#F5A623",text:"#7A4F00",activeBg:"#F5A623",activeText:"#fff"},fail:{label:"Fail",bg:"#FFF0F0",border:"#E53E3E",text:"#7A1A1A",activeBg:"#E53E3E",activeText:"#fff"},na:{label:"N/A",bg:C.grey3,border:C.grey5,text:C.grey7,activeBg:C.grey6,activeText:"#fff"}};
-  var SEVERITY_CFG:any={critical:{label:"Critical",bg:"#FFF0F0",border:"#E53E3E",text:"#7A1A1A",activeBg:"#E53E3E",activeText:"#fff"},major:{label:"Major",bg:"#FFF8E6",border:"#F5A623",text:"#7A4F00",activeBg:"#F5A623",activeText:"#fff"},minor:{label:"Minor",bg:C.grey3,border:C.grey5,text:C.grey7,activeBg:C.grey6,activeText:"#fff"}};
-  if(showReport){return(
-    <div style={{background:C.grey2,height:"100%",overflow:"auto",padding:isMobile?"20px 16px":"40px 32px",fontFamily:FF}}>
-      <div style={{maxWidth:800,margin:"0 auto",paddingBottom:80}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20}}><button onClick={function(){setShowReport(false);}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey7,fontSize:13,fontWeight:600,padding:0,display:"flex",alignItems:"center",gap:6}}>← Back to checklist</button><span style={{color:C.grey5}}>·</span><button onClick={function(){setActiveAuditId(null);setShowReport(false);}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey7,fontSize:13,fontWeight:600,padding:0}}>All audits</button></div>
-        <div style={{background:C.black,borderRadius:20,padding:isMobile?"24px":"36px 40px",marginBottom:24}}>
-          <div style={{fontSize:12,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>QA Audit Report</div>
-          <h1 style={{color:C.white,fontSize:isMobile?24:30,fontWeight:900,margin:"0 0 4px",lineHeight:1.15,letterSpacing:"-0.02em"}}>{activeAudit.label||activeAudit.url}</h1>
-          <div style={{fontSize:12,color:C.grey6,marginBottom:16}}>{activeAudit.url}</div>
-          <p style={{color:C.grey6,fontSize:14,lineHeight:1.7,margin:"0 0 20px"}}>{totalDone} of {totalItems} criteria assessed{overallPct!==null?" · "+overallPct+"% pass rate":""}</p>
-          <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(5,1fr)",gap:8}}>
-            {CATEGORIES.map(function(cat){var score=categoryScore(cat);var scoreColor=score===null?C.grey6:score>=80?"#22C55E":score>=60?"#F5A623":"#E53E3E";return(<div key={cat.id} style={{background:"rgba(255,255,255,0.06)",borderRadius:10,padding:"12px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:800,color:scoreColor,lineHeight:1}}>{score!==null?score+"%":"—"}</div><div style={{fontSize:9,color:C.grey6,marginTop:4,lineHeight:1.3}}>{cat.label}</div></div>);})}
-          </div>
-        </div>
-        <div style={{background:C.white,borderRadius:16,padding:"24px 28px",marginBottom:16,border:"1px solid "+C.grey4}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:12}}>Executive Summary</div>
-          <p style={{fontSize:15,color:C.offBlack,lineHeight:1.7,margin:0}}>The GWI website QA audit assessed {totalItems} heuristic criteria across five areas.{overallPct!==null?" An overall pass rate of "+overallPct+"% was recorded from "+totalScored+" scored items.":""}{criticalFails.length>0?" "+criticalFails.length+" critical issue"+(criticalFails.length>1?"s were":" was")+" identified requiring immediate attention.":""}{majorFails.length>0?" "+majorFails.length+" major issue"+(majorFails.length>1?"s":"")+" require prioritisation in the next sprint.":""}{criticalFails.length===0&&majorFails.length===0&&minorFails.length===0?" No issues were logged.":" All issues are detailed below with a recommended remediation roadmap."}</p>
-        </div>
-        {criticalFails.length>0&&(<div style={{background:C.white,borderRadius:16,padding:"24px 28px",marginBottom:16,border:"1px solid #FECACA"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}><div style={{width:10,height:10,borderRadius:"50%",background:"#E53E3E",flexShrink:0}}/><div style={{fontSize:11,fontWeight:700,color:"#E53E3E",textTransform:"uppercase",letterSpacing:"0.08em"}}>Critical Issues ({criticalFails.length})</div></div>
-          {criticalFails.map(function(it:any){var r=getResult(it.id);return(<div key={it.id} style={{padding:"12px 0",borderBottom:"1px solid "+C.grey3}}><div style={{fontSize:14,fontWeight:600,color:C.offBlack,marginBottom:2}}>{it.text}</div><div style={{fontSize:12,color:C.grey7}}>{it.category}</div>{r.notes&&<div style={{fontSize:13,color:C.grey8,marginTop:6,fontStyle:"italic"}}>"{r.notes}"</div>}</div>);})}
-        </div>)}
-        {majorFails.length>0&&(<div style={{background:C.white,borderRadius:16,padding:"24px 28px",marginBottom:16,border:"1px solid #FDE68A"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}><div style={{width:10,height:10,borderRadius:"50%",background:"#F5A623",flexShrink:0}}/><div style={{fontSize:11,fontWeight:700,color:"#7A4F00",textTransform:"uppercase",letterSpacing:"0.08em"}}>Major Issues ({majorFails.length})</div></div>
-          {majorFails.map(function(it:any){var r=getResult(it.id);return(<div key={it.id} style={{padding:"12px 0",borderBottom:"1px solid "+C.grey3}}><div style={{fontSize:14,fontWeight:600,color:C.offBlack,marginBottom:2}}>{it.text}</div><div style={{fontSize:12,color:C.grey7}}>{it.category}</div>{r.notes&&<div style={{fontSize:13,color:C.grey8,marginTop:6,fontStyle:"italic"}}>"{r.notes}"</div>}</div>);})}
-        </div>)}
-        {minorFails.length>0&&(<div style={{background:C.white,borderRadius:16,padding:"24px 28px",marginBottom:16,border:"1px solid "+C.grey4}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}><div style={{width:10,height:10,borderRadius:"50%",background:C.grey6,flexShrink:0}}/><div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em"}}>Minor Issues ({minorFails.length})</div></div>
-          {minorFails.map(function(it:any){var r=getResult(it.id);return(<div key={it.id} style={{padding:"12px 0",borderBottom:"1px solid "+C.grey3}}><div style={{fontSize:14,fontWeight:600,color:C.offBlack,marginBottom:2}}>{it.text}</div><div style={{fontSize:12,color:C.grey7}}>{it.category}</div>{r.notes&&<div style={{fontSize:13,color:C.grey8,marginTop:6,fontStyle:"italic"}}>"{r.notes}"</div>}</div>);})}
-        </div>)}
-        <div style={{background:C.white,borderRadius:16,padding:"24px 28px",border:"1px solid "+C.grey4}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:16}}>Recommended Roadmap</div>
-          {criticalFails.length===0&&majorFails.length===0&&minorFails.length===0&&<div style={{fontSize:14,color:C.grey7}}>No issues logged. Complete the checklist to generate a roadmap.</div>}
-          {criticalFails.length>0&&<div style={{marginBottom:16}}><div style={{fontSize:12,fontWeight:700,color:"#E53E3E",marginBottom:8}}>Immediate — this sprint</div>{criticalFails.map(function(it:any){return <div key={it.id} style={{fontSize:14,color:C.offBlack,padding:"6px 0",borderBottom:"1px solid "+C.grey3,display:"flex",alignItems:"flex-start",gap:8}}><span style={{color:"#E53E3E",flexShrink:0}}>•</span>{it.text}</div>;})}</div>}
-          {majorFails.length>0&&<div style={{marginBottom:16}}><div style={{fontSize:12,fontWeight:700,color:"#F5A623",marginBottom:8}}>Next sprint</div>{majorFails.map(function(it:any){return <div key={it.id} style={{fontSize:14,color:C.offBlack,padding:"6px 0",borderBottom:"1px solid "+C.grey3,display:"flex",alignItems:"flex-start",gap:8}}><span style={{color:"#F5A623",flexShrink:0}}>•</span>{it.text}</div>;})}</div>}
-          {minorFails.length>0&&<div><div style={{fontSize:12,fontWeight:700,color:C.grey7,marginBottom:8}}>Backlog</div>{minorFails.map(function(it:any){return <div key={it.id} style={{fontSize:14,color:C.offBlack,padding:"6px 0",borderBottom:"1px solid "+C.grey3,display:"flex",alignItems:"flex-start",gap:8}}><span style={{color:C.grey5,flexShrink:0}}>•</span>{it.text}</div>;})}</div>}
-        </div>
-      </div>
-    </div>
-  );}
-  return(
-    <div style={{background:C.grey2,height:"100%",overflow:"auto",padding:isMobile?"20px 16px":"40px 32px",fontFamily:FF}}>
-      <div style={{maxWidth:900,margin:"0 auto",paddingBottom:80}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20}}><button onClick={function(){setActiveAuditId(null);}} style={{background:"none",border:"none",cursor:"pointer",color:C.grey7,fontSize:13,fontWeight:600,padding:0,display:"flex",alignItems:"center",gap:6}}>← All audits</button></div>
-        <div style={{background:C.black,borderRadius:20,padding:isMobile?"24px":"36px 40px",marginBottom:28}}>
-          <div style={{fontSize:12,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>UX Heuristic Evaluation</div>
-          <h1 style={{color:C.white,fontSize:isMobile?22:28,fontWeight:900,margin:"0 0 4px",lineHeight:1.15,letterSpacing:"-0.02em"}}>{activeAudit.label||activeAudit.url}</h1>
-          <div style={{fontSize:12,color:C.grey6,marginBottom:16}}>{activeAudit.url}</div>
-          <div style={{background:"rgba(255,255,255,0.06)",borderRadius:12,padding:"16px 20px"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-              <span style={{fontSize:13,fontWeight:600,color:C.white}}>Progress</span>
-              <span style={{fontSize:18,fontWeight:800,color:C.pink}}>{totalDone}/{totalItems}</span>
-            </div>
-            <div style={{background:"rgba(255,255,255,0.1)",borderRadius:99,height:6,overflow:"hidden",marginBottom:16}}><div style={{width:(totalItems>0?totalDone/totalItems*100:0)+"%",background:C.pink,height:"100%",borderRadius:99,transition:"width 0.4s"}}/></div>
-            <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(5,1fr)",gap:6,marginBottom:16}}>
-              {CATEGORIES.map(function(cat){var score=categoryScore(cat);var scoreColor=score===null?C.grey6:score>=80?"#22C55E":score>=60?"#F5A623":"#E53E3E";var done=cat.items.filter(function(it){return getResult(it.id).status!==null;}).length;return(<button key={cat.id} onClick={function(){setActiveCategory(cat.id);}} style={{textAlign:"center",background:activeCategory===cat.id?"rgba(255,255,255,0.14)":"rgba(255,255,255,0.04)",borderRadius:8,padding:"10px 6px",border:activeCategory===cat.id?"1px solid rgba(255,255,255,0.2)":"1px solid transparent",cursor:"pointer",transition:"background 0.15s"}}><div style={{fontSize:18,fontWeight:800,color:scoreColor,lineHeight:1}}>{score!==null?score+"%":"—"}</div><div style={{fontSize:9,color:C.grey6,marginTop:3,lineHeight:1.3}}>{done}/{cat.items.length}</div></button>);})}
-            </div>
-            <button onClick={function(){setShowReport(true);}} style={{width:"100%",background:C.pink,color:C.white,border:"none",borderRadius:8,padding:"12px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>View Report</button>
-          </div>
-        </div>
-        <div style={{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"}}>
-          {CATEGORIES.map(function(cat){var done=cat.items.filter(function(it){return getResult(it.id).status!==null;}).length;var isActive=activeCategory===cat.id;return(<button key={cat.id} onClick={function(){setActiveCategory(cat.id);}} style={{padding:"8px 14px",borderRadius:99,fontSize:12,fontWeight:700,border:"none",cursor:"pointer",background:isActive?C.pink:C.white,color:isActive?C.white:C.grey8,boxShadow:isActive?"0 2px 8px rgba(255,0,119,0.25)":"0 1px 4px rgba(0,0,0,0.08)",transition:"all 0.15s",whiteSpace:"nowrap"}}>{cat.label}<span style={{marginLeft:6,opacity:0.7,fontWeight:400}}>{done}/{cat.items.length}</span></button>);})}
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {activeCat.items.map(function(item,idx){
-            var r=getResult(item.id);var statusCfg=r.status?STATUS_CFG[r.status]:null;var expanded=expandedItems[item.id];var needsSeverity=r.status==="fail"||r.status==="partial";
-            var prev=idx>0?activeCat.items[idx-1]:null;
-            var showGroup=(item as any).group&&(!prev||(prev as any).group!==(item as any).group);
-            return(
-              <Fragment key={item.id}>
-              {showGroup&&<div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em",marginTop:idx===0?0:12,marginBottom:2,paddingLeft:4}}>{(item as any).group}</div>}
-              <div style={{background:C.white,borderRadius:12,padding:"16px 20px",border:"1.5px solid "+(statusCfg?statusCfg.border:C.grey4),transition:"border-color 0.2s"}}>
-                <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
-                  <div style={{fontSize:12,fontWeight:700,color:C.grey6,marginTop:3,minWidth:20,flexShrink:0}}>{idx+1}</div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:14,fontWeight:600,color:C.offBlack,marginBottom:12,lineHeight:1.5}}>{item.text}</div>
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:needsSeverity||expanded||r.notes?12:0}}>
-                      {Object.entries(STATUS_CFG).map(function([key,cfg]:any){var isActive=r.status===key;return(<button key={key} onClick={function(){setResult(item.id,"status",isActive?null:key);if(isActive)setResult(item.id,"severity",null);}} style={{padding:"5px 12px",borderRadius:99,fontSize:11,fontWeight:700,border:"1.5px solid "+(isActive?cfg.activeBg:cfg.border),background:isActive?cfg.activeBg:cfg.bg,color:isActive?cfg.activeText:cfg.text,cursor:"pointer",transition:"all 0.15s"}}>{isActive&&<span style={{marginRight:3}}>✓</span>}{cfg.label}</button>);})}
-                      <button onClick={function(){setExpandedItems(function(prev){return {...prev,[item.id]:!prev[item.id]};});}} style={{padding:"5px 12px",borderRadius:99,fontSize:11,fontWeight:600,border:"1.5px solid "+C.grey4,background:r.notes?C.grey3:"transparent",color:C.grey7,cursor:"pointer",marginLeft:"auto"}}>{expanded||r.notes?"Hide note":"+ Note"}</button>
-                    </div>
-                    {needsSeverity&&(<div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:item.id==="design.colour-contrast.2"||expanded||r.notes?12:0}}><span style={{fontSize:11,color:C.grey7,fontWeight:600}}>Severity:</span>{Object.entries(SEVERITY_CFG).map(function([key,cfg]:any){var isActive=r.severity===key;return(<button key={key} onClick={function(){setResult(item.id,"severity",isActive?null:key);}} style={{padding:"4px 10px",borderRadius:99,fontSize:11,fontWeight:700,border:"1.5px solid "+(isActive?cfg.activeBg:cfg.border),background:isActive?cfg.activeBg:cfg.bg,color:isActive?cfg.activeText:cfg.text,cursor:"pointer",transition:"all 0.15s"}}>{cfg.label}</button>);})}</div>)}
-                    {item.id==="design.colour-contrast.2"&&(function(){
-                      var ratio=contrastRatio(ccFg,ccBg);
-                      var passAA=ratio!==null&&ratio>=4.5;var passAALg=ratio!==null&&ratio>=3;var passAAA=ratio!==null&&ratio>=7;var passAAALg=ratio!==null&&ratio>=4.5;
-                      var ratioColor=ratio===null?C.grey6:ratio>=7?"#22C55E":ratio>=4.5?"#22C55E":ratio>=3?"#F5A623":"#E53E3E";
-                      return(<div style={{background:C.grey2,borderRadius:12,padding:"16px",marginBottom:expanded||r.notes?12:0}}>
-                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}}>
-                          <div style={{fontSize:11,fontWeight:700,color:C.grey7,textTransform:"uppercase",letterSpacing:"0.08em"}}>Contrast Checker</div>
-                          <button onClick={scanPageColors} disabled={ccScanning} style={{fontSize:11,fontWeight:700,color:ccScanning?C.grey6:C.pink,background:"none",border:"1.5px solid "+(ccScanning?C.grey4:C.pink),borderRadius:6,padding:"5px 12px",cursor:ccScanning?"wait":"pointer",display:"flex",alignItems:"center",gap:5}}>{ccScanning?"Scanning…":"⟳ Scan page colours"}</button>
-                        </div>
-                        {ccScanError&&<div style={{fontSize:12,color:"#E53E3E",marginBottom:12,padding:"8px 12px",background:"#FFF0F0",borderRadius:8}}>{ccScanError}</div>}
-                        {ccScanColors&&(<div style={{marginBottom:14}}>
-                          <div style={{fontSize:11,fontWeight:600,color:C.grey7,marginBottom:6}}>Found on page — click to select</div>
-                          <div style={{marginBottom:8}}><div style={{fontSize:10,color:C.grey6,marginBottom:4}}>TEXT COLOURS</div><div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{(ccScanColors.textColors||[]).map(function(col:string){return(<button key={col} onClick={function(){setCcFg(col);}} title={col} style={{width:28,height:28,borderRadius:6,background:col,border:ccFg===col?"2.5px solid "+C.pink:"2px solid rgba(0,0,0,0.12)",cursor:"pointer",flexShrink:0,transition:"transform 0.1s"}} onMouseEnter={function(e){(e.currentTarget as HTMLElement).style.transform="scale(1.15)";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.transform="scale(1)";}}/>);})}</div></div>
-                          <div><div style={{fontSize:10,color:C.grey6,marginBottom:4}}>BACKGROUND COLOURS</div><div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{(ccScanColors.bgColors||[]).map(function(col:string){return(<button key={col} onClick={function(){setCcBg(col);}} title={col} style={{width:28,height:28,borderRadius:6,background:col,border:ccBg===col?"2.5px solid "+C.pink:"2px solid rgba(0,0,0,0.12)",cursor:"pointer",flexShrink:0,transition:"transform 0.1s"}} onMouseEnter={function(e){(e.currentTarget as HTMLElement).style.transform="scale(1.15)";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.transform="scale(1)";}}/>);})}</div></div>
-                        </div>)}
-                        <div style={{display:"flex",gap:12,marginBottom:14,flexWrap:"wrap"}}>
-                          {[{label:"Text colour",val:ccFg,set:setCcFg},{label:"Background",val:ccBg,set:setCcBg}].map(function(inp){return(<div key={inp.label} style={{flex:1,minWidth:140}}>
-                            <div style={{fontSize:11,fontWeight:600,color:C.grey7,marginBottom:6}}>{inp.label}</div>
-                            <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                              <input type="color" value={inp.val} onChange={function(e){inp.set(e.target.value);}} style={{width:34,height:34,borderRadius:6,border:"1.5px solid "+C.grey4,cursor:"pointer",padding:2,flexShrink:0}}/>
-                              <input value={inp.val} onChange={function(e){if(/^#[0-9a-fA-F]{0,6}$/.test(e.target.value))inp.set(e.target.value);}} style={{width:"100%",padding:"7px 10px",borderRadius:6,border:"1.5px solid "+C.grey4,fontSize:12,fontFamily:"monospace",outline:"none",boxSizing:"border-box"}} onFocus={function(e){e.currentTarget.style.borderColor=C.pink;}} onBlur={function(e){e.currentTarget.style.borderColor=C.grey4;}}/>
-                            </div>
-                          </div>);})}
-                        </div>
-                        <div style={{background:ccBg,borderRadius:10,padding:"16px 20px",marginBottom:12,border:"1px solid "+C.grey4,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
-                          <div><div style={{color:ccFg,fontSize:16,fontWeight:700,lineHeight:1.4,marginBottom:2}}>Aa — Normal text sample</div><div style={{color:ccFg,fontSize:13,lineHeight:1.5,opacity:0.85}}>The quick brown fox jumps over the lazy dog.</div></div>
-                          <div style={{textAlign:"right",flexShrink:0}}><div style={{fontSize:30,fontWeight:900,color:ratioColor,lineHeight:1}}>{ratio!==null?ratio+":1":"—"}</div><div style={{fontSize:10,color:C.grey6,marginTop:2}}>contrast ratio</div></div>
-                        </div>
-                        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:12}}>
-                          {[{l:"AA Normal",p:passAA,req:"≥4.5:1"},{l:"AA Large",p:passAALg,req:"≥3:1"},{l:"AAA Normal",p:passAAA,req:"≥7:1"},{l:"AAA Large",p:passAAALg,req:"≥4.5:1"}].map(function(ch){return(<div key={ch.l} style={{background:ch.p?"#E6F9F2":"#FFF0F0",borderRadius:8,padding:"8px 6px",textAlign:"center",border:"1px solid "+(ch.p?"#00A86B":"#E53E3E")}}><div style={{fontSize:10,fontWeight:700,color:ch.p?"#005C3B":"#7A1A1A"}}>{ch.l}</div><div style={{fontSize:11,fontWeight:800,color:ch.p?"#00A86B":"#E53E3E",marginTop:2}}>{ch.p?"Pass":"Fail"}</div><div style={{fontSize:9,color:ch.p?"#005C3B":"#7A1A1A",opacity:0.7}}>{ch.req}</div></div>);})}
-                        </div>
-                        <button onClick={function(){if(ratio===null)return;var note="Contrast ratio: "+ratio+":1 — AA Normal: "+(passAA?"Pass":"Fail")+" · AA Large: "+(passAALg?"Pass":"Fail")+" · AAA Normal: "+(passAAA?"Pass":"Fail")+". Text: "+ccFg+", Background: "+ccBg+".";setResult(item.id,"notes",(r.notes?r.notes+"\n":"")+note);setExpandedItems(function(prev){return{...prev,[item.id]:true};});}} style={{fontSize:11,fontWeight:600,color:C.grey7,background:"none",border:"1px solid "+C.grey4,borderRadius:6,padding:"5px 12px",cursor:"pointer"}}>Copy result to notes</button>
-                      </div>);
-                    })()}
-                    {(expanded||r.notes)&&(<textarea value={r.notes||""} onChange={function(e){setResult(item.id,"notes",e.target.value);}} placeholder="Add a note, observation, or screenshot link..." style={{width:"100%",minHeight:68,padding:"10px 14px",borderRadius:8,border:"1.5px solid "+C.grey4,fontSize:13,color:C.offBlack,fontFamily:FF,resize:"vertical",boxSizing:"border-box",outline:"none",lineHeight:1.6}} onFocus={function(e){e.currentTarget.style.borderColor=C.pink;}} onBlur={function(e){e.currentTarget.style.borderColor=C.grey4;}}/>)}
-                  </div>
-                </div>
-              </div>
-              </Fragment>
-            );
-          })}
-        </div>
-        {CATEGORIES.findIndex(function(c){return c.id===activeCategory;})<CATEGORIES.length-1&&(<div style={{marginTop:16}}><button onClick={function(){var idx=CATEGORIES.findIndex(function(c){return c.id===activeCategory;});setActiveCategory(CATEGORIES[idx+1].id);}} style={{width:"100%",padding:"13px",borderRadius:12,background:C.white,border:"1px solid "+C.grey4,fontSize:14,fontWeight:700,color:C.offBlack,cursor:"pointer"}}>Next: {CATEGORIES[CATEGORIES.findIndex(function(c){return c.id===activeCategory;})+1].label} →</button></div>)}
-      </div>
-    </div>
-  );
-}
-
 export default function App(){
 
-  var VALID_VIEWS=["dashboard","audit","generated-audits","summary","personas","persona-detail","mapping","journey","lifecycle","affinity","flows","analytics","settings","wireframes","feedback","guide","landing","qa-checklist","qa-walkthrough"];
+  var VALID_VIEWS=["dashboard","audit","generated-audits","summary","personas","persona-detail","mapping","journey","lifecycle","affinity","flows","analytics","settings","wireframes","feedback","guide","landing","qa-walkthrough"];
   function hashToView(h){var v=(h||"").replace(/^#\//,"").split("/")[0];return VALID_VIEWS.indexOf(v)>=0?v:"dashboard";}
   function hashToSubId(h){var parts=(h||"").replace(/^#\//,"").split("/");return parts.length>1?decodeURIComponent(parts[1]):null;}
   var [view,setViewRaw]=useState(function(){return hashToView(window.location.hash);});
@@ -4729,7 +4378,6 @@ export default function App(){
   var [savedWireframes,setSavedWireframes]=useState(function(){try{var s=localStorage.getItem("gwi_saved_wireframes");return s?JSON.parse(s):[];}catch(e){return [];}});
   var [lovedComponents,setLovedComponents]=useState(function(){try{var s=localStorage.getItem("gwi_loved_components");return s?JSON.parse(s):[];}catch(e){return [];}});
   var [feedback,setFeedback]=useState(function(){try{var s=localStorage.getItem("gwi_feedback");return s?JSON.parse(s):[];}catch(e){return [];}});
-  var [qaPages,setQaPages]=useState(function(){try{var s=localStorage.getItem("gwi_qa_pages");return s?JSON.parse(s):[];}catch(e){return [];}});
   var [showFeedbackModal,setShowFeedbackModal]=useState(false);
   var [feedbackToast,setFeedbackToast]=useState(false);
   var feedbackSubmittedRef=useRef(false);
@@ -4746,11 +4394,10 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
   useEffect(function(){try{localStorage.setItem("gwi_saved_wireframes",JSON.stringify(savedWireframes));}catch(e){};},[savedWireframes]);
   useEffect(function(){try{localStorage.setItem("gwi_loved_components",JSON.stringify(lovedComponents));}catch(e){};},[lovedComponents]);
   useEffect(function(){try{localStorage.setItem("gwi_feedback",JSON.stringify(feedback));}catch(e){};},[feedback]);
-  useEffect(function(){try{localStorage.setItem("gwi_qa_pages",JSON.stringify(qaPages));}catch(e){};},[qaPages]);
   useEffect(function(){function onHash(){var h=window.location.hash;var v=hashToView(h);var sub=hashToSubId(h);setViewRaw(v);if(v==="persona-detail"&&sub)setActivePersonaId(sub);if(v==="journey"&&sub)setActivePersonaForJourney(sub);}window.addEventListener("hashchange",onHash);return function(){window.removeEventListener("hashchange",onHash);};},[]);
   useEffect(function(){function onKey(e:KeyboardEvent){if((e.metaKey||e.ctrlKey)&&e.shiftKey&&e.key==="F"){e.preventDefault();setShowFeedbackModal(function(prev){return !prev;});}}document.addEventListener("keydown",onKey);return function(){document.removeEventListener("keydown",onKey);};},[]);
-  var _NAV_VIEWS=["dashboard","summary","audit","wireframes","personas","mapping","analytics","qa-checklist","qa-walkthrough"];
-  var _NAV_MAP:Record<string,string>={dashboard:"dashboard",summary:"summary","generated-audits":"summary",wireframes:"wireframes",audit:"audit",personas:"personas","persona-detail":"personas",mapping:"mapping",journey:"mapping",lifecycle:"mapping",affinity:"mapping",flows:"mapping",analytics:"analytics","qa-checklist":"qa-checklist","qa-walkthrough":"qa-walkthrough"};
+  var _NAV_VIEWS=["dashboard","summary","audit","wireframes","personas","mapping","analytics","qa-walkthrough"];
+  var _NAV_MAP:Record<string,string>={dashboard:"dashboard",summary:"summary","generated-audits":"summary",wireframes:"wireframes",audit:"audit",personas:"personas","persona-detail":"personas",mapping:"mapping",journey:"mapping",lifecycle:"mapping",affinity:"mapping",flows:"mapping",analytics:"analytics","qa-walkthrough":"qa-walkthrough"};
   useEffect(function(){
     function onArrow(e:KeyboardEvent){
       if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight")return;
@@ -4823,7 +4470,6 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
           <button onClick={function(){setView("personas");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:(view==="personas"||view==="persona-detail")?C.pink:"transparent",color:(view==="personas"||view==="persona-detail")?C.white:C.grey7,flexShrink:0}}>Personas</button>
           <Dropdown label="Journeys" items={MAPPING_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("mapping");}} forceActive={view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"}/>
           <button onClick={function(){setView("analytics");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="analytics"?C.pink:"transparent",color:view==="analytics"?C.white:C.grey7,flexShrink:0}}>Analytics</button>
-          <button onClick={function(){setView("qa-checklist");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="qa-checklist"?C.pink:"transparent",color:view==="qa-checklist"?C.white:C.grey7,flexShrink:0}}>QA Checklist</button>
           <button onClick={function(){setView("qa-walkthrough");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="qa-walkthrough"?C.pink:"transparent",color:view==="qa-walkthrough"?C.white:C.grey7,flexShrink:0}}>QA Walkthrough</button>
           <div style={{flex:1}}/>
           {(view==="personas"||view==="persona-detail"||view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows")&&(
@@ -4848,7 +4494,6 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="settings"&&<SettingsPage pages={pages} setPages={setPages} personas={personas} setPersonas={setPersonas} stages={stages} setStages={setStages} verticals={verticals} setVerticals={setVerticals} journeys={journeys} setJourneys={setJourneys} gaCards={gaCards} setGaCards={setGaCards} wireframeRules={wireframeRules} setWireframeRules={setWireframeRules} clientList={clientList} setClientList={setClientList} caseStudies={caseStudies} setCaseStudies={setCaseStudies} setView={setView} asanaPat={asanaPat} setAsanaPat={setAsanaPat} asanaProjectId={asanaProjectId} setAsanaProjectId={setAsanaProjectId}/>}
         {view==="landing"&&<LandingPage setView={setView}/>}
         {view==="guide"&&<GuidePage/>}
-        {view==="qa-checklist"&&<QAChecklistPage qaPages={qaPages} setQaPages={setQaPages}/>}
         {view==="qa-walkthrough"&&<QAWalkthroughPage publishShare={async function(audit:QAAudit){var shareId=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,10);var safe=JSON.parse(JSON.stringify(audit));await setDoc(doc(_db,'sharedReports',shareId),{kind:'qa-walkthrough',audit:safe,createdAt:Date.now()});return shareId;}}/>}
         {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData} onAddRec={function(action,pageUrl){var pageObj=pages.find(function(p){return p.url===pageUrl;});var newAction=Object.assign({},action,{status:"todo"});var existing=auditData.find(function(p){return p.url===pageUrl;});if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}}} onRemoveRec={function(actionId,pageUrl){setAuditData(function(prev){return prev.map(function(p){return p.url!==pageUrl?p:Object.assign({},p,{actions:(p.actions||[]).filter(function(a:any){return a.id!==actionId;})});});});}} lovedComponents={lovedComponents} onLoveComponent={function(lc){setLovedComponents(function(prev){return (prev as any[]).concat([lc]);});}} onUnloveComponent={function(id){setLovedComponents(function(prev){return (prev as any[]).filter(function(lc:any){return lc.id!==id;});});}} personas={personas} wireframeRules={wireframeRules} pages={pages} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}}/>}
       </div>
