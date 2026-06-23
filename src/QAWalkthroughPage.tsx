@@ -196,7 +196,7 @@ const ALL_ITEMS: (Item & { sectionId: string; sectionTitle: string; sectionNumbe
   s => s.items.map(it => ({ ...it, sectionId: s.id, sectionTitle: s.title, sectionNumber: s.number }))
 );
 
-function extractViewportWidth(text: string): number | null {
+export function extractViewportWidth(text: string): number | null {
   const m = text.match(/(\d{3,4})\s*px/i);
   if (!m) return null;
   const w = parseInt(m[1], 10);
@@ -204,7 +204,7 @@ function extractViewportWidth(text: string): number | null {
   return w;
 }
 
-function heightFor(width: number): number {
+export function heightFor(width: number): number {
   if (width >= 1800) return 1000;
   if (width >= 1400) return 900;
   if (width >= 1000) return 800;
@@ -212,7 +212,7 @@ function heightFor(width: number): number {
   return Math.round(width * 2.05);
 }
 
-function openSized(url: string, width: number) {
+export function openSized(url: string, width: number) {
   const height = heightFor(width);
   const left = Math.max(0, Math.round((window.screen.availWidth - width) / 2));
   const top = Math.max(0, Math.round((window.screen.availHeight - height) / 2));

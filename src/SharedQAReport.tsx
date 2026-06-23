@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
-import { Audit, Answers, SECTIONS, statsForAudit, statsForSection, fmtAgo, buildHtml } from "./QAWalkthroughPage";
+import { Audit, Answers, SECTIONS, statsForAudit, statsForSection, fmtAgo, buildHtml, extractViewportWidth, openSized } from "./QAWalkthroughPage";
 
 const C = {
   pink: "#FF0077",
@@ -242,7 +242,19 @@ export function SharedQAReport({ shareId }: { shareId: string }) {
                           <tr key={it.id}>
                             <td style={{ width: 90, padding: "12px 16px", fontWeight: 700, fontSize: 11, letterSpacing: "0.06em", color, borderBottom: `1px solid ${C.grey3}`, verticalAlign: "top", textTransform: "uppercase" }}>{label}</td>
                             <td style={{ padding: "12px 16px", borderBottom: `1px solid ${C.grey3}` }}>
-                              {it.text}
+                              {(() => {
+                                const w = extractViewportWidth(it.text);
+                                if (w && audit.url) {
+                                  return (
+                                    <button type="button" onClick={() => openSized(audit.url, w)}
+                                            title={`Open ${audit.url} at ${w}px`}
+                                            style={{ background: "none", border: "none", padding: 0, font: "inherit", color: "inherit", cursor: "pointer", textAlign: "left", textDecoration: "underline", textDecorationColor: C.pink, textDecorationThickness: 1.5, textUnderlineOffset: 3 }}>
+                                      {it.text}
+                                    </button>
+                                  );
+                                }
+                                return it.text;
+                              })()}
                               {ans?.comment && (
                                 <div style={{
                                   marginTop: 6, padding: "8px 12px", borderRadius: 4, fontSize: 13, color: C.inkSoft,
