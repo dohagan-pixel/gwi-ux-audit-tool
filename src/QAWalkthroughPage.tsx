@@ -1203,18 +1203,18 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
 
                         <div style={{ display: "flex", gap: 20, alignItems: "flex-end" }}>
                           <div>
-                            <div style={{ fontSize: 26, fontWeight: 600, color: C.ink, lineHeight: 1, letterSpacing: "-0.03em" }}>{ss.answered}<span style={{ color: C.grey5 }}>/{ss.total}</span></div>
+                            <div style={{ fontSize: 26, fontWeight: 800, color: C.ink, lineHeight: 1, letterSpacing: "-0.03em" }}>{ss.answered}<span style={{ color: C.grey5 }}>/{ss.total}</span></div>
                             <div style={{ fontSize: 10, fontWeight: 600, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Answered</div>
                           </div>
                           {(ss.pass + ss.na) > 0 && (
                             <div>
-                              <div style={{ fontSize: 26, fontWeight: 600, color: C.pass, lineHeight: 1, letterSpacing: "-0.03em" }}>{ss.pass + ss.na}</div>
+                              <div style={{ fontSize: 26, fontWeight: 800, color: C.pass, lineHeight: 1, letterSpacing: "-0.03em" }}>{ss.pass + ss.na}</div>
                               <div style={{ fontSize: 10, fontWeight: 600, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Pass</div>
                             </div>
                           )}
                           {ss.fail > 0 && (
                             <div>
-                              <div style={{ fontSize: 26, fontWeight: 600, color: C.fail, lineHeight: 1, letterSpacing: "-0.03em" }}>{ss.fail}</div>
+                              <div style={{ fontSize: 26, fontWeight: 800, color: C.fail, lineHeight: 1, letterSpacing: "-0.03em" }}>{ss.fail}</div>
                               <div style={{ fontSize: 10, fontWeight: 600, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Flag</div>
                             </div>
                           )}
