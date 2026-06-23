@@ -289,7 +289,23 @@ function countH1Tags(html: string): number {
 
 function extractImages(html: string) {
   const urls: string[] = [];
-  for (const m of html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)) urls.push(m[1]);
+  // Walk every <img> tag and capture both src and alt so we can audit alt text.
+  let imgTotal = 0;
+  let imgWithAlt = 0;
+  let imgEmptyAlt = 0;
+  let imgDescriptiveAlt = 0;
+  for (const m of html.matchAll(/<img\b([^>]*)>/gi)) {
+    const attrs = m[1];
+    const srcMatch = attrs.match(/\bsrc\s*=\s*["']([^"']+)["']/i);
+    const altMatch = attrs.match(/\balt\s*=\s*["']([^"']*)["']/i);
+    if (srcMatch) urls.push(srcMatch[1]);
+    imgTotal++;
+    if (altMatch) {
+      imgWithAlt++;
+      if (altMatch[1].trim().length === 0) imgEmptyAlt++;
+      else imgDescriptiveAlt++;
+    }
+  }
   for (const m of html.matchAll(/<source[^>]+srcset=["']([^"']+)["']/gi)) {
     for (const candidate of m[1].split(',')) {
       const src = candidate.trim().split(/\s+/)[0];
@@ -331,6 +347,13 @@ function extractImages(html: string) {
     unknown: byExt.unknown || 0,
     byExtension: byExt,
     samples,
+    altText: {
+      total: imgTotal,
+      withAlt: imgWithAlt,
+      missing: imgTotal - imgWithAlt,
+      empty: imgEmptyAlt,
+      descriptive: imgDescriptiveAlt,
+    },
   };
 }
 

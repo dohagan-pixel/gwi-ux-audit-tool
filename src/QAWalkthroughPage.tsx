@@ -264,6 +264,7 @@ type ScanResult = {
     unknown: number;
     byExtension: Record<string, number>;
     samples: Record<string, string[]>;
+    altText: { total: number; withAlt: number; missing: number; empty: number; descriptive: number };
   };
 };
 
@@ -380,6 +381,18 @@ const SCANNERS: ScannerCheck[] = [
       if (!i || i.total === 0) return { pass: false, detail: "Scanner didn't find any images on the page." };
       if (i.jpg === 0 && i.png === 0) return { pass: true, detail: `No JPG or PNG photographs found. WebP × ${i.webp}, SVG × ${i.svg}.` };
       return { pass: false, detail: `${i.jpg} JPG and ${i.png} PNG image${i.jpg + i.png === 1 ? "" : "s"} found. WebP is preferred for photos.${i.webp ? ` WebP is in use too (${i.webp}) — review the rasters.` : ""}` };
+    },
+  },
+  {
+    itemId: "accessibility.markup.1",
+    label: "Scan image alt text",
+    run: d => {
+      const a = d.images?.altText;
+      if (!a || a.total === 0) return { pass: true, detail: "No <img> tags found on the page — nothing to flag." };
+      if (a.missing > 0) {
+        return { pass: false, detail: `${a.missing} of ${a.total} <img> tag${a.missing === 1 ? " is" : "s are"} missing the alt attribute entirely. Every image needs one — use alt="" for decorative images.` };
+      }
+      return { pass: true, detail: `All ${a.total} <img> tags have an alt attribute: ${a.descriptive} descriptive, ${a.empty} empty (decorative).` };
     },
   },
 ];
