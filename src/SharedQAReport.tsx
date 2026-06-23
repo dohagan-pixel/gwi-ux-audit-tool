@@ -232,7 +232,7 @@ export function SharedQAReport({ shareId }: { shareId: string }) {
                       const label = status === "na" ? "Pass · N/A" : status === "fail" ? "Flag" : typeof status === "string" ? status : "—";
                       const groupRow = it.group !== prevGroup ? (
                         <tr key={it.id + "-grp"}>
-                          <td colSpan={2} style={{ padding: "14px 16px 4px", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: C.grey7, fontWeight: 700, borderBottom: `1px solid ${C.grey3}` }}>{it.group}</td>
+                          <td colSpan={2} style={{ padding: "10px 16px", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: C.white, background: C.ink, fontWeight: 700 }}>{it.group}</td>
                         </tr>
                       ) : null;
                       prevGroup = it.group;

@@ -459,7 +459,7 @@ export function buildHtml(meta: ExportMeta, answers: Answers): string {
       const color = status === "pass" || status === "na" ? C.pass : status === "fail" ? C.fail : C.na;
       const label = status === "na" ? "Pass · N/A" : status === "fail" ? "FLAG" : status.toUpperCase();
       const groupRow = it.group !== prevGroup
-        ? `<tr><td colspan="2" style="padding:18px 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:${C.grey7};font-weight:700">${escapeHtml(it.group)}</td></tr>`
+        ? `<tr><td colspan="2" style="padding:10px 16px;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:${C.white};background:${C.ink};font-weight:700">${escapeHtml(it.group)}</td></tr>`
         : "";
       prevGroup = it.group;
       const noteBox = a?.comment
