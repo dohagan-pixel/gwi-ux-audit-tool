@@ -655,6 +655,17 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
   const [shareCopied, setShareCopied] = useState(false);
   const [autoScanCount, setAutoScanCount] = useState<number | null>(null);
   const [editingSettings, setEditingSettings] = useState(false);
+  const [openSectionMenu, setOpenSectionMenu] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!openSectionMenu) return;
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      if (!t.closest?.("[data-section-menu]")) setOpenSectionMenu(null);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [openSectionMenu]);
 
   const activeAudit = useMemo(() => audits.find(a => a.id === activeAuditId) || null, [audits, activeAuditId]);
   const activeSection = activeSectionId ? SECTIONS.find(s => s.id === activeSectionId) || null : null;
@@ -1153,11 +1164,37 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                     const ds = sectionDerivedStatus(a, s.id);
                     const pill = STATUS_PILL[ds];
                     const explicit = a.sectionStatuses[s.id];
+                    const menuOpen = openSectionMenu === s.id;
+                    const ctaLabel = ss.answered === 0 ? "Begin →" : ss.answered >= ss.total ? "Review →" : "Continue →";
+                    const ctaMode: "start" | "continue" | "review" = ss.answered === 0 ? "start" : ss.answered >= ss.total ? "review" : "continue";
+                    // Build the context-aware menu options based on current state.
+                    type MenuItem = { label: string; action: () => void };
+                    const menu: MenuItem[] = [];
+                    if (explicit !== "approved") menu.push({ label: "Mark as approved", action: () => setSectionStatus(s.id, "approved") });
+                    if (explicit !== "revisit") menu.push({ label: "Mark as needs revisit", action: () => setSectionStatus(s.id, "revisit") });
+                    if (explicit) menu.push({ label: explicit === "approved" ? "Clear approval" : "Clear revisit", action: () => setSectionStatus(s.id, explicit) });
                     return (
                       <div key={s.id} style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 14, padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
                         <div>
-                          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-start", marginBottom: 8 }}>
-                            <span style={{ display: "inline-flex", alignItems: "center", padding: "3px 10px", borderRadius: 99, background: pill.bg, color: pill.fg, border: `1px solid ${pill.border}`, fontWeight: 700, fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" }}>{pill.label}</span>
+                          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-start", marginBottom: 8, position: "relative" }} data-section-menu>
+                            <button type="button" onClick={() => setOpenSectionMenu(menuOpen ? null : s.id)}
+                                    style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 8px 3px 10px", borderRadius: 99, background: pill.bg, color: pill.fg, border: `1px solid ${pill.border}`, fontWeight: 700, fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer", fontFamily: FF }}>
+                              {pill.label}
+                              <span style={{ fontSize: 10, opacity: 0.7 }}>▾</span>
+                            </button>
+                            {menuOpen && (
+                              <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.08)", padding: 4, minWidth: 200, zIndex: 10 }}>
+                                {menu.map((m, i) => (
+                                  <button key={i} type="button"
+                                          onClick={() => { m.action(); setOpenSectionMenu(null); }}
+                                          style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", borderRadius: 6, border: "none", background: "transparent", color: C.ink, fontFamily: FF, fontSize: 13, fontWeight: 500, cursor: "pointer" }}
+                                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.grey2; }}
+                                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+                                    {m.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                           <h3 style={{ fontSize: 27, fontWeight: 700, letterSpacing: "-0.02em", marginBottom: 6 }}>{s.title}</h3>
                           <p style={{ fontSize: 12, color: C.grey7, lineHeight: 1.5, margin: 0 }}>{s.intro}</p>
@@ -1182,15 +1219,10 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                           )}
                         </div>
 
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: "auto" }}>
-                          <button onClick={() => openSection(s.id, ss.answered === 0 ? "start" : ss.answered >= ss.total ? "review" : "continue")} style={{ ...btnPrimary, ...btnSmall, flex: 1, justifyContent: "center" }}>
-                            {ss.answered === 0 ? "Start →" : ss.answered >= ss.total ? "Review →" : "Continue →"}
-                          </button>
-                          <button onClick={() => setSectionStatus(s.id, "approved")} title="Mark approved"
-                                  style={{ padding: "8px 10px", borderRadius: 99, border: `1px solid ${explicit === "approved" ? C.pass : C.grey4}`, background: explicit === "approved" ? "#ECF8F1" : "transparent", color: explicit === "approved" ? C.pass : C.grey7, fontFamily: FF, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✓</button>
-                          <button onClick={() => setSectionStatus(s.id, "revisit")} title="Needs revisit"
-                                  style={{ padding: "8px 10px", borderRadius: 99, border: `1px solid ${explicit === "revisit" ? "#F5A623" : C.grey4}`, background: explicit === "revisit" ? "#FFF6E8" : "transparent", color: explicit === "revisit" ? "#7A4F00" : C.grey7, fontFamily: FF, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>↻</button>
-                        </div>
+                        <button onClick={() => openSection(s.id, ctaMode)}
+                                style={{ ...btnPrimary, ...btnSmall, width: "100%", justifyContent: "center", marginTop: "auto" }}>
+                          {ctaLabel}
+                        </button>
                       </div>
                     );
                   })}
