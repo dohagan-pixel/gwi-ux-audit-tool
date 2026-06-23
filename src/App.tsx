@@ -4420,14 +4420,11 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
       {id:"design.layout.4",group:"Layout & spacing",text:"All content is aligned to the grid — no elements sitting outside the layout column"},
       {id:"design.layout.5",group:"Layout & spacing",text:"Sections are clearly delineated — the page does not read as one continuous unbroken block"},
       {id:"design.layout.6",group:"Layout & spacing",text:"Body copy blocks are not centre-aligned — centre alignment is only used in short display contexts"},
-      {id:"design.layout.7",group:"Layout & spacing",text:"The page has been reviewed at 1280px (primary desktop target per GA4), 1920px (secondary), and 1440px"},
-      {id:"design.layout.8",group:"Layout & spacing",text:"The page has been reviewed at 100% zoom and reduced zoom to check overall composition and proportion"},
       {id:"design.buttons.1",group:"Buttons & interactive elements",text:"Button sizes are consistent across the page — no rogue oversized or undersized instances"},
       {id:"design.buttons.2",group:"Buttons & interactive elements",text:"Button hierarchy is clear — primary, secondary, and tertiary styles are visually distinct"},
       {id:"design.buttons.3",group:"Buttons & interactive elements",text:"CTA labels are consistent — the same action is not labelled differently in different places on the same page"},
       {id:"design.buttons.4",group:"Buttons & interactive elements",text:"All buttons and interactive elements have a visible hover state in the Webflow build"},
       {id:"design.buttons.5",group:"Buttons & interactive elements",text:"Links in body copy are visually distinct from surrounding text"},
-      {id:"design.buttons.6",group:"Buttons & interactive elements",text:"No button is styled to look like a link, or vice versa, without clear intent"},
       {id:"design.buttons.7",group:"Buttons & interactive elements",text:"Any HubSpot-embedded CTAs or forms match the button style and hierarchy of the surrounding page"},
       {id:"design.imagery-format.1",group:"Imagery — format & quality",text:"All illustrations and icons are SVG — no PNG or JPG used for scalable graphics"},
       {id:"design.imagery-format.2",group:"Imagery — format & quality",text:"Photographic images use WebP format and are compressed appropriately for web"},
@@ -4437,7 +4434,6 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
       {id:"design.imagery-format.6",group:"Imagery — format & quality",text:"SVG files are clean — no embedded raster data, no unnecessary metadata, optimised file size"},
       {id:"design.imagery-brand.1",group:"Imagery — brand & content",text:"Illustrations are from the approved GWI illustration library and are consistent in style"},
       {id:"design.imagery-brand.2",group:"Imagery — brand & content",text:"Illustrations and images feel like they belong to the page — not stock-photo generic"},
-      {id:"design.imagery-brand.3",group:"Imagery — brand & content",text:"No text is embedded in any image or illustration — all text is live HTML"},
       {id:"design.imagery-brand.4",group:"Imagery — brand & content",text:"Hero images and key visuals do not obscure or compete with headline copy"},
       {id:"design.imagery-brand.5",group:"Imagery — brand & content",text:"Decorative images have empty alt text (\"\") and are marked as presentational"},
       {id:"design.iconography.1",group:"Iconography",text:"Icons are from the approved GWI icon set and are exported as SVG"},
@@ -4445,19 +4441,15 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
       {id:"design.iconography.3",group:"Iconography",text:"Icons are used to support meaning — not as decoration or filler"},
       {id:"design.iconography.4",group:"Iconography",text:"Icons used alongside text are vertically aligned and proportionally sized"},
       {id:"design.logo.1",group:"Logo",text:"The correct logo variant is used for its background — Default on light, On Black on dark"},
-      {id:"design.logo.2",group:"Logo",text:"The logo has correct clear space on all sides (equal to the height of the i-dot)"},
       {id:"design.logo.3",group:"Logo",text:"The logo is not stretched, skewed, rotated, recoloured, or modified in any way"},
-      {id:"design.logo.4",group:"Logo",text:"The Hot Pink dot on the i is intact and the correct colour (#FF0077)"},
       {id:"design.components.1",group:"Component consistency",text:"All components used are from the GWI Webflow design system — no one-off or bespoke components introduced without sign-off"},
       {id:"design.components.2",group:"Component consistency",text:"Components are used as intended in the design system — no misuse of a pattern for a different purpose"},
       {id:"design.components.3",group:"Component consistency",text:"Any new components introduced follow design system token structure and naming conventions"},
       {id:"design.components.4",group:"Component consistency",text:"The page does not introduce visual patterns that conflict with or would confuse the wider system"},
       {id:"design.components.5",group:"Component consistency",text:"HubSpot-embedded modules (forms, CTAs, dynamic content) are styled to be visually seamless with the surrounding Webflow page"},
-      {id:"design.visual-quality.1",group:"Visual quality",text:"No visual inconsistencies visible at 100% zoom — no misaligned elements, ragged spacing, or unintended overlaps"},
       {id:"design.visual-quality.2",group:"Visual quality",text:"Dark and light sections transition cleanly — no unintended colour bleed or gap between sections"},
       {id:"design.visual-quality.3",group:"Visual quality",text:"All borders and dividers are consistent in weight and colour across the page"},
       {id:"design.visual-quality.4",group:"Visual quality",text:"Shadows and elevation are consistent and follow design system usage — not applied ad hoc in Webflow"},
-      {id:"design.visual-quality.5",group:"Visual quality",text:"Loading states, empty states, and any conditional content have been checked and look intentional"},
       {id:"design.visual-quality.6",group:"Visual quality",text:"The build has been checked in Chrome, Firefox, and Safari at desktop width"},
     ]},
     {id:"navigation",label:"Navigation & Structure",items:[
@@ -4493,7 +4485,6 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
       {id:"mobile.desktop-breakpoints.6",group:"Desktop — primary breakpoints",text:"All content is readable and well-proportioned at 1280px — the page is not designed only for wide viewports"},
       {id:"mobile.desktop-browser.1",group:"Desktop — browser QA",text:"Tested in Chrome — dominant browser for GWI.com traffic"},
       {id:"mobile.desktop-browser.2",group:"Desktop — browser QA",text:"Tested in Safari — second most common browser, especially for macOS users (142k active users on Mac)"},
-      {id:"mobile.desktop-browser.3",group:"Desktop — browser QA",text:"Tested in Edge — third most common browser in GWI.com data"},
       {id:"mobile.desktop-browser.4",group:"Desktop — browser QA",text:"No rendering inconsistencies between browsers — fonts, spacing, and layout are consistent"},
       {id:"mobile.mobile-breakpoints.1",group:"Mobile layout — breakpoints",text:"Page renders correctly at 390px (iPhone 14/15 standard — primary iOS target)"},
       {id:"mobile.mobile-breakpoints.2",group:"Mobile layout — breakpoints",text:"Page renders correctly at 375px (iPhone SE / older iOS — still widely used)"},
@@ -4542,7 +4533,7 @@ function QAChecklistPage({qaPages,setQaPages}:{qaPages:any[],setQaPages:Function
         <div style={{background:C.black,borderRadius:20,padding:isMobile?"24px":"36px 40px",marginBottom:28}}>
           <div style={{fontSize:12,fontWeight:700,color:C.pink,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>UX Heuristic Evaluation</div>
           <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
-            <div><h1 style={{color:C.white,fontSize:isMobile?24:30,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:"-0.02em"}}>QA Checklist</h1><p style={{color:C.grey6,fontSize:14,lineHeight:1.7,margin:0,maxWidth:500}}>Run a structured heuristic audit on any page. Each audit scores 138 GWI Website Delivery criteria across 5 categories and generates a prioritised roadmap.</p></div>
+            <div><h1 style={{color:C.white,fontSize:isMobile?24:30,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:"-0.02em"}}>QA Checklist</h1><p style={{color:C.grey6,fontSize:14,lineHeight:1.7,margin:0,maxWidth:500}}>Run a structured heuristic audit on any page. Each audit scores 129 GWI Website Delivery criteria across 5 categories and generates a prioritised roadmap.</p></div>
             <button onClick={function(){setShowNewForm(true);}} style={{background:C.pink,color:C.white,border:"none",borderRadius:10,padding:"12px 20px",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>+ Start new QA test</button>
           </div>
         </div>
