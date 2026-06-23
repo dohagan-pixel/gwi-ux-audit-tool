@@ -1141,9 +1141,8 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                     </div>
                   )}
 
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
                     {[
-                      { v: stats.answered === 0 ? "—" : `${stats.passPct}%`, l: "Pass rate", color: C.ink },
                       { v: stats.pass + stats.na, l: "Pass", color: C.pass },
                       { v: stats.fail, l: "Flag", color: C.fail },
                       { v: `${stats.answered}/${stats.total}`, l: "Answered", color: C.ink },
