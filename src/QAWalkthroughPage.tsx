@@ -969,11 +969,11 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                         <div style={{ fontSize: 12, color: C.grey7, marginBottom: 16, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.url}</div>
                         <div style={{ display: "flex", gap: 18, alignItems: "flex-end", marginBottom: 12 }}>
                           <div>
-                            <div style={{ fontSize: 24, fontWeight: 800, color: C.ink, lineHeight: 1, letterSpacing: "-0.02em" }}>{stats.answered}<span style={{ fontSize: 14, color: C.grey5 }}>/{stats.total}</span></div>
+                            <div style={{ fontSize: 22, fontWeight: 600, color: C.ink, lineHeight: 1, letterSpacing: "0.06em" }}>{stats.answered}<span style={{ color: C.grey5 }}>/{stats.total}</span></div>
                             <div style={{ fontSize: 10, fontWeight: 600, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Answered</div>
                           </div>
                           <div>
-                            <div style={{ fontSize: 24, fontWeight: 800, color: stats.fail > 0 ? C.fail : C.grey5, lineHeight: 1, letterSpacing: "-0.02em" }}>{stats.fail}</div>
+                            <div style={{ fontSize: 22, fontWeight: 600, color: stats.fail > 0 ? C.fail : C.grey5, lineHeight: 1, letterSpacing: "0.06em" }}>{stats.fail}</div>
                             <div style={{ fontSize: 10, fontWeight: 600, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Flags</div>
                           </div>
                         </div>
@@ -1141,7 +1141,7 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                       { v: `${stats.answered}/${stats.total}`, l: "Answered", color: C.ink },
                     ].map((k, i) => (
                       <div key={i} style={{ background: C.grey2, borderRadius: 10, padding: 14 }}>
-                        <div style={{ fontSize: 22, fontWeight: 800, color: k.color, letterSpacing: "-0.02em" }}>{k.v}</div>
+                        <div style={{ fontSize: 22, fontWeight: 600, color: k.color, letterSpacing: "0.06em" }}>{k.v}</div>
                         <div style={{ fontSize: 10, fontWeight: 600, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>{k.l}</div>
                       </div>
                     ))}
