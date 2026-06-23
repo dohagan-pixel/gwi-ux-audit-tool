@@ -367,7 +367,8 @@ function buildHtml(meta: ExportMeta, answers: Answers): string {
     else if (a.status === "pass") pass++;
     else if (a.status === "fail") fail++;
   }));
-  const passPct = total ? Math.round((pass / total) * 100) : 0;
+  // N/A counts as a pass for scoring — reviewer skipped because it doesn't apply / is fine.
+  const passPct = total ? Math.round(((pass + na) / total) * 100) : 0;
 
   const issuesBlock = (() => {
     const groups: Record<string, string[]> = {};
@@ -419,7 +420,8 @@ function buildMarkdown(meta: ExportMeta, answers: Answers): string {
     else if (a.status === "pass") pass++;
     else if (a.status === "fail") fail++;
   }));
-  const passPct = total ? Math.round((pass / total) * 100) : 0;
+  // N/A counts as a pass for scoring — reviewer skipped because it doesn't apply / is fine.
+  const passPct = total ? Math.round(((pass + na) / total) * 100) : 0;
   const lines: string[] = [];
   lines.push(`# UX QA report — ${meta.pageName || meta.url}`, "");
   lines.push(`- **URL:** ${meta.url}`);
@@ -495,8 +497,8 @@ function statsForAudit(a: Audit) {
     else if (ans.status === "fail") fail++;
   }
   const total = items.length;
-  const answered = pass + fail;
-  const passPct = answered ? Math.round((pass / answered) * 100) : 0;
+  const answered = pass + fail + na; // items touched (incl. skipped)
+  const passPct = total ? Math.round(((pass + na) / total) * 100) : 0; // N/A counts as pass
   return { pass, fail, na, total, answered, passPct };
 }
 
@@ -511,8 +513,8 @@ function statsForSection(a: Audit, sectionId: string) {
     else if (ans.status === "fail") fail++;
   }
   const total = sec.items.length;
-  const answered = pass + fail;
-  const passPct = answered ? Math.round((pass / answered) * 100) : 0;
+  const answered = pass + fail + na; // items touched (incl. skipped)
+  const passPct = total ? Math.round(((pass + na) / total) * 100) : 0; // N/A counts as pass
   return { pass, fail, na, total, answered, passPct };
 }
 
