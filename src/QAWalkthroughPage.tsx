@@ -444,82 +444,210 @@ function buildMarkdown(meta: ExportMeta, answers: Answers): string {
   return lines.join("\n");
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Persistence — audits saved to localStorage so reviewers can resume.
+// ─────────────────────────────────────────────────────────────────────────
+
+type SectionStatus = "approved" | "revisit";
+type SectionStatuses = Record<string, SectionStatus>;
+
+type Audit = {
+  id: string;
+  url: string;
+  pageName: string;
+  reviewer: string;
+  asanaLink: string;
+  createdAt: number;
+  updatedAt: number;
+  enabledSectionIds: string[];
+  answers: Answers;
+  sectionStatuses: SectionStatuses;
+};
+
+const STORAGE_KEY = "gwi-ux-qa-walkthroughs/v1";
+
+function loadAudits(): Audit[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+
+function saveAudits(audits: Audit[]) {
+  if (typeof window === "undefined") return;
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(audits)); } catch { /* quota */ }
+}
+
+function newAuditId(): string {
+  return "qa-" + Math.random().toString(36).slice(2, 9) + "-" + Date.now().toString(36);
+}
+
+function statsForAudit(a: Audit) {
+  const items = ALL_ITEMS.filter(it => a.enabledSectionIds.includes(it.sectionId));
+  let pass = 0, fail = 0, na = 0;
+  for (const it of items) {
+    const ans = a.answers[it.id];
+    if (!ans || ans.status === "na") na++;
+    else if (ans.status === "pass") pass++;
+    else if (ans.status === "fail") fail++;
+  }
+  const total = items.length;
+  const answered = pass + fail;
+  const passPct = answered ? Math.round((pass / answered) * 100) : 0;
+  return { pass, fail, na, total, answered, passPct };
+}
+
+function statsForSection(a: Audit, sectionId: string) {
+  const sec = SECTIONS.find(s => s.id === sectionId);
+  if (!sec) return { pass: 0, fail: 0, na: 0, total: 0, answered: 0, passPct: 0 };
+  let pass = 0, fail = 0, na = 0;
+  for (const it of sec.items) {
+    const ans = a.answers[it.id];
+    if (!ans || ans.status === "na") na++;
+    else if (ans.status === "pass") pass++;
+    else if (ans.status === "fail") fail++;
+  }
+  const total = sec.items.length;
+  const answered = pass + fail;
+  const passPct = answered ? Math.round((pass / answered) * 100) : 0;
+  return { pass, fail, na, total, answered, passPct };
+}
+
+type DerivedStatus = "not_started" | "in_progress" | "complete" | "approved" | "revisit";
+
+function sectionDerivedStatus(a: Audit, sectionId: string): DerivedStatus {
+  const explicit = a.sectionStatuses[sectionId];
+  if (explicit) return explicit;
+  const { answered, total } = statsForSection(a, sectionId);
+  if (answered === 0) return "not_started";
+  if (answered >= total) return "complete";
+  return "in_progress";
+}
+
+const STATUS_PILL: Record<DerivedStatus, { label: string; bg: string; fg: string; border: string }> = {
+  not_started: { label: "Not started", bg: C.grey2, fg: C.grey7, border: C.grey4 },
+  in_progress: { label: "In progress", bg: C.pinkBg, fg: C.pink, border: C.pink },
+  complete: { label: "All answered", bg: "#E0F2FE", fg: "#0369A1", border: "#7DD3FC" },
+  approved: { label: "Approved", bg: "#ECF8F1", fg: C.pass, border: C.pass },
+  revisit: { label: "Needs revisit", bg: "#FFF6E8", fg: "#7A4F00", border: "#F5A623" },
+};
+
+function fmtAgo(ts: number): string {
+  const diff = Date.now() - ts;
+  if (diff < 60_000) return "just now";
+  if (diff < 3600_000) return `${Math.floor(diff / 60_000)} min ago`;
+  if (diff < 86400_000) return `${Math.floor(diff / 3600_000)}h ago`;
+  if (diff < 7 * 86400_000) return `${Math.floor(diff / 86400_000)}d ago`;
+  return new Date(ts).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────────────────────────────────
+
 export function QAWalkthroughPage() {
-  const [phase, setPhase] = useState<"intro" | "sections" | "questions" | "done">("intro");
-  const [url, setUrl] = useState("");
-  const [pageName, setPageName] = useState("");
-  const [reviewer, setReviewer] = useState("");
-  const [asanaLink, setAsanaLink] = useState("");
-  const [enabledSections, setEnabledSections] = useState<string[]>(SECTIONS.map(s => s.id));
+  const initialAudits = useMemo(loadAudits, []);
+  const [audits, setAudits] = useState<Audit[]>(initialAudits);
+  const [phase, setPhase] = useState<"list" | "intro" | "audit" | "questions">(initialAudits.length ? "list" : "intro");
+  const [activeAuditId, setActiveAuditId] = useState<string | null>(null);
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [cur, setCur] = useState(0);
-  const [answers, setAnswers] = useState<Answers>({});
-  const [startedAt, setStartedAt] = useState("");
-  const [finishedAt, setFinishedAt] = useState("");
   const taRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const [draftUrl, setDraftUrl] = useState("");
+  const [draftPageName, setDraftPageName] = useState("");
+  const [draftReviewer, setDraftReviewer] = useState("");
+  const [draftAsana, setDraftAsana] = useState("");
+
   const [scanData, setScanData] = useState<ScanResult | null>(null);
   const [scanLoading, setScanLoading] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanResults, setScanResults] = useState<Record<string, { pass: boolean; detail: string }>>({});
 
-  const items = useMemo(() => ALL_ITEMS.filter(it => enabledSections.includes(it.sectionId)), [enabledSections]);
+  const activeAudit = useMemo(() => audits.find(a => a.id === activeAuditId) || null, [audits, activeAuditId]);
+  const activeSection = activeSectionId ? SECTIONS.find(s => s.id === activeSectionId) || null : null;
+  const items = activeSection ? activeSection.items : [];
   const total = items.length;
   const q = items[cur];
 
-  const passCount = items.filter(it => answers[it.id]?.status === "pass").length;
-  const failCount = items.filter(it => answers[it.id]?.status === "fail").length;
-  const naCount = total - passCount - failCount;
-  const passPct = total ? Math.round((passCount / total) * 100) : 0;
-  const progress = phase === "done" ? 100 : phase === "intro" ? 0 : phase === "sections" ? 5 : total ? Math.round((cur / total) * 100) : 0;
-
-  const fmtNow = () => new Date().toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
-
-  function goHome() {
-    setPhase("intro"); setCur(0); setAnswers({}); setStartedAt(""); setFinishedAt("");
-    setScanData(null); setScanError(null); setScanResults({});
-  }
-
-  async function runScanner(scanner: ScannerCheck) {
-    if (!url.trim() || !q) return;
-    setScanError(null);
-    setScanLoading(true);
-    try {
-      let data = scanData;
-      if (!data) {
-        const r = await fetch(`/api/scan-typography?url=${encodeURIComponent(url)}`);
-        const j = await r.json();
-        if (!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
-        data = j as ScanResult;
-        setScanData(data);
-      }
-      const result = scanner.run(data);
-      setScanResults(prev => ({ ...prev, [scanner.itemId]: result }));
-      setAnswers(prev => ({ ...prev, [q.id]: { status: result.pass ? "pass" : "fail", comment: `Checked by scanner — ${result.detail}` } }));
-    } catch (e: any) {
-      setScanError(e?.message || "Scanner failed.");
-    } finally {
-      setScanLoading(false);
-    }
-  }
-  function startQuestions() {
-    if (!enabledSections.length) return;
-    setStartedAt(fmtNow()); setPhase("questions"); setCur(0);
-  }
-  function setAnswer(status: Status) {
-    if (!q) return;
-    setAnswers(prev => ({ ...prev, [q.id]: { status, comment: prev[q.id]?.comment } }));
-  }
-  function setCommentText(v: string) {
-    if (!q) return;
-    setAnswers(prev => {
-      const existing = prev[q.id];
-      const status: Status = existing?.status ?? "fail";
-      return { ...prev, [q.id]: { status, comment: v } };
+  function persist(updater: (prev: Audit[]) => Audit[]) {
+    setAudits(prev => {
+      const next = updater(prev);
+      saveAudits(next);
+      return next;
     });
   }
-  function nextQ() { if (cur < total - 1) setCur(cur + 1); else finish(); }
+  function updateActiveAudit(patch: Partial<Audit>) {
+    if (!activeAuditId) return;
+    persist(prev => prev.map(a => a.id === activeAuditId ? { ...a, ...patch, updatedAt: Date.now() } : a));
+  }
+  function deleteAuditConfirm(id: string) {
+    if (!confirm("Delete this audit? This can't be undone.")) return;
+    persist(prev => prev.filter(a => a.id !== id));
+    if (activeAuditId === id) { setActiveAuditId(null); setPhase("list"); }
+  }
+  function startNewAudit() {
+    setDraftUrl(""); setDraftPageName(""); setDraftReviewer(""); setDraftAsana("");
+    setPhase("intro");
+  }
+  function createAudit() {
+    if (!draftUrl.trim()) return;
+    const id = newAuditId();
+    const audit: Audit = {
+      id,
+      url: draftUrl.trim(),
+      pageName: draftPageName.trim(),
+      reviewer: draftReviewer.trim(),
+      asanaLink: draftAsana.trim(),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      enabledSectionIds: SECTIONS.map(s => s.id),
+      answers: {},
+      sectionStatuses: {},
+    };
+    persist(prev => [audit, ...prev]);
+    setActiveAuditId(id);
+    setPhase("audit");
+  }
+  function openAudit(id: string) {
+    setActiveAuditId(id);
+    setActiveSectionId(null);
+    setCur(0);
+    setScanResults({}); setScanData(null); setScanError(null);
+    setPhase("audit");
+  }
+  function openSection(sectionId: string) {
+    setActiveSectionId(sectionId);
+    setCur(0);
+    setPhase("questions");
+  }
+  function backToList() { setActiveAuditId(null); setActiveSectionId(null); setPhase("list"); }
+  function backToAudit() { setActiveSectionId(null); setPhase("audit"); }
+
+  function setAnswer(status: Status) {
+    if (!q || !activeAudit) return;
+    updateActiveAudit({ answers: { ...activeAudit.answers, [q.id]: { status, comment: activeAudit.answers[q.id]?.comment } } });
+  }
+  function setCommentText(v: string) {
+    if (!q || !activeAudit) return;
+    const existing = activeAudit.answers[q.id];
+    const status: Status = existing?.status ?? "fail";
+    updateActiveAudit({ answers: { ...activeAudit.answers, [q.id]: { status, comment: v } } });
+  }
+  function nextQ() { if (cur < total - 1) setCur(cur + 1); else backToAudit(); }
   function prevQ() { if (cur > 0) setCur(cur - 1); }
   function skipQ() { setAnswer("na"); nextQ(); }
-  function finish() { setFinishedAt(fmtNow()); setPhase("done"); }
+
+  function setSectionStatus(sectionId: string, status: SectionStatus) {
+    if (!activeAudit) return;
+    const curStatus = activeAudit.sectionStatuses[sectionId];
+    const next = { ...activeAudit.sectionStatuses };
+    if (curStatus === status) delete next[sectionId]; else next[sectionId] = status;
+    updateActiveAudit({ sectionStatuses: next });
+  }
 
   useEffect(() => {
     if (phase !== "questions" || !q) return;
@@ -535,44 +663,69 @@ export function QAWalkthroughPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [phase, q, cur, total]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function download(format: "html" | "md") {
+  async function runScanner(scanner: ScannerCheck) {
+    if (!activeAudit?.url || !q) return;
+    setScanError(null);
+    setScanLoading(true);
+    try {
+      let data = scanData;
+      if (!data) {
+        const r = await fetch(`/api/scan-typography?url=${encodeURIComponent(activeAudit.url)}`);
+        const j = await r.json();
+        if (!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
+        data = j as ScanResult;
+        setScanData(data);
+      }
+      const result = scanner.run(data);
+      setScanResults(prev => ({ ...prev, [scanner.itemId]: result }));
+      updateActiveAudit({ answers: { ...activeAudit.answers, [q.id]: { status: result.pass ? "pass" : "fail", comment: `Checked by scanner — ${result.detail}` } } });
+    } catch (e: any) {
+      setScanError(e?.message || "Scanner failed.");
+    } finally {
+      setScanLoading(false);
+    }
+  }
+
+  function downloadReport(audit: Audit, format: "html" | "md") {
     const meta: ExportMeta = {
-      url, pageName, reviewer, asanaLink, startedAt, finishedAt, enabledSectionIds: enabledSections,
+      url: audit.url,
+      pageName: audit.pageName,
+      reviewer: audit.reviewer,
+      asanaLink: audit.asanaLink,
+      startedAt: new Date(audit.createdAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }),
+      finishedAt: new Date(audit.updatedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }),
+      enabledSectionIds: audit.enabledSectionIds,
     };
-    const content = format === "html" ? buildHtml(meta, answers) : buildMarkdown(meta, answers);
+    const content = format === "html" ? buildHtml(meta, audit.answers) : buildMarkdown(meta, audit.answers);
     const blob = new Blob([content], { type: format === "html" ? "text/html" : "text/markdown" });
     const a = document.createElement("a");
     const stamp = new Date().toISOString().slice(0, 10);
-    const safe = (pageName || "ux-qa-report").replace(/[^a-z0-9-]+/gi, "-").toLowerCase();
+    const safe = (audit.pageName || "ux-qa-report").replace(/[^a-z0-9-]+/gi, "-").toLowerCase();
     a.href = URL.createObjectURL(blob);
     a.download = `${safe}-${stamp}.${format}`;
     a.click();
     URL.revokeObjectURL(a.href);
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: "100%", padding: "14px 16px", border: `1px solid ${C.grey4}`, borderRadius: 10,
-    background: C.white, fontFamily: FF, fontSize: 15, color: C.ink, boxSizing: "border-box", outline: "none",
-  };
-  const labelStyle: React.CSSProperties = {
-    fontSize: 12, fontWeight: 600, color: C.inkSoft, letterSpacing: "0.04em",
-    textTransform: "uppercase", marginBottom: 6, display: "block",
-  };
-  const btnPrimary: React.CSSProperties = {
-    display: "inline-flex", alignItems: "center", gap: 10, padding: "13px 26px",
-    borderRadius: 99, border: "none", background: C.ink, color: C.white,
-    fontFamily: FF, fontSize: 14, fontWeight: 700, cursor: "pointer",
-  };
-  const btnGhost: React.CSSProperties = {
-    display: "inline-flex", alignItems: "center", gap: 10, padding: "11px 20px",
-    borderRadius: 99, border: `1px solid ${C.grey4}`, background: "transparent",
-    color: C.ink, fontFamily: FF, fontSize: 13, fontWeight: 600, cursor: "pointer",
-  };
+  const inputStyle: React.CSSProperties = { width: "100%", padding: "14px 16px", border: `1px solid ${C.grey4}`, borderRadius: 10, background: C.white, fontFamily: FF, fontSize: 15, color: C.ink, boxSizing: "border-box", outline: "none" };
+  const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: C.inkSoft, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 6, display: "block" };
+  const btnPrimary: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 10, padding: "13px 26px", borderRadius: 99, border: "none", background: C.ink, color: C.white, fontFamily: FF, fontSize: 14, fontWeight: 700, cursor: "pointer" };
+  const btnGhost: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 10, padding: "11px 20px", borderRadius: 99, border: `1px solid ${C.grey4}`, background: "transparent", color: C.ink, fontFamily: FF, fontSize: 13, fontWeight: 600, cursor: "pointer" };
+  const btnSmall: React.CSSProperties = { padding: "8px 14px", fontSize: 12 };
 
-  const cur_a = q ? answers[q.id] : undefined;
+  const cur_a = q && activeAudit ? activeAudit.answers[q.id] : undefined;
   const cur_status = cur_a?.status;
   const cur_comment = cur_a?.comment ?? "";
   const notesVisible = cur_status === "pass" || cur_status === "fail" || cur_comment.length > 0;
+
+  const progress = (() => {
+    if (phase === "questions" && total > 0) return Math.round(((cur + 1) / total) * 100);
+    if (phase === "audit" && activeAudit) {
+      const s = statsForAudit(activeAudit);
+      return s.total ? Math.round((s.answered / s.total) * 100) : 0;
+    }
+    return 0;
+  })();
 
   return (
     <div style={{ background: C.grey1, minHeight: "100%", overflow: "auto", fontFamily: FF, color: C.ink }}>
@@ -581,114 +734,242 @@ export function QAWalkthroughPage() {
       </div>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 32px", borderBottom: `1px solid ${C.grey4}`, background: C.white }}>
-        <button type="button" onClick={goHome} style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: FF }}>
+        <button type="button" onClick={backToList} style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: FF }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: C.pink, textTransform: "uppercase", letterSpacing: "0.12em" }}>UX QA · Walkthrough</span>
         </button>
         <div style={{ fontSize: 12, color: C.grey7 }}>
+          {phase === "list" && `${audits.length} audit${audits.length === 1 ? "" : "s"}`}
+          {phase === "audit" && activeAudit && `${statsForAudit(activeAudit).answered} / ${statsForAudit(activeAudit).total}`}
           {phase === "questions" && `${cur + 1} / ${total}`}
-          {phase === "done" && `${passPct}% pass`}
         </div>
       </div>
 
       <div style={{ display: "flex", justifyContent: "center", padding: "40px 24px 80px" }}>
-        <div style={{ width: "100%", maxWidth: phase === "done" ? 1080 : 760, animation: "qaScreenIn 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
+        <div style={{ width: "100%", maxWidth: phase === "list" || phase === "audit" ? 1080 : 760, animation: "qaScreenIn 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
           <style>{`@keyframes qaScreenIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+
+          {phase === "list" && (
+            <>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
+                <div>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11, fontWeight: 700, color: C.pink, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.pink }} />
+                    Your audits
+                  </span>
+                  <h1 style={{ fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1, margin: "10px 0 6px" }}>
+                    Pages you've <em style={{ fontStyle: "normal", color: C.pink }}>QA'd.</em>
+                  </h1>
+                  <p style={{ fontSize: 15, color: C.grey7, maxWidth: 580 }}>
+                    Pick up where you left off. Audits save automatically to this browser — open one to step through a section, mark it approved, or flag it to revisit.
+                  </p>
+                </div>
+                <button onClick={startNewAudit} style={btnPrimary}>+ New audit</button>
+              </div>
+
+              {audits.length === 0 ? (
+                <div style={{ padding: 64, background: C.white, border: `1px dashed ${C.grey4}`, borderRadius: 14, textAlign: "center" }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: C.ink, marginBottom: 6 }}>No audits yet</div>
+                  <p style={{ color: C.grey7, marginBottom: 20 }}>Run your first QA walkthrough — it'll save here so you can revisit it later.</p>
+                  <button onClick={startNewAudit} style={btnPrimary}>+ Start new audit</button>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
+                  {audits.map(a => {
+                    const stats = statsForAudit(a);
+                    const approvedCount = Object.values(a.sectionStatuses).filter(s => s === "approved").length;
+                    const revisitCount = Object.values(a.sectionStatuses).filter(s => s === "revisit").length;
+                    const scoreColor = stats.answered === 0 ? C.grey5 : stats.passPct >= 80 ? C.pass : stats.passPct >= 60 ? "#F5A623" : C.fail;
+                    return (
+                      <div key={a.id} onClick={() => openAudit(a.id)}
+                           style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 14, padding: 22, cursor: "pointer", position: "relative", transition: "border-color 0.15s, box-shadow 0.15s" }}
+                           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = C.ink; (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 16px rgba(0,0,0,0.06)"; }}
+                           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = C.grey4; (e.currentTarget as HTMLElement).style.boxShadow = "none"; }}>
+                        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: C.ink, paddingRight: 28 }}>{a.pageName || a.url}</div>
+                        <div style={{ fontSize: 12, color: C.grey7, marginBottom: 16, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.url}</div>
+                        <div style={{ display: "flex", gap: 18, alignItems: "flex-end", marginBottom: 12 }}>
+                          <div>
+                            <div style={{ fontSize: 24, fontWeight: 800, color: scoreColor, lineHeight: 1, letterSpacing: "-0.02em" }}>{stats.answered === 0 ? "—" : `${stats.passPct}%`}</div>
+                            <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Pass rate</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 24, fontWeight: 800, color: C.ink, lineHeight: 1, letterSpacing: "-0.02em" }}>{stats.answered}<span style={{ fontSize: 14, color: C.grey5 }}>/{stats.total}</span></div>
+                            <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Answered</div>
+                          </div>
+                          {stats.fail > 0 && (
+                            <div>
+                              <div style={{ fontSize: 24, fontWeight: 800, color: C.fail, lineHeight: 1, letterSpacing: "-0.02em" }}>{stats.fail}</div>
+                              <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Fails</div>
+                            </div>
+                          )}
+                        </div>
+                        {(approvedCount > 0 || revisitCount > 0) && (
+                          <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                            {approvedCount > 0 && <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 99, background: "#ECF8F1", color: C.pass, fontWeight: 700 }}>✓ {approvedCount} approved</span>}
+                            {revisitCount > 0 && <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 99, background: "#FFF6E8", color: "#7A4F00", fontWeight: 700 }}>↻ {revisitCount} revisit</span>}
+                          </div>
+                        )}
+                        <div style={{ fontSize: 11, color: C.grey5, marginTop: 14, letterSpacing: "0.02em" }}>Updated {fmtAgo(a.updatedAt)}</div>
+                        <button onClick={e => { e.stopPropagation(); deleteAuditConfirm(a.id); }}
+                                title="Delete audit"
+                                style={{ position: "absolute", top: 12, right: 12, background: "transparent", border: "none", padding: 6, color: C.grey5, cursor: "pointer", borderRadius: 6, fontSize: 16, lineHeight: 1 }}>×</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
 
           {phase === "intro" && (
             <>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11, fontWeight: 700, color: C.pink, letterSpacing: "0.12em", textTransform: "uppercase" }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.pink }} />
-                Website delivery · QA &amp; Approvals
+                New audit
               </span>
               <h1 style={{ fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.05, margin: "14px 0 16px" }}>
                 UX QA <em style={{ fontStyle: "normal", color: C.pink }}>checklist.</em>
               </h1>
               <p style={{ fontSize: 17, lineHeight: 1.6, color: C.grey7, maxWidth: 580, marginBottom: 28 }}>
-                Paste the staged URL, pick which sections to run, and step through each item. Pass, fail, or leave a comment for the ones that need an Asana task before release.
+                Paste the staged URL and a name. You'll see all five sections and can step through them in any order — section by section, with progress saved as you go.
               </p>
 
               <div style={{ marginBottom: 16 }}>
                 <label htmlFor="qaw-url" style={labelStyle}>Staged URL</label>
-                <input id="qaw-url" placeholder="https://staging.gwi.com/your-page"
-                       value={url} onChange={e => setUrl(e.target.value)}
-                       style={inputStyle} autoFocus
+                <input id="qaw-url" placeholder="https://staging.gwi.com/your-page" value={draftUrl} onChange={e => setDraftUrl(e.target.value)} style={inputStyle} autoFocus
                        onFocus={e => { e.currentTarget.style.borderColor = C.pink; e.currentTarget.style.boxShadow = `0 0 0 4px ${C.pinkBg}`; }}
                        onBlur={e => { e.currentTarget.style.borderColor = C.grey4; e.currentTarget.style.boxShadow = "none"; }} />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
                 <div>
                   <label htmlFor="qaw-name" style={labelStyle}>Page / project name</label>
-                  <input id="qaw-name" placeholder="e.g. Solutions — Brands" value={pageName} onChange={e => setPageName(e.target.value)} style={inputStyle}
+                  <input id="qaw-name" placeholder="e.g. Solutions — Brands" value={draftPageName} onChange={e => setDraftPageName(e.target.value)} style={inputStyle}
                          onFocus={e => { e.currentTarget.style.borderColor = C.pink; }} onBlur={e => { e.currentTarget.style.borderColor = C.grey4; }} />
                 </div>
                 <div>
                   <label htmlFor="qaw-who" style={labelStyle}>Your name</label>
-                  <input id="qaw-who" placeholder="Reviewer" value={reviewer} onChange={e => setReviewer(e.target.value)} style={inputStyle}
+                  <input id="qaw-who" placeholder="Reviewer" value={draftReviewer} onChange={e => setDraftReviewer(e.target.value)} style={inputStyle}
                          onFocus={e => { e.currentTarget.style.borderColor = C.pink; }} onBlur={e => { e.currentTarget.style.borderColor = C.grey4; }} />
                 </div>
               </div>
               <div style={{ marginBottom: 28 }}>
                 <label htmlFor="qaw-asana" style={labelStyle}>Asana task link (optional)</label>
-                <input id="qaw-asana" placeholder="https://app.asana.com/…" value={asanaLink} onChange={e => setAsanaLink(e.target.value)} style={inputStyle}
+                <input id="qaw-asana" placeholder="https://app.asana.com/…" value={draftAsana} onChange={e => setDraftAsana(e.target.value)} style={inputStyle}
                        onFocus={e => { e.currentTarget.style.borderColor = C.pink; }} onBlur={e => { e.currentTarget.style.borderColor = C.grey4; }} />
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button type="button" disabled={!url.trim()} onClick={() => setPhase("sections")}
-                        style={{ ...btnPrimary, opacity: url.trim() ? 1 : 0.4, cursor: url.trim() ? "pointer" : "not-allowed" }}>
-                  Continue → Pick sections
-                </button>
-              </div>
-            </>
-          )}
-
-          {phase === "sections" && (
-            <>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11, fontWeight: 700, color: C.pink, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.pink }} />
-                Step 2 · Pick what to review
-              </span>
-              <h1 style={{ fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.05, margin: "14px 0 16px" }}>
-                Which <em style={{ fontStyle: "normal", color: C.pink }}>sections</em>?
-              </h1>
-              <p style={{ fontSize: 17, lineHeight: 1.6, color: C.grey7, maxWidth: 580, marginBottom: 24 }}>
-                Apply all five for a full new-page release. For smaller optimisations or component-level changes, tick only the sections that apply.
-              </p>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14, marginBottom: 32 }}>
-                {SECTIONS.map(s => {
-                  const on = enabledSections.includes(s.id);
-                  return (
-                    <div key={s.id} role="button" tabIndex={0}
-                         onClick={() => setEnabledSections(prev => prev.includes(s.id) ? prev.filter(x => x !== s.id) : [...prev, s.id])}
-                         onKeyDown={e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); setEnabledSections(prev => prev.includes(s.id) ? prev.filter(x => x !== s.id) : [...prev, s.id]); } }}
-                         style={{ background: C.white, border: `1px solid ${on ? C.pink : C.grey4}`, borderRadius: 14, padding: 20, cursor: "pointer", boxShadow: on ? `0 0 0 3px ${C.pinkBg}` : "none", transition: "all 0.15s" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                        <span style={{ display: "inline-flex", alignItems: "center", padding: "3px 10px", borderRadius: 99, background: on ? C.pink : C.grey2, color: on ? C.white : C.grey7, fontWeight: 700, fontSize: 11, letterSpacing: "0.04em" }}>{s.number}</span>
-                        <span style={{ fontSize: 12, color: C.grey7 }}>{s.items.length} items</span>
-                      </div>
-                      <h3 style={{ fontSize: 17, marginBottom: 6 }}>{s.title}</h3>
-                      <p style={{ fontSize: 13, color: C.grey7, lineHeight: 1.5, margin: 0 }}>{s.intro}</p>
-                    </div>
-                  );
-                })}
-              </div>
-
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <button type="button" onClick={() => setPhase("intro")} style={btnGhost}>← Back</button>
-                <button type="button" disabled={!enabledSections.length} onClick={startQuestions}
-                        style={{ ...btnPrimary, opacity: enabledSections.length ? 1 : 0.4, cursor: enabledSections.length ? "pointer" : "not-allowed" }}>
-                  Start QA · {SECTIONS.filter(s => enabledSections.includes(s.id)).reduce((n, s) => n + s.items.length, 0)} items →
+                <button type="button" onClick={() => setPhase(audits.length ? "list" : "intro")} style={btnGhost}>← Back</button>
+                <button type="button" disabled={!draftUrl.trim()} onClick={createAudit}
+                        style={{ ...btnPrimary, opacity: draftUrl.trim() ? 1 : 0.4, cursor: draftUrl.trim() ? "pointer" : "not-allowed" }}>
+                  Create audit →
                 </button>
               </div>
             </>
           )}
 
-          {phase === "questions" && q && (
+          {phase === "audit" && activeAudit && (() => {
+            const a = activeAudit;
+            const stats = statsForAudit(a);
+            return (
+              <>
+                <button onClick={backToList} style={{ background: "none", border: "none", cursor: "pointer", color: C.grey7, fontSize: 13, fontWeight: 600, padding: 0, marginBottom: 14 }}>← All audits</button>
+
+                <div style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 16, padding: 28, marginBottom: 20 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20, flexWrap: "wrap", marginBottom: 16 }}>
+                    <div style={{ flex: 1, minWidth: 280 }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11, fontWeight: 700, color: C.pink, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.pink }} />
+                        Audit
+                      </span>
+                      <h1 style={{ fontSize: "clamp(24px, 3.5vw, 32px)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.1, marginBottom: 6 }}>{a.pageName || a.url}</h1>
+                      <a href={a.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: C.pink, textDecoration: "none" }}>{a.url}</a>
+                      <div style={{ fontSize: 12, color: C.grey7, marginTop: 8 }}>
+                        {a.reviewer && <>Reviewed by {a.reviewer} · </>}Updated {fmtAgo(a.updatedAt)}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button onClick={() => downloadReport(a, "html")} style={{ ...btnGhost, ...btnSmall }}>↓ HTML</button>
+                      <button onClick={() => downloadReport(a, "md")} style={{ ...btnGhost, ...btnSmall }}>↓ Markdown</button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+                    {[
+                      { v: stats.answered === 0 ? "—" : `${stats.passPct}%`, l: "Pass rate", color: C.ink },
+                      { v: stats.pass, l: "Pass", color: C.pass },
+                      { v: stats.fail, l: "Fail", color: C.fail },
+                      { v: `${stats.answered}/${stats.total}`, l: "Answered", color: C.ink },
+                    ].map((k, i) => (
+                      <div key={i} style={{ background: C.grey2, borderRadius: 10, padding: 14 }}>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: k.color, letterSpacing: "-0.02em" }}>{k.v}</div>
+                        <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>{k.l}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <h2 style={{ fontSize: 16, fontWeight: 700, color: C.ink, margin: "8px 0 14px", letterSpacing: "-0.01em" }}>Sections</h2>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 14 }}>
+                  {SECTIONS.filter(s => a.enabledSectionIds.includes(s.id)).map(s => {
+                    const ss = statsForSection(a, s.id);
+                    const ds = sectionDerivedStatus(a, s.id);
+                    const pill = STATUS_PILL[ds];
+                    const explicit = a.sectionStatuses[s.id];
+                    return (
+                      <div key={s.id} style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 14, padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", padding: "3px 10px", borderRadius: 99, background: C.grey2, color: C.grey7, fontWeight: 700, fontSize: 11, letterSpacing: "0.04em" }}>{s.number}</span>
+                            <span style={{ display: "inline-flex", alignItems: "center", padding: "3px 10px", borderRadius: 99, background: pill.bg, color: pill.fg, border: `1px solid ${pill.border}`, fontWeight: 700, fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" }}>{pill.label}</span>
+                          </div>
+                          <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 6 }}>{s.title}</h3>
+                          <p style={{ fontSize: 12, color: C.grey7, lineHeight: 1.5, margin: 0 }}>{s.intro}</p>
+                        </div>
+
+                        <div style={{ display: "flex", gap: 16, alignItems: "flex-end" }}>
+                          <div>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: C.ink, lineHeight: 1 }}>{ss.answered}<span style={{ color: C.grey5, fontSize: 12 }}>/{ss.total}</span></div>
+                            <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 3 }}>Answered</div>
+                          </div>
+                          {ss.pass > 0 && (
+                            <div>
+                              <div style={{ fontSize: 18, fontWeight: 800, color: C.pass, lineHeight: 1 }}>{ss.pass}</div>
+                              <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 3 }}>Pass</div>
+                            </div>
+                          )}
+                          {ss.fail > 0 && (
+                            <div>
+                              <div style={{ fontSize: 18, fontWeight: 800, color: C.fail, lineHeight: 1 }}>{ss.fail}</div>
+                              <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 3 }}>Fail</div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: "auto" }}>
+                          <button onClick={() => openSection(s.id)} style={{ ...btnPrimary, ...btnSmall, flex: 1, justifyContent: "center" }}>
+                            {ss.answered === 0 ? "Start →" : ss.answered >= ss.total ? "Review →" : "Continue →"}
+                          </button>
+                          <button onClick={() => setSectionStatus(s.id, "approved")} title="Mark approved"
+                                  style={{ padding: "8px 10px", borderRadius: 99, border: `1px solid ${explicit === "approved" ? C.pass : C.grey4}`, background: explicit === "approved" ? "#ECF8F1" : "transparent", color: explicit === "approved" ? C.pass : C.grey7, fontFamily: FF, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✓</button>
+                          <button onClick={() => setSectionStatus(s.id, "revisit")} title="Needs revisit"
+                                  style={{ padding: "8px 10px", borderRadius: 99, border: `1px solid ${explicit === "revisit" ? "#F5A623" : C.grey4}`, background: explicit === "revisit" ? "#FFF6E8" : "transparent", color: explicit === "revisit" ? "#7A4F00" : C.grey7, fontFamily: FF, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>↻</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })()}
+
+          {phase === "questions" && activeAudit && activeSection && q && (
             <>
+              <button onClick={backToAudit} style={{ background: "none", border: "none", cursor: "pointer", color: C.grey7, fontSize: 13, fontWeight: 600, padding: 0, marginBottom: 14 }}>← Back to sections</button>
+
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ display: "inline-flex", alignItems: "center", padding: "6px 12px", background: C.pinkBg, color: C.pink, borderRadius: 99, fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                  {q.sectionNumber}. {q.sectionTitle}
+                  {activeSection.number}. {activeSection.title}
                 </span>
                 <span style={{ fontSize: 12, color: C.grey5, fontWeight: 600 }}>{cur + 1} / {total}</span>
               </div>
@@ -696,7 +977,7 @@ export function QAWalkthroughPage() {
               <div style={{ fontSize: "clamp(22px, 3.2vw, 28px)", fontWeight: 700, lineHeight: 1.3, letterSpacing: "-0.015em", margin: "4px 0 16px" }}>{q.text}</div>
 
               {(() => {
-                if (!url.trim()) return null;
+                if (!activeAudit.url.trim()) return null;
                 const w = extractViewportWidth(q.text);
                 const tool = findToolLink(q.text);
                 const scanner = findScanner(q.id);
@@ -729,12 +1010,12 @@ export function QAWalkthroughPage() {
                     )}
                     {w && (
                       <div>
-                        <button type="button" onClick={() => openSized(url, w)}
+                        <button type="button" onClick={() => openSized(activeAudit.url, w)}
                                 style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 10, border: `1px solid ${C.pink}`, background: C.pinkBg, color: C.pink, fontFamily: FF, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M21 14v7H3V3h7"/>
                           </svg>
-                          Open {url} at {w}px →
+                          Open {activeAudit.url} at {w}px →
                         </button>
                         <div style={{ fontSize: 11, color: C.grey5, marginTop: 6, letterSpacing: "0.04em" }}>
                           Opens in a sized popup window ({w} × {heightFor(w)}px). Resize manually if your browser overrides.
@@ -743,7 +1024,7 @@ export function QAWalkthroughPage() {
                     )}
                     {tool && (
                       <div>
-                        <a href={tool.href(url)} target="_blank" rel="noreferrer"
+                        <a href={tool.href(activeAudit.url)} target="_blank" rel="noreferrer"
                            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 10, border: `1px solid ${C.pink}`, background: C.pinkBg, color: C.pink, fontFamily: FF, fontSize: 13, fontWeight: 700, textDecoration: "none", cursor: "pointer" }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M21 14v7H3V3h7"/>
@@ -768,17 +1049,8 @@ export function QAWalkthroughPage() {
                   return (
                     <button key={opt.key} type="button"
                             onClick={() => setAnswer(opt.key)}
-                            style={{
-                              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                              background: sel ? (opt.key === "pass" ? "#ECF8F1" : "#FBECEE") : C.white,
-                              border: `1px solid ${sel ? opt.color : C.grey4}`, borderRadius: 12, padding: "22px 16px",
-                              cursor: "pointer", fontFamily: FF, transition: "all 0.15s",
-                            }}>
-                      <div style={{
-                        width: 36, height: 36, borderRadius: "50%", display: "grid", placeItems: "center",
-                        fontWeight: 800, fontSize: 16, marginBottom: 8,
-                        background: sel ? opt.color : C.grey2, color: sel ? C.white : C.grey7,
-                      }}>{opt.icon}</div>
+                            style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: sel ? (opt.key === "pass" ? "#ECF8F1" : "#FBECEE") : C.white, border: `1px solid ${sel ? opt.color : C.grey4}`, borderRadius: 12, padding: "22px 16px", cursor: "pointer", fontFamily: FF, transition: "all 0.15s" }}>
+                      <div style={{ width: 36, height: 36, borderRadius: "50%", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 16, marginBottom: 8, background: sel ? opt.color : C.grey2, color: sel ? C.white : C.grey7 }}>{opt.icon}</div>
                       <div style={{ fontSize: 14, fontWeight: 700 }}>{opt.label}</div>
                       <div style={{ fontSize: 11, color: C.grey5, marginTop: 4, letterSpacing: "0.05em", textTransform: "uppercase" }}>{opt.short}</div>
                     </button>
@@ -788,11 +1060,8 @@ export function QAWalkthroughPage() {
 
               {notesVisible && (
                 <div style={{ marginTop: 16 }}>
-                  <label style={labelStyle}>
-                    {cur_status === "fail" ? "Why is it failing? (optional)" : "Any notes? (optional)"}
-                  </label>
-                  <textarea ref={taRef} placeholder={cur_status === "fail" ? "Describe what's wrong, where, and what the fix looks like." : "Anything worth flagging for the team."}
-                            value={cur_comment} onChange={e => setCommentText(e.target.value)}
+                  <label style={labelStyle}>{cur_status === "fail" ? "Why is it failing? (optional)" : "Any notes? (optional)"}</label>
+                  <textarea ref={taRef} placeholder={cur_status === "fail" ? "Describe what's wrong, where, and what the fix looks like." : "Anything worth flagging for the team."} value={cur_comment} onChange={e => setCommentText(e.target.value)}
                             style={{ width: "100%", minHeight: 96, resize: "vertical", border: `1px solid ${C.grey4}`, borderRadius: 10, padding: "12px 14px", fontFamily: FF, fontSize: 14, color: C.ink, background: C.white, boxSizing: "border-box", outline: "none", lineHeight: 1.5 }}
                             onFocus={e => { e.currentTarget.style.borderColor = C.pink; e.currentTarget.style.boxShadow = `0 0 0 3px ${C.pinkBg}`; }}
                             onBlur={e => { e.currentTarget.style.borderColor = C.grey4; e.currentTarget.style.boxShadow = "none"; }} />
@@ -805,7 +1074,7 @@ export function QAWalkthroughPage() {
                   <button type="button" onClick={skipQ} style={{ ...btnGhost, padding: "9px 16px", fontSize: 12 }}>Skip (N/A)</button>
                 </div>
                 <button type="button" onClick={nextQ} disabled={!cur_status} style={{ ...btnPrimary, opacity: cur_status ? 1 : 0.4, cursor: cur_status ? "pointer" : "not-allowed" }}>
-                  {cur === total - 1 ? "Finish ✓" : "Next →"}
+                  {cur === total - 1 ? "Finish section ✓" : "Next →"}
                 </button>
               </div>
 
@@ -815,69 +1084,6 @@ export function QAWalkthroughPage() {
             </>
           )}
 
-          {phase === "done" && (
-            <>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11, fontWeight: 700, color: C.pink, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.pink }} />
-                QA complete
-              </span>
-              <h1 style={{ fontSize: "clamp(32px, 5vw, 48px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.05, margin: "14px 0 10px" }}>{pageName || "Untitled page"}</h1>
-              <p style={{ fontSize: 15, color: C.grey7, marginBottom: 16 }}>
-                <a href={url} target="_blank" rel="noreferrer" style={{ color: C.pink, textDecoration: "none" }}>{url}</a>
-                {reviewer && ` · Reviewed by ${reviewer}`} · Finished {finishedAt}
-              </p>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, margin: "24px 0 32px" }}>
-                {[
-                  { v: `${passPct}%`, l: "Pass rate", color: C.ink },
-                  { v: passCount, l: "Pass", color: C.pass },
-                  { v: failCount, l: "Fail", color: C.fail },
-                  { v: naCount, l: "N/A · skipped", color: C.na },
-                ].map((k, i) => (
-                  <div key={i} style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 12, padding: 16 }}>
-                    <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em", color: k.color }}>{k.v}</div>
-                    <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: C.grey7, marginTop: 4 }}>{k.l}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 16, padding: 28, marginBottom: 20 }}>
-                <h2 style={{ fontSize: 20, marginBottom: 8 }}>Download report</h2>
-                <p style={{ color: C.grey7, fontSize: 14, marginBottom: 16 }}>Self-contained file with every answer and comment.</p>
-                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                  <button type="button" onClick={() => download("html")} style={btnPrimary}>↓ HTML report</button>
-                  <button type="button" onClick={() => download("md")} style={btnGhost}>↓ Markdown</button>
-                  <button type="button" onClick={goHome} style={btnGhost}>Start another</button>
-                </div>
-              </div>
-
-              {(() => {
-                const issues = ALL_ITEMS.filter(it => enabledSections.includes(it.sectionId) && answers[it.id]?.status === "fail");
-                if (!issues.length) return null;
-                return (
-                  <div style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 16, padding: 28, marginBottom: 20 }}>
-                    <h2 style={{ fontSize: 20, marginBottom: 12 }}>Issues to log in Asana ({issues.length})</h2>
-                    <ul style={{ listStyle: "none", padding: 0 }}>
-                      {issues.map(it => {
-                        const a = answers[it.id];
-                        return (
-                          <li key={it.id} style={{ padding: "12px 0", borderBottom: `1px solid ${C.grey3}`, fontSize: 14 }}>
-                            <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, marginBottom: 4, color: C.grey7 }}>
-                              <span style={{ color: C.fail }}>FAIL</span> · {it.sectionTitle} → {it.group}
-                            </div>
-                            <div>{it.text}</div>
-                            {a?.comment && (
-                              <div style={{ marginTop: 6, padding: "8px 10px", background: C.grey2, borderLeft: `3px solid ${C.pink}`, borderRadius: 4, fontSize: 13 }}>{a.comment}</div>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                );
-              })()}
-            </>
-          )}
         </div>
       </div>
     </div>
