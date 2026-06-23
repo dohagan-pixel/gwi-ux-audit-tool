@@ -253,6 +253,18 @@ type ScanResult = {
     brandedOther: { name: string; count: number }[];
     hasFaktum: boolean;
   };
+  images: {
+    total: number;
+    svg: number;
+    png: number;
+    jpg: number;
+    webp: number;
+    gif: number;
+    avif: number;
+    unknown: number;
+    byExtension: Record<string, number>;
+    samples: Record<string, string[]>;
+  };
 };
 
 type ScannerCheck = { itemId: string; label: string; run: (d: ScanResult) => { pass: boolean; detail: string } };
@@ -345,6 +357,29 @@ const SCANNERS: ScannerCheck[] = [
       if (!weights.length) return { pass: true, detail: "No explicit body font-weight — defaults to 400 (Regular), which is correct." };
       const has400 = weights.includes(400);
       return { pass: has400, detail: `Body declared weights: ${[...new Set(weights)].join(", ")}. ${has400 ? "Includes 400 (Regular)." : "Missing 400 — body may be using a heavier or lighter weight."}` };
+    },
+  },
+  {
+    itemId: "design.imagery-format.1",
+    label: "Scan image formats",
+    run: d => {
+      const i = d.images;
+      if (!i || i.total === 0) return { pass: false, detail: "Scanner didn't find any images on the page." };
+      const raster = i.png + i.jpg + i.gif;
+      const vector = i.svg;
+      if (raster === 0) return { pass: true, detail: `All ${i.total} images are SVG${i.webp ? ` or WebP (${i.webp})` : ""} — no raster icons.` };
+      if (vector >= raster) return { pass: true, detail: `${vector} SVG and ${raster} raster (PNG/JPG/GIF). Vector usage dominates — likely good, but spot-check raster icons.` };
+      return { pass: false, detail: `${raster} raster image${raster === 1 ? "" : "s"} (${i.png} PNG, ${i.jpg} JPG${i.gif ? `, ${i.gif} GIF` : ""}) vs ${vector} SVG. Many icons should likely be SVG.` };
+    },
+  },
+  {
+    itemId: "design.imagery-format.2",
+    label: "Scan photo formats",
+    run: d => {
+      const i = d.images;
+      if (!i || i.total === 0) return { pass: false, detail: "Scanner didn't find any images on the page." };
+      if (i.jpg === 0 && i.png === 0) return { pass: true, detail: `No JPG or PNG photographs found. WebP × ${i.webp}, SVG × ${i.svg}.` };
+      return { pass: false, detail: `${i.jpg} JPG and ${i.png} PNG image${i.jpg + i.png === 1 ? "" : "s"} found. WebP is preferred for photos.${i.webp ? ` WebP is in use too (${i.webp}) — review the rasters.` : ""}` };
     },
   },
 ];
@@ -596,6 +631,7 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
   const [sharing, setSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
+  const [autoScanCount, setAutoScanCount] = useState<number | null>(null);
 
   const activeAudit = useMemo(() => audits.find(a => a.id === activeAuditId) || null, [audits, activeAuditId]);
   const activeSection = activeSectionId ? SECTIONS.find(s => s.id === activeSectionId) || null : null;
@@ -626,9 +662,10 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
   function createAudit() {
     if (!draftUrl.trim()) return;
     const id = newAuditId();
+    const url = draftUrl.trim();
     const audit: Audit = {
       id,
-      url: draftUrl.trim(),
+      url,
       pageName: draftPageName.trim(),
       reviewer: draftReviewer.trim(),
       asanaLink: draftAsana.trim(),
@@ -641,6 +678,36 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
     persist(prev => [audit, ...prev]);
     setActiveAuditId(id);
     setPhase("audit");
+    void autoScanAndApply(id, url);
+  }
+
+  async function autoScanAndApply(auditId: string, url: string) {
+    if (!url) return;
+    setScanError(null);
+    setScanLoading(true);
+    setAutoScanCount(null);
+    try {
+      const r = await fetch(`/api/scan-typography?url=${encodeURIComponent(url)}`);
+      const data = await r.json();
+      if (!r.ok) throw new Error(data?.error || `HTTP ${r.status}`);
+      setScanData(data as ScanResult);
+      const newAnswers: Answers = {};
+      const newScanResults: Record<string, { pass: boolean; detail: string }> = {};
+      for (const scanner of SCANNERS) {
+        try {
+          const result = scanner.run(data as ScanResult);
+          newScanResults[scanner.itemId] = result;
+          newAnswers[scanner.itemId] = { status: result.pass ? "pass" : "fail", comment: `Auto-scanned — ${result.detail}` };
+        } catch { /* skip individual scanner failures */ }
+      }
+      setScanResults(prev => ({ ...prev, ...newScanResults }));
+      persist(prev => prev.map(a => a.id === auditId ? { ...a, answers: { ...a.answers, ...newAnswers }, updatedAt: Date.now() } : a));
+      setAutoScanCount(Object.keys(newAnswers).length);
+    } catch (e: any) {
+      setScanError(e?.message || "Auto-scan failed.");
+    } finally {
+      setScanLoading(false);
+    }
   }
   function openAudit(id: string) {
     setActiveAuditId(id);
@@ -938,6 +1005,10 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button onClick={() => autoScanAndApply(a.id, a.url)} disabled={scanLoading}
+                              style={{ ...btnGhost, ...btnSmall, opacity: scanLoading ? 0.6 : 1, cursor: scanLoading ? "wait" : "pointer" }}>
+                        {scanLoading ? "Scanning…" : "↻ Re-scan page"}
+                      </button>
                       <button onClick={() => shareAudit(a)} disabled={sharing}
                               style={{ ...btnPrimary, ...btnSmall, opacity: sharing ? 0.6 : 1, cursor: sharing ? "wait" : "pointer" }}>
                         {sharing ? "Publishing…" : shareCopied ? "✓ Link copied" : "Share report →"}
@@ -945,6 +1016,21 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                       {shareError && <span style={{ fontSize: 12, color: C.fail, alignSelf: "center" }}>{shareError}</span>}
                     </div>
                   </div>
+
+                  {(scanLoading || autoScanCount !== null || scanError) && (
+                    <div style={{
+                      marginBottom: 16, padding: "10px 14px", borderRadius: 10, fontSize: 13,
+                      background: scanError ? "#FBECEE" : scanLoading ? C.grey2 : "#ECF8F1",
+                      color: scanError ? C.fail : scanLoading ? C.grey7 : C.pass,
+                      border: `1px solid ${scanError ? C.fail : scanLoading ? C.grey4 : C.pass}`,
+                    }}>
+                      {scanLoading && <>Scanning page for auto-detectable answers…</>}
+                      {!scanLoading && scanError && <>Auto-scan failed — {scanError}</>}
+                      {!scanLoading && !scanError && autoScanCount !== null && (
+                        <><strong>{autoScanCount} answer{autoScanCount === 1 ? "" : "s"} auto-detected</strong> from the page. Review each scanned question to override if needed.</>
+                      )}
+                    </div>
+                  )}
 
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
                     {[

@@ -287,6 +287,53 @@ function countH1Tags(html: string): number {
   return (html.match(/<h1[\s>]/gi) || []).length;
 }
 
+function extractImages(html: string) {
+  const urls: string[] = [];
+  for (const m of html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)) urls.push(m[1]);
+  for (const m of html.matchAll(/<source[^>]+srcset=["']([^"']+)["']/gi)) {
+    for (const candidate of m[1].split(',')) {
+      const src = candidate.trim().split(/\s+/)[0];
+      if (src) urls.push(src);
+    }
+  }
+  // Also catch background-image URLs in inline styles (light scan; ignores stylesheets)
+  for (const m of html.matchAll(/background(?:-image)?\s*:[^;"']*url\(["']?([^"')]+)/gi)) urls.push(m[1]);
+  const extOf = (u: string) => {
+    const clean = u.split('?')[0].split('#')[0];
+    const ext = clean.split('.').pop()?.toLowerCase() || '';
+    if (['svg','png','jpg','jpeg','webp','gif','avif'].includes(ext)) return ext === 'jpeg' ? 'jpg' : ext;
+    if (clean.startsWith('data:image/svg')) return 'svg';
+    if (clean.startsWith('data:image/png')) return 'png';
+    if (clean.startsWith('data:image/jpeg') || clean.startsWith('data:image/jpg')) return 'jpg';
+    if (clean.startsWith('data:image/webp')) return 'webp';
+    if (clean.startsWith('data:image/gif')) return 'gif';
+    return 'unknown';
+  };
+  const byExt: Record<string, number> = {};
+  for (const u of urls) {
+    const ext = extOf(u);
+    byExt[ext] = (byExt[ext] || 0) + 1;
+  }
+  const samples: Record<string, string[]> = {};
+  for (const u of urls.slice(0, 60)) {
+    const ext = extOf(u);
+    if (!samples[ext]) samples[ext] = [];
+    if (samples[ext].length < 3) samples[ext].push(u);
+  }
+  return {
+    total: urls.length,
+    svg: byExt.svg || 0,
+    png: byExt.png || 0,
+    jpg: byExt.jpg || 0,
+    webp: byExt.webp || 0,
+    gif: byExt.gif || 0,
+    avif: byExt.avif || 0,
+    unknown: byExt.unknown || 0,
+    byExtension: byExt,
+    samples,
+  };
+}
+
 async function scanTypography(url: string) {
   const { html, css: rawCss } = await fetchAllCss(url);
   const desktopCss = stripMediaQueries(stripFontFaceBlocks(rawCss));
@@ -299,8 +346,8 @@ async function scanTypography(url: string) {
   const h1Count = countH1Tags(html);
   const fontFamilies = findFontFamilies(desktopCss, cssVars);
   const fontWeights = findFontWeights(desktopCss, cssVars);
+  const images = extractImages(html);
 
-  // Pick the largest h1 (likely hero) and smallest body size (worst case for the min-16 check)
   const heroH1 = h1Sizes.length ? Math.max(...h1Sizes) : null;
   const dominantH2 = h2Sizes.length ? Math.max(...h2Sizes) : null;
   const bodyPx = bodySizes.length ? Math.min(...bodySizes) : (rootPx ? rootPx : null);
@@ -315,6 +362,7 @@ async function scanTypography(url: string) {
       brandedOther: fontFamilies.families.filter(f => !isSystemFamily(f.name) && !/faktum/i.test(f.name)),
       hasFaktum: fontFamilies.families.some(f => /faktum/i.test(f.name)),
     },
+    images,
   };
 }
 
