@@ -1159,7 +1159,7 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                           <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-start", marginBottom: 8 }}>
                             <span style={{ display: "inline-flex", alignItems: "center", padding: "3px 10px", borderRadius: 99, background: pill.bg, color: pill.fg, border: `1px solid ${pill.border}`, fontWeight: 700, fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" }}>{pill.label}</span>
                           </div>
-                          <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 6 }}>{s.title}</h3>
+                          <h3 style={{ fontSize: 27, fontWeight: 700, letterSpacing: "-0.02em", marginBottom: 6 }}>{s.title}</h3>
                           <p style={{ fontSize: 12, color: C.grey7, lineHeight: 1.5, margin: 0 }}>{s.intro}</p>
                         </div>
 
