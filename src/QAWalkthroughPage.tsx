@@ -891,7 +891,7 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
 
   const inputStyle: React.CSSProperties = { width: "100%", padding: "14px 16px", border: `1px solid ${C.grey4}`, borderRadius: 10, background: C.white, fontFamily: FF, fontSize: 15, color: C.ink, boxSizing: "border-box", outline: "none" };
   const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: C.inkSoft, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 6, display: "block" };
-  const btnPrimary: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 10, padding: "13px 26px", borderRadius: 99, border: "none", background: C.ink, color: C.white, fontFamily: FF, fontSize: 14, fontWeight: 700, cursor: "pointer" };
+  const btnPrimary: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 10, padding: "13px 26px", borderRadius: 99, border: "none", background: C.ink, color: C.white, fontFamily: FF, fontSize: 14, fontWeight: 600, cursor: "pointer" };
   const btnGhost: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 10, padding: "11px 20px", borderRadius: 99, border: `1px solid ${C.grey4}`, background: "transparent", color: C.ink, fontFamily: FF, fontSize: 13, fontWeight: 600, cursor: "pointer" };
   const btnSmall: React.CSSProperties = { padding: "8px 14px", fontSize: 12 };
 
@@ -970,11 +970,11 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                         <div style={{ display: "flex", gap: 18, alignItems: "flex-end", marginBottom: 12 }}>
                           <div>
                             <div style={{ fontSize: 24, fontWeight: 800, color: C.ink, lineHeight: 1, letterSpacing: "-0.02em" }}>{stats.answered}<span style={{ fontSize: 14, color: C.grey5 }}>/{stats.total}</span></div>
-                            <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Answered</div>
+                            <div style={{ fontSize: 10, fontWeight: 600, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Answered</div>
                           </div>
                           <div>
                             <div style={{ fontSize: 24, fontWeight: 800, color: stats.fail > 0 ? C.fail : C.grey5, lineHeight: 1, letterSpacing: "-0.02em" }}>{stats.fail}</div>
-                            <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Flags</div>
+                            <div style={{ fontSize: 10, fontWeight: 600, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Flags</div>
                           </div>
                         </div>
                         {(approvedCount > 0 || revisitCount > 0) && (
@@ -1142,7 +1142,7 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                     ].map((k, i) => (
                       <div key={i} style={{ background: C.grey2, borderRadius: 10, padding: 14 }}>
                         <div style={{ fontSize: 22, fontWeight: 800, color: k.color, letterSpacing: "-0.02em" }}>{k.v}</div>
-                        <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>{k.l}</div>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>{k.l}</div>
                       </div>
                     ))}
                   </div>
@@ -1171,7 +1171,7 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                       <div key={s.id} style={{ background: C.white, border: `1px solid ${C.grey4}`, borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
                         <div style={{ display: "flex", justifyContent: "flex-start", position: "relative" }} data-section-menu>
                           <button type="button" onClick={() => setOpenSectionMenu(menuOpen ? null : s.id)}
-                                  style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "5px 12px", borderRadius: 99, background: pill.bg, color: pill.fg, fontWeight: 700, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer", fontFamily: FF, border: "none" }}>
+                                  style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "5px 12px", borderRadius: 99, background: pill.bg, color: pill.fg, fontWeight: 600, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer", fontFamily: FF, border: "none" }}>
                             <span style={{ width: 7, height: 7, borderRadius: "50%", background: pill.fg }} />
                             {pill.label}
                             <span style={{ fontSize: 9, opacity: 0.6 }}>▾</span>
@@ -1204,18 +1204,18 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                         <div style={{ display: "flex", gap: 20, alignItems: "flex-end" }}>
                           <div>
                             <div style={{ fontSize: 20, fontWeight: 800, color: C.ink, lineHeight: 1, letterSpacing: "-0.02em" }}>{ss.answered}<span style={{ color: C.grey5, fontSize: 13 }}>/{ss.total}</span></div>
-                            <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Answered</div>
+                            <div style={{ fontSize: 10, fontWeight: 600, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Answered</div>
                           </div>
                           {(ss.pass + ss.na) > 0 && (
                             <div>
                               <div style={{ fontSize: 20, fontWeight: 800, color: C.pass, lineHeight: 1, letterSpacing: "-0.02em" }}>{ss.pass + ss.na}</div>
-                              <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Pass</div>
+                              <div style={{ fontSize: 10, fontWeight: 600, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Pass</div>
                             </div>
                           )}
                           {ss.fail > 0 && (
                             <div>
                               <div style={{ fontSize: 20, fontWeight: 800, color: C.fail, lineHeight: 1, letterSpacing: "-0.02em" }}>{ss.fail}</div>
-                              <div style={{ fontSize: 10, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Flag</div>
+                              <div style={{ fontSize: 10, fontWeight: 600, color: C.grey7, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 4 }}>Flag</div>
                             </div>
                           )}
                         </div>
