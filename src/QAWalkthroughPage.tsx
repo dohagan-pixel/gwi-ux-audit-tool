@@ -363,12 +363,14 @@ function buildHtml(meta: ExportMeta, answers: Answers): string {
   enabledSecs.forEach(s => s.items.forEach(it => {
     total++;
     const a = answers[it.id];
-    if (!a || a.status === "na") na++;
+    if (!a) return; // untouched — don't count
+    if (a.status === "na") na++;
     else if (a.status === "pass") pass++;
     else if (a.status === "fail") fail++;
   }));
-  // N/A counts as a pass for scoring — reviewer skipped because it doesn't apply / is fine.
-  const passPct = total ? Math.round(((pass + na) / total) * 100) : 0;
+  // N/A counts as a pass; only score items the reviewer touched (untouched items don't drag it down).
+  const answered = pass + fail + na;
+  const passPct = answered ? Math.round(((pass + na) / answered) * 100) : 0;
 
   const issuesBlock = (() => {
     const groups: Record<string, string[]> = {};
@@ -416,12 +418,14 @@ function buildMarkdown(meta: ExportMeta, answers: Answers): string {
   enabledSecs.forEach(s => s.items.forEach(it => {
     total++;
     const a = answers[it.id];
-    if (!a || a.status === "na") na++;
+    if (!a) return; // untouched — don't count
+    if (a.status === "na") na++;
     else if (a.status === "pass") pass++;
     else if (a.status === "fail") fail++;
   }));
-  // N/A counts as a pass for scoring — reviewer skipped because it doesn't apply / is fine.
-  const passPct = total ? Math.round(((pass + na) / total) * 100) : 0;
+  // N/A counts as a pass; only score items the reviewer touched (untouched items don't drag it down).
+  const answered = pass + fail + na;
+  const passPct = answered ? Math.round(((pass + na) / answered) * 100) : 0;
   const lines: string[] = [];
   lines.push(`# UX QA report — ${meta.pageName || meta.url}`, "");
   lines.push(`- **URL:** ${meta.url}`);
@@ -492,13 +496,15 @@ function statsForAudit(a: Audit) {
   let pass = 0, fail = 0, na = 0;
   for (const it of items) {
     const ans = a.answers[it.id];
-    if (!ans || ans.status === "na") na++;
+    if (!ans) continue; // untouched — don't count
+    if (ans.status === "na") na++;
     else if (ans.status === "pass") pass++;
     else if (ans.status === "fail") fail++;
   }
   const total = items.length;
-  const answered = pass + fail + na; // items touched (incl. skipped)
-  const passPct = total ? Math.round(((pass + na) / total) * 100) : 0; // N/A counts as pass
+  const answered = pass + fail + na; // items touched
+  // N/A counts as pass; only score items the reviewer touched.
+  const passPct = answered ? Math.round(((pass + na) / answered) * 100) : 0;
   return { pass, fail, na, total, answered, passPct };
 }
 
@@ -508,13 +514,15 @@ function statsForSection(a: Audit, sectionId: string) {
   let pass = 0, fail = 0, na = 0;
   for (const it of sec.items) {
     const ans = a.answers[it.id];
-    if (!ans || ans.status === "na") na++;
+    if (!ans) continue; // untouched — don't count
+    if (ans.status === "na") na++;
     else if (ans.status === "pass") pass++;
     else if (ans.status === "fail") fail++;
   }
   const total = sec.items.length;
-  const answered = pass + fail + na; // items touched (incl. skipped)
-  const passPct = total ? Math.round(((pass + na) / total) * 100) : 0; // N/A counts as pass
+  const answered = pass + fail + na; // items touched
+  // N/A counts as pass; only score items the reviewer touched.
+  const passPct = answered ? Math.round(((pass + na) / answered) * 100) : 0;
   return { pass, fail, na, total, answered, passPct };
 }
 
