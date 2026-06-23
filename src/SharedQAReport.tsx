@@ -243,14 +243,22 @@ export function SharedQAReport({ shareId }: { shareId: string }) {
                             <td style={{ width: 90, padding: "12px 16px", fontWeight: 700, fontSize: 11, letterSpacing: "0.06em", color, borderBottom: `1px solid ${C.grey3}`, verticalAlign: "top", textTransform: "uppercase" }}>{label}</td>
                             <td style={{ padding: "12px 16px", borderBottom: `1px solid ${C.grey3}` }}>
                               {(() => {
-                                const w = extractViewportWidth(it.text);
-                                if (w && audit.url) {
+                                const m = it.text.match(/(\d{3,4})\s*px/i);
+                                const w = m ? parseInt(m[1], 10) : null;
+                                if (m && m.index !== undefined && w && w >= 200 && w <= 4000 && audit.url) {
+                                  const before = it.text.slice(0, m.index);
+                                  const link = it.text.slice(m.index, m.index + m[0].length);
+                                  const after = it.text.slice(m.index + m[0].length);
                                   return (
-                                    <button type="button" onClick={() => openSized(audit.url, w)}
-                                            title={`Open ${audit.url} at ${w}px`}
-                                            style={{ background: "none", border: "none", padding: 0, font: "inherit", color: "inherit", cursor: "pointer", textAlign: "left", textDecoration: "underline", textDecorationColor: C.pink, textDecorationThickness: 1.5, textUnderlineOffset: 3 }}>
-                                      {it.text}
-                                    </button>
+                                    <>
+                                      {before}
+                                      <button type="button" onClick={() => openSized(audit.url, w)}
+                                              title={`Open ${audit.url} at ${w}px`}
+                                              style={{ background: "none", border: "none", padding: 0, font: "inherit", color: "inherit", cursor: "pointer", textDecoration: "underline", textDecorationColor: C.ink, textDecorationThickness: 1.5, textUnderlineOffset: 3, fontWeight: 600 }}>
+                                        {link}
+                                      </button>
+                                      {after}
+                                    </>
                                   );
                                 }
                                 return it.text;
