@@ -180,7 +180,7 @@ export function SharedQAReport({ shareId }: { shareId: string }) {
                       <li key={i} style={{ marginBottom: 8, fontSize: 14, lineHeight: 1.5 }}>
                         {f.text}
                         {f.comment && (
-                          <div style={{ marginTop: 4, padding: "6px 10px", background: C.grey2, borderLeft: `3px solid ${C.pink}`, borderRadius: 4, fontSize: 13, color: C.inkSoft }}>{f.comment}</div>
+                          <div style={{ marginTop: 4, padding: "6px 10px", background: "rgba(218, 52, 65, 0.12)", borderLeft: `3px solid ${C.fail}`, borderRadius: 4, fontSize: 13, color: C.inkSoft }}>{f.comment}</div>
                         )}
                       </li>
                     ))}
@@ -223,7 +223,11 @@ export function SharedQAReport({ shareId }: { shareId: string }) {
                             <td style={{ padding: "12px 16px", borderBottom: `1px solid ${C.grey3}` }}>
                               {it.text}
                               {ans?.comment && (
-                                <div style={{ marginTop: 6, padding: "8px 12px", background: C.grey2, borderLeft: `3px solid ${C.pink}`, borderRadius: 4, fontSize: 13, color: C.inkSoft }}>{ans.comment}</div>
+                                <div style={{
+                                  marginTop: 6, padding: "8px 12px", borderRadius: 4, fontSize: 13, color: C.inkSoft,
+                                  background: status === "fail" ? "rgba(218, 52, 65, 0.12)" : "rgba(0, 136, 81, 0.12)",
+                                  borderLeft: `3px solid ${status === "fail" ? C.fail : C.pass}`,
+                                }}>{ans.comment}</div>
                               )}
                             </td>
                           </tr>

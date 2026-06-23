@@ -446,7 +446,7 @@ export function buildHtml(meta: ExportMeta, answers: Answers): string {
         : "";
       prevGroup = it.group;
       const noteBox = a?.comment
-        ? `<div style="margin-top:6px;padding:8px 10px;background:${C.grey2};border-left:3px solid ${C.pink};font-size:13px;border-radius:4px">${escapeHtml(a.comment)}</div>`
+        ? `<div style="margin-top:6px;padding:8px 10px;background:${status === "fail" ? "rgba(218, 52, 65, 0.12)" : "rgba(0, 136, 81, 0.12)"};border-left:3px solid ${status === "fail" ? C.fail : C.pass};font-size:13px;border-radius:4px">${escapeHtml(a.comment)}</div>`
         : "";
       return `${groupRow}<tr><td style="width:90px;padding:10px 12px;font-weight:700;font-size:11px;letter-spacing:0.06em;color:${color};border-bottom:1px solid ${C.grey3};vertical-align:top">${escapeHtml(label)}</td><td style="padding:10px 12px;border-bottom:1px solid ${C.grey3}">${escapeHtml(it.text)}${noteBox}</td></tr>`;
     }).join("");
