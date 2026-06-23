@@ -72,7 +72,6 @@ export const SECTIONS: Section[] = [
     id: "design", number: 3, title: "Design",
     intro: "Does the staged Webflow build match the approved Figma and hold up under scrutiny?",
     items: [
-      { id: "design.figma.1", group: "Figma-to-Webflow fidelity", text: "The staged build matches the approved Figma design — reviewed side by side at 1440px desktop" },
       { id: "design.figma.2", group: "Figma-to-Webflow fidelity", text: "No components, colours, or type styles have drifted from the Figma source during build" },
       { id: "design.figma.3", group: "Figma-to-Webflow fidelity", text: "Any deviations from the Figma are intentional and have been flagged and approved before QA" },
       { id: "design.colour-brand.2", group: "Colour — brand usage", text: "Hot Pink is not used as a large background fill across full-width sections" },
