@@ -391,6 +391,23 @@ function findScanner(itemId: string): ScannerCheck | undefined {
   return SCANNERS.find(s => s.itemId === itemId);
 }
 
+function linkifyHtml(text: string): string {
+  const re = /(https?:\/\/[^\s<>"']+)/g;
+  let out = "";
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(text)) !== null) {
+    if (match.index > lastIndex) out += escapeHtml(text.slice(lastIndex, match.index));
+    const url = match[0].replace(/[.,;:!?)\]]+$/, "");
+    out += `<a href="${escapeHtml(url)}" target="_blank" rel="noreferrer" style="color:inherit;text-decoration:underline;word-break:break-all">${escapeHtml(url)}</a>`;
+    const trailing = match[0].slice(url.length);
+    if (trailing) out += escapeHtml(trailing);
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) out += escapeHtml(text.slice(lastIndex));
+  return out || escapeHtml(text);
+}
+
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }
@@ -446,7 +463,7 @@ export function buildHtml(meta: ExportMeta, answers: Answers): string {
         : "";
       prevGroup = it.group;
       const noteBox = a?.comment
-        ? `<div style="margin-top:6px;padding:8px 10px;background:${status === "fail" ? "rgba(218, 52, 65, 0.12)" : "rgba(0, 136, 81, 0.12)"};border-left:3px solid ${status === "fail" ? C.fail : C.pass};font-size:13px;border-radius:4px">${escapeHtml(a.comment)}</div>`
+        ? `<div style="margin-top:6px;padding:8px 10px;background:${status === "fail" ? "rgba(218, 52, 65, 0.12)" : "rgba(0, 136, 81, 0.12)"};border-left:3px solid ${status === "fail" ? C.fail : C.pass};font-size:13px;border-radius:4px">${linkifyHtml(a.comment)}</div>`
         : "";
       return `${groupRow}<tr><td style="width:90px;padding:10px 12px;font-weight:700;font-size:11px;letter-spacing:0.06em;color:${color};border-bottom:1px solid ${C.grey3};vertical-align:top">${escapeHtml(label)}</td><td style="padding:10px 12px;border-bottom:1px solid ${C.grey3}">${escapeHtml(it.text)}${noteBox}</td></tr>`;
     }).join("");

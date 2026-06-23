@@ -20,6 +20,27 @@ const C = {
 };
 const FF = "Faktum, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
+function linkify(text: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  const re = /(https?:\/\/[^\s<>"']+)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(text)) !== null) {
+    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
+    const url = match[0].replace(/[.,;:!?)\]]+$/, ""); // trim trailing sentence punctuation
+    parts.push(
+      <a key={parts.length} href={url} target="_blank" rel="noreferrer"
+         style={{ color: "inherit", textDecoration: "underline", wordBreak: "break-all" }}>{url}</a>
+    );
+    // any trimmed trailing punctuation goes back into the text stream
+    const trailing = match[0].slice(url.length);
+    if (trailing) parts.push(trailing);
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return parts.length ? parts : [text];
+}
+
 function downloadDoc(audit: Audit) {
   const html = buildHtml({
     url: audit.url,
@@ -180,7 +201,7 @@ export function SharedQAReport({ shareId }: { shareId: string }) {
                       <li key={i} style={{ marginBottom: 8, fontSize: 14, lineHeight: 1.5 }}>
                         {f.text}
                         {f.comment && (
-                          <div style={{ marginTop: 4, padding: "6px 10px", background: "rgba(218, 52, 65, 0.12)", borderLeft: `3px solid ${C.fail}`, borderRadius: 4, fontSize: 13, color: C.inkSoft }}>{f.comment}</div>
+                          <div style={{ marginTop: 4, padding: "6px 10px", background: "rgba(218, 52, 65, 0.12)", borderLeft: `3px solid ${C.fail}`, borderRadius: 4, fontSize: 13, color: C.inkSoft }}>{linkify(f.comment!)}</div>
                         )}
                       </li>
                     ))}
@@ -227,7 +248,7 @@ export function SharedQAReport({ shareId }: { shareId: string }) {
                                   marginTop: 6, padding: "8px 12px", borderRadius: 4, fontSize: 13, color: C.inkSoft,
                                   background: status === "fail" ? "rgba(218, 52, 65, 0.12)" : "rgba(0, 136, 81, 0.12)",
                                   borderLeft: `3px solid ${status === "fail" ? C.fail : C.pass}`,
-                                }}>{ans.comment}</div>
+                                }}>{linkify(ans.comment!)}</div>
                               )}
                             </td>
                           </tr>
