@@ -1,4 +1,14 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
+import { Pencil, RefreshCw, ArrowRight } from "lucide-react";
+
+// Asana brand mark (three dots) — from the supplied SVG, recoloured via currentColor.
+function AsanaIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 14 14" fill="currentColor" aria-hidden="true" focusable="false">
+      <path d="m 10.39,7.32625 c -1.441,0 -2.61,1.168 -2.61,2.61 0,1.442 1.169,2.61 2.61,2.61 1.441,0 2.61,-1.17 2.61,-2.61 0,-1.44 -1.168,-2.61 -2.61,-2.61 z m -6.78,0 c -1.44,0 -2.61,1.1685 -2.61,2.61 0,1.4415 1.169,2.61 2.61,2.61 1.441,0 2.61,-1.169 2.61,-2.61 0,-1.441 -1.168,-2.61 -2.61,-2.61 z m 6,-3.2625 c 0,1.4415 -1.1685,2.61 -2.61,2.61 -1.441,0 -2.61,-1.1685 -2.61,-2.61 0,-1.44 1.169,-2.61 2.61,-2.61 1.4415,0 2.61,1.17 2.61,2.61 z" />
+    </svg>
+  );
+}
 
 // Palette aligned to the V2 design tokens (src/v2/theme.ts) so the QA
 // module is pixel-consistent with the platform home.
@@ -930,7 +940,7 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
 
       <div style={{ display: "flex", justifyContent: "center", padding: "40px 24px 80px" }}>
         <div style={{ width: "100%", maxWidth: phase === "list" || phase === "audit" ? 1080 : 760, animation: "qaScreenIn 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
-          <style>{`@keyframes qaScreenIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+          <style>{`@keyframes qaScreenIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } } @keyframes qaspin { to { transform: rotate(360deg); } }`}</style>
 
           {phase === "list" && (
             <>
@@ -1089,7 +1099,6 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                           <a href={a.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: C.pink, textDecoration: "none" }}>{a.url}</a>
                           <div style={{ fontSize: 12, color: C.grey7, marginTop: 8 }}>
                             {a.reviewer && <>Reviewed by {a.reviewer} · </>}Updated {fmtAgo(a.updatedAt)}
-                            {a.asanaLink && (<> · <a href={a.asanaLink} target="_blank" rel="noreferrer" style={{ color: C.pink, textDecoration: "none" }}>Asana task</a></>)}
                           </div>
                         </>
                       )}
@@ -1106,15 +1115,23 @@ export function QAWalkthroughPage({ publishShare }: { publishShare?: (audit: Aud
                       ) : (
                         <>
                           <button onClick={startEditSettings} title="Edit audit settings"
-                                  style={{ ...btnGhost, ...btnSmall }}>✎ Edit</button>
+                                  style={{ ...btnGhost, ...btnSmall, gap: 7 }}><Pencil size={14} /> Edit</button>
                           <button onClick={() => autoScanAndApply(a.id, a.url)} disabled={scanLoading}
-                                  style={{ ...btnGhost, ...btnSmall, opacity: scanLoading ? 0.6 : 1, cursor: scanLoading ? "wait" : "pointer" }}>
-                            {scanLoading ? "Scanning…" : "↻ Re-scan page"}
+                                  style={{ ...btnGhost, ...btnSmall, gap: 7, opacity: scanLoading ? 0.6 : 1, cursor: scanLoading ? "wait" : "pointer" }}>
+                            <RefreshCw size={14} style={scanLoading ? { animation: "qaspin 0.8s linear infinite" } : undefined} /> {scanLoading ? "Scanning…" : "Re-scan page"}
                           </button>
                           <button onClick={() => shareAudit(a)} disabled={sharing}
-                                  style={{ ...btnPrimary, ...btnSmall, opacity: sharing ? 0.6 : 1, cursor: sharing ? "wait" : "pointer" }}>
-                            {sharing ? "Publishing…" : shareCopied ? "✓ Link copied" : "Share report →"}
+                                  style={{ ...btnPrimary, ...btnSmall, gap: 7, opacity: sharing ? 0.6 : 1, cursor: sharing ? "wait" : "pointer" }}>
+                            {sharing ? "Publishing…" : shareCopied ? "✓ Link copied" : <>Share report <ArrowRight size={15} /></>}
                           </button>
+                          {a.asanaLink && (
+                            <a href={a.asanaLink} target="_blank" rel="noreferrer" title="Open Asana task"
+                               style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: "50%", border: `1px solid ${C.grey4}`, background: C.white, color: "#F06A6A", flexShrink: 0, transition: "border-color .15s, transform .15s" }}
+                               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "#F06A6A"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; }}
+                               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = C.grey4; (e.currentTarget as HTMLElement).style.transform = "none"; }}>
+                              <AsanaIcon size={16} />
+                            </a>
+                          )}
                           {shareError && <span style={{ fontSize: 12, color: C.fail, alignSelf: "center" }}>{shareError}</span>}
                         </>
                       )}
