@@ -127,7 +127,10 @@ function EmbedCard({ item, onDelete }: { item: ContentItem; onDelete: () => void
   );
 }
 
-function HScroller({ children }: { children: React.ReactNode }) {
+// Arrows sit at a fixed pixel offset (not a % of the row) so they land in the
+// middle of the media block itself rather than drifting into the meta text
+// below once tags/captions push a card's total height around.
+function HScroller({ children, arrowTop = 120 }: { children: React.ReactNode; arrowTop?: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const scroll = (dir: 1 | -1) => {
     const el = ref.current;
@@ -138,7 +141,7 @@ function HScroller({ children }: { children: React.ReactNode }) {
     <div style={{ position: "relative" }}>
       <button
         type="button" onClick={() => scroll(-1)} aria-label="Scroll left"
-        style={{ ...arrowBtnStyle, left: -16 }}
+        style={{ ...arrowBtnStyle, top: arrowTop, left: -16 }}
       >
         <ChevronLeft size={18} />
       </button>
@@ -147,7 +150,7 @@ function HScroller({ children }: { children: React.ReactNode }) {
       </div>
       <button
         type="button" onClick={() => scroll(1)} aria-label="Scroll right"
-        style={{ ...arrowBtnStyle, right: -16 }}
+        style={{ ...arrowBtnStyle, top: arrowTop, right: -16 }}
       >
         <ChevronRight size={18} />
       </button>
@@ -156,9 +159,18 @@ function HScroller({ children }: { children: React.ReactNode }) {
 }
 
 const arrowBtnStyle: React.CSSProperties = {
-  position: "absolute", top: "40%", transform: "translateY(-50%)",
+  position: "absolute", transform: "translateY(-50%)",
   width: 36, height: 36, borderRadius: "50%", border: `1px solid ${T.grey3}`, background: T.white,
   color: T.ink, display: "grid", placeItems: "center", cursor: "pointer", boxShadow: SHADOW.hover, zIndex: 2,
+};
+
+// Approximate media-block height per type, used only to vertically centre the
+// slider arrows on the media itself (not an exact render height).
+const SECTION_MEDIA_HEIGHT: Record<ContentType, number> = {
+  instagram: 500,
+  youtube: Math.round((460 * 9) / 16),
+  blog: Math.round((280 * 11) / 16),
+  website: Math.round((280 * 11) / 16),
 };
 
 function ItemMeta({ item, onDelete }: { item: ContentItem; onDelete: () => void }) {
@@ -214,7 +226,7 @@ function TypeSection({
           View all <ArrowRight size={13} />
         </button>
       </div>
-      <HScroller>
+      <HScroller arrowTop={SECTION_MEDIA_HEIGHT[type] / 2}>
         {visible.map((item) => (
           <SliderItem key={item.id} item={item} onDelete={() => onDelete(item.id)} />
         ))}
