@@ -1,9 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from "firebase/firestore";
-import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, X } from "lucide-react";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, X, Upload, ImageOff } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 
 const TAGS = ["Digital design trends", "AI-assisted design tools", "No-code platforms", "Agentic web standards"] as const;
+
+// Each fixed topic maps to one of GWI's four secondary colour families —
+// gives instant at-a-glance categorisation across the grid.
+const TAG_COLORS: Record<string, { fg: string; bg: string }> = {
+  "Digital design trends": { fg: "#333688", bg: "#DEE0F7" },      // Violet
+  "AI-assisted design tools": { fg: "#154B5B", bg: "#D3EFF2" },   // Teal
+  "No-code platforms": { fg: "#512179", bg: "#EFE0F5" },          // Purple
+  "Agentic web standards": { fg: "#003C71", bg: "#DCEFFB" },      // Blue
+};
 
 export type ContentType = "instagram" | "youtube" | "blog" | "website";
 
@@ -70,14 +80,14 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
   return (
     <div style={{ background: T.grey1, minHeight: "100%", overflow: "auto", fontFamily: T.font, color: T.ink }}>
       <div style={{ maxWidth: MAXW, margin: "0 auto", padding: `${SP.xxxl}px ${SP.xl}px ${SP.huge}px` }}>
-        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: SP.lg, flexWrap: "wrap" }}>
+        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: SP.lg, flexWrap: "wrap", paddingBottom: SP.xxl, borderBottom: `1px solid ${T.grey3}` }}>
           <div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: SP.sm, ...TYPE.eyebrow, color: T.hub }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.hub }} />
               Studio resource
             </div>
-            <h1 style={{ ...TYPE.h1, margin: `${SP.sm}px 0 ${SP.xs}px` }}>Content Hub</h1>
-            <p style={{ ...TYPE.body, color: T.grey7, margin: 0, maxWidth: 560 }}>
+            <h1 style={{ ...TYPE.hero, fontSize: "clamp(36px, 5vw, 56px)", margin: `${SP.sm}px 0 ${SP.md}px` }}>Content Hub</h1>
+            <p style={{ ...TYPE.lede, color: T.grey7, margin: 0, maxWidth: 580 }}>
               Digital design trends, AI-assisted design tools, no-code platforms and agentic web standards — save what's worth sharing with the studio.
             </p>
           </div>
@@ -85,16 +95,19 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
             type="button"
             onClick={() => setShowAdd(true)}
             style={{
-              display: "inline-flex", alignItems: "center", gap: SP.sm, padding: "10px 18px",
-              borderRadius: R.pill, border: "none", background: T.hub, color: T.white,
+              display: "inline-flex", alignItems: "center", gap: SP.sm, padding: "12px 22px",
+              borderRadius: R.pill, border: "none", background: T.ink, color: T.white,
               fontFamily: T.font, fontWeight: 700, fontSize: 14, cursor: "pointer", flexShrink: 0,
+              transition: "background .2s",
             }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = T.hub; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = T.ink; }}
           >
             <Plus size={16} /> Add content
           </button>
         </header>
 
-        <div style={{ display: "flex", gap: SP.md, marginTop: SP.xxl, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: SP.md, marginTop: SP.xl, flexWrap: "wrap", alignItems: "center" }}>
           <div style={{ display: "flex", gap: SP.xs, background: T.grey2, borderRadius: R.pill, padding: 3 }}>
             {(["all", "instagram", "youtube", "blog", "website"] as const).map((t) => (
               <button
@@ -127,15 +140,16 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
           <div style={{ display: "flex", gap: SP.xs, flexWrap: "wrap" }}>
             {TAGS.map((tag) => {
               const active = tagFilter.includes(tag);
+              const c = TAG_COLORS[tag];
               return (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => toggleTagFilter(tag)}
                   style={{
-                    border: `1px solid ${active ? T.hub : T.grey4}`, cursor: "pointer", fontFamily: T.font,
+                    border: `1px solid ${active ? c.fg : T.grey4}`, cursor: "pointer", fontFamily: T.font,
                     fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: R.pill,
-                    background: active ? T.hubBg : T.white, color: active ? T.hub : T.grey6,
+                    background: active ? c.bg : T.white, color: active ? c.fg : T.grey6,
                   }}
                 >
                   {tag}
@@ -145,7 +159,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
           </div>
         </div>
 
-        <div style={{ marginTop: SP.xxl }}>
+        <div style={{ marginTop: SP.xxxl }}>
           {loading ? (
             <p style={{ ...TYPE.body, color: T.grey6 }}>Loading…</p>
           ) : filtered.length === 0 ? (
@@ -157,7 +171,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
               <p style={{ ...TYPE.small, margin: 0 }}>Be the first to add something worth sharing with the studio.</p>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: SP.xl }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: SP.xxl }}>
               {filtered.map((item) => (
                 <ContentCard key={item.id} item={item} onDelete={() => handleDelete(item.id)} />
               ))}
@@ -185,23 +199,37 @@ function ContentCard({ item, onDelete }: { item: ContentItem; onDelete: () => vo
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        background: T.white, border: `1px solid ${hover ? T.hub : T.grey3}`, borderRadius: R.xl,
-        overflow: "hidden", display: "flex", flexDirection: "column",
-        boxShadow: hover ? SHADOW.hover : SHADOW.none, transition: "box-shadow .2s, border-color .2s",
+        background: T.white, borderRadius: R.xl, overflow: "hidden", display: "flex", flexDirection: "column",
+        boxShadow: hover ? SHADOW.pop : SHADOW.none, transform: hover ? "translateY(-4px)" : "none",
+        transition: "box-shadow .25s cubic-bezier(.16,1,.3,1), transform .25s cubic-bezier(.16,1,.3,1)",
       }}
     >
-      <a href={item.url} target="_blank" rel="noreferrer" style={{ display: "block", textDecoration: "none" }}>
-        <div style={{
-          height: 150, background: item.thumbnailUrl ? `url(${item.thumbnailUrl}) center/cover no-repeat` : T.grey2,
-          display: "grid", placeItems: "center", color: T.grey5,
-        }}>
-          {!item.thumbnailUrl && <span style={{ transform: "scale(2)" }}>{meta.icon}</span>}
+      <a href={item.url} target="_blank" rel="noreferrer" style={{ display: "block", textDecoration: "none", position: "relative" }}>
+        <div style={{ position: "relative", aspectRatio: "16 / 11", overflow: "hidden", background: T.grey2 }}>
+          {item.thumbnailUrl ? (
+            <img
+              src={item.thumbnailUrl}
+              alt=""
+              style={{
+                width: "100%", height: "100%", objectFit: "cover", display: "block",
+                transform: hover ? "scale(1.06)" : "scale(1)", transition: "transform .5s cubic-bezier(.16,1,.3,1)",
+              }}
+            />
+          ) : (
+            <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: T.grey5 }}>
+              <span style={{ transform: "scale(2.2)" }}>{meta.icon}</span>
+            </div>
+          )}
+          <div style={{
+            position: "absolute", top: 12, left: 12, display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "5px 10px", borderRadius: R.pill, background: "rgba(14,17,22,0.72)", color: T.white,
+            ...TYPE.label, backdropFilter: "blur(4px)",
+          }}>
+            {meta.icon} {meta.label}
+          </div>
         </div>
       </a>
       <div style={{ padding: SP.lg, display: "flex", flexDirection: "column", gap: SP.sm, flex: 1 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: SP.xs, color: T.grey6, ...TYPE.label }}>
-          {meta.icon} {meta.label}
-        </div>
         <a href={item.url} target="_blank" rel="noreferrer" style={{ ...TYPE.h3, color: T.ink, textDecoration: "none", display: "flex", gap: SP.xs, alignItems: "flex-start" }}>
           <span style={{ flex: 1 }}>{item.title || item.url}</span>
           <ExternalLink size={14} style={{ flexShrink: 0, marginTop: 4, color: T.grey5 }} />
@@ -209,9 +237,10 @@ function ContentCard({ item, onDelete }: { item: ContentItem; onDelete: () => vo
         {item.note && <p style={{ ...TYPE.small, color: T.grey7, margin: 0 }}>{item.note}</p>}
         {item.tags.length > 0 && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: SP.xs }}>
-            {item.tags.map((t) => (
-              <span key={t} style={{ ...TYPE.label, color: T.hub, background: T.hubBg, padding: "4px 8px", borderRadius: R.pill }}>{t}</span>
-            ))}
+            {item.tags.map((t) => {
+              const c = TAG_COLORS[t] || { fg: T.hub, bg: T.hubBg };
+              return <span key={t} style={{ ...TYPE.label, color: c.fg, background: c.bg, padding: "4px 8px", borderRadius: R.pill }}>{t}</span>;
+            })}
           </div>
         )}
         <div style={{ marginTop: "auto", paddingTop: SP.sm, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -249,8 +278,10 @@ function AddContentModal({
   const [note, setNote] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [fetching, setFetching] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canFetchPreview = type === "youtube" || type === "blog" || type === "website";
 
@@ -269,6 +300,27 @@ function AddContentModal({
       setError("Couldn't fetch a preview — enter a title manually.");
     } finally {
       setFetching(false);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setError("Please choose an image file."); return; }
+    if (file.size > 5 * 1024 * 1024) { setError("Image must be under 5MB."); return; }
+    setUploading(true);
+    setError("");
+    try {
+      const path = `contentHub/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "")}`;
+      const storageRef = ref(getStorage(), path);
+      await uploadBytes(storageRef, file, { contentType: file.type });
+      const downloadUrl = await getDownloadURL(storageRef);
+      setThumbnailUrl(downloadUrl);
+    } catch {
+      setError("Couldn't upload that image — try again.");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -357,6 +409,41 @@ function AddContentModal({
         </Field>
 
         <Field label="Title"><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Give it a title" style={inputStyle} /></Field>
+
+        <Field label="Thumbnail">
+          <div style={{ display: "flex", gap: SP.md, alignItems: "center" }}>
+            <div style={{
+              width: 72, height: 72, borderRadius: R.md, background: T.grey2, flexShrink: 0, overflow: "hidden",
+              display: "grid", placeItems: "center", color: T.grey5,
+            }}>
+              {thumbnailUrl ? <img src={thumbnailUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <ImageOff size={20} />}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+              <input
+                type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} style={{ display: "none" }}
+              />
+              <button
+                type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6, ...TYPE.small, fontWeight: 700,
+                  padding: "8px 14px", borderRadius: R.md, border: `1px solid ${T.grey4}`, background: T.white,
+                  color: T.ink, cursor: uploading ? "default" : "pointer", alignSelf: "flex-start",
+                }}
+              >
+                <Upload size={13} /> {uploading ? "Uploading…" : thumbnailUrl ? "Replace image" : "Upload image"}
+              </button>
+              {thumbnailUrl && (
+                <button
+                  type="button" onClick={() => setThumbnailUrl("")}
+                  style={{ ...TYPE.small, color: T.grey6, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}
+                >
+                  Remove image
+                </button>
+              )}
+            </div>
+          </div>
+        </Field>
+
         <Field label="Notes (optional)">
           <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why does this matter to the studio?" rows={3} style={{ ...inputStyle, resize: "vertical" as const }} />
         </Field>
@@ -365,13 +452,14 @@ function AddContentModal({
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {TAGS.map((tag) => {
               const active = tags.includes(tag);
+              const c = TAG_COLORS[tag];
               return (
                 <button
                   key={tag} type="button" onClick={() => toggleTag(tag)}
                   style={{
-                    border: `1px solid ${active ? T.hub : T.grey4}`, cursor: "pointer", fontFamily: T.font,
+                    border: `1px solid ${active ? c.fg : T.grey4}`, cursor: "pointer", fontFamily: T.font,
                     fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: R.pill,
-                    background: active ? T.hubBg : T.white, color: active ? T.hub : T.grey6,
+                    background: active ? c.bg : T.white, color: active ? c.fg : T.grey6,
                   }}
                 >
                   {tag}
@@ -384,7 +472,7 @@ function AddContentModal({
         {error && <p style={{ ...TYPE.small, color: T.flag, margin: `0 0 ${SP.md}px` }}>{error}</p>}
 
         <button
-          type="button" onClick={handleSave} disabled={saving}
+          type="button" onClick={handleSave} disabled={saving || uploading}
           style={{
             width: "100%", padding: "12px", borderRadius: R.pill, border: "none", marginTop: SP.sm,
             background: T.hub, color: T.white, fontFamily: T.font, fontWeight: 700, fontSize: 14,

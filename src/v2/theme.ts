@@ -37,8 +37,8 @@ export const T = {
   auditBg: "rgba(84,97,200,0.10)",
   qa: "#FF0077",         // hot pink
   qaBg: "#FFE8EE",
-  hub: "#0E9384",        // teal
-  hubBg: "rgba(14,147,132,0.10)",
+  hub: "#008291",        // GWI brand teal
+  hubBg: "rgba(0,130,145,0.10)",
 
   font: "Faktum, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 } as const;
