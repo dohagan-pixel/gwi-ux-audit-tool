@@ -821,6 +821,7 @@ function AddContentModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
         style={{
           background: T.white, borderRadius: R.xl, padding: SP.xxl, width: "100%", maxWidth: 480,
           maxHeight: "90vh", overflow: "auto", boxShadow: SHADOW.pop, fontFamily: T.font,
