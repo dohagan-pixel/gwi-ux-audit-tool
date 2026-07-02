@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from "firebase/firestore";
-import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, X, Upload, ImageOff, Maximize2 } from "lucide-react";
+import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, X, Upload, ImageOff } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 
 const TAGS = ["Digital design trends", "AI-assisted design tools", "No-code platforms", "Agentic web standards"] as const;
@@ -76,34 +76,38 @@ function InstagramEmbed({ url }: { url: string }) {
   );
 }
 
-function InstagramLightbox({ item, onClose }: { item: ContentItem; onClose: () => void }) {
+function InstagramRow({ items, onDelete }: { items: ContentItem[]; onDelete: (id: string) => void }) {
+  if (!items.length) return null;
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed", inset: 0, background: "rgba(14,17,22,0.6)", display: "grid",
-        placeItems: "center", zIndex: 100, padding: SP.xl, overflow: "auto",
-      }}
-    >
-      <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 420, maxHeight: "90vh", overflow: "auto", borderRadius: R.xl }}>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: SP.sm, marginBottom: SP.sm }}>
-          <a
-            href={item.url} target="_blank" rel="noreferrer"
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6, ...TYPE.small, fontWeight: 700,
-              padding: "8px 14px", borderRadius: R.pill, background: T.white, color: T.ink, textDecoration: "none",
-            }}
-          >
-            Open on Instagram <ExternalLink size={13} />
-          </a>
-          <button
-            type="button" onClick={onClose}
-            style={{ display: "grid", placeItems: "center", width: 34, height: 34, borderRadius: "50%", border: "none", background: T.white, color: T.ink, cursor: "pointer" }}
-          >
-            <X size={18} />
-          </button>
-        </div>
-        <InstagramEmbed url={item.url} />
+    <div style={{ marginTop: SP.xl }}>
+      <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.md }}>
+        <Instagram size={17} color={T.hub} />
+        <h2 style={{ ...TYPE.h3, margin: 0 }}>From Instagram</h2>
+        <span style={{ ...TYPE.small, color: T.grey5 }}>{items.length}</span>
+      </div>
+      <div style={{ display: "flex", gap: SP.lg, overflowX: "auto", paddingBottom: SP.md, scrollSnapType: "x proximity" }}>
+        {items.map((item) => (
+          <div key={item.id} style={{ flex: "0 0 auto", width: 340, scrollSnapAlign: "start" }}>
+            <div style={{ borderRadius: R.xl, overflow: "hidden", boxShadow: SHADOW.hover }}>
+              <InstagramEmbed url={item.url} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: SP.sm, marginTop: SP.sm }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1 }}>
+                {item.tags.map((t) => {
+                  const c = TAG_COLORS[t] || { fg: T.hub, bg: T.hubBg };
+                  return <span key={t} style={{ ...TYPE.label, color: c.fg, background: c.bg, padding: "4px 8px", borderRadius: R.pill }}>{t}</span>;
+                })}
+              </div>
+              <button
+                type="button" onClick={() => onDelete(item.id)} title="Remove"
+                style={{ border: "none", background: "transparent", cursor: "pointer", color: T.grey5, padding: 4, flexShrink: 0 }}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+            <span style={{ ...TYPE.small, color: T.grey5, display: "block", marginTop: 4 }}>{item.addedBy || item.addedByEmail} · {fmtDate(item.createdAt)}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -116,7 +120,6 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
   const [typeFilter, setTypeFilter] = useState<ContentType | "all">("all");
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [search, setSearch] = useState("");
-  const [lightboxItem, setLightboxItem] = useState<ContentItem | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -127,15 +130,26 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
   };
   useEffect(load, []);
 
+  // Embeddable Instagram posts/reels get their own scrollable row, played inline —
+  // everything else (including non-embeddable Instagram Stories) stays in the main grid.
+  const instagramEmbeds = useMemo(
+    () => items.filter((it) => it.type === "instagram" && isEmbeddableInstagramPost(it.url)),
+    [items]
+  );
+  const gridItems = useMemo(
+    () => items.filter((it) => !(it.type === "instagram" && isEmbeddableInstagramPost(it.url))),
+    [items]
+  );
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return items.filter((it) => {
+    return gridItems.filter((it) => {
       if (typeFilter !== "all" && it.type !== typeFilter) return false;
       if (tagFilter.length && !tagFilter.some((t) => it.tags.includes(t))) return false;
       if (q && !`${it.title} ${it.note || ""}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [items, typeFilter, tagFilter, search]);
+  }, [gridItems, typeFilter, tagFilter, search]);
 
   const toggleTagFilter = (tag: string) => {
     setTagFilter((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
@@ -229,6 +243,8 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
           </div>
         </div>
 
+        <InstagramRow items={instagramEmbeds} onDelete={handleDelete} />
+
         <div style={{ marginTop: SP.xxxl }}>
           {loading ? (
             <p style={{ ...TYPE.body, color: T.grey6 }}>Loading…</p>
@@ -243,7 +259,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: SP.xxl }}>
               {filtered.map((item) => (
-                <ContentCard key={item.id} item={item} onDelete={() => handleDelete(item.id)} onWatchInline={() => setLightboxItem(item)} />
+                <ContentCard key={item.id} item={item} onDelete={() => handleDelete(item.id)} />
               ))}
             </div>
           )}
@@ -257,56 +273,13 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
           onAdded={(item) => { setItems((prev) => [item, ...prev]); setShowAdd(false); }}
         />
       )}
-
-      {lightboxItem && <InstagramLightbox item={lightboxItem} onClose={() => setLightboxItem(null)} />}
     </div>
   );
 }
 
-function ContentCard({ item, onDelete, onWatchInline }: { item: ContentItem; onDelete: () => void; onWatchInline: () => void }) {
+function ContentCard({ item, onDelete }: { item: ContentItem; onDelete: () => void }) {
   const [hover, setHover] = useState(false);
   const meta = TYPE_META[item.type];
-  const watchInline = item.type === "instagram" && isEmbeddableInstagramPost(item.url);
-
-  const thumb = (
-    <div style={{ position: "relative", aspectRatio: "16 / 11", overflow: "hidden", background: T.grey2 }}>
-      {item.thumbnailUrl ? (
-        <img
-          src={item.thumbnailUrl}
-          alt=""
-          style={{
-            width: "100%", height: "100%", objectFit: "cover", display: "block",
-            transform: hover ? "scale(1.06)" : "scale(1)", transition: "transform .5s cubic-bezier(.16,1,.3,1)",
-          }}
-        />
-      ) : (
-        <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: T.grey5 }}>
-          <span style={{ transform: "scale(2.2)" }}>{meta.icon}</span>
-        </div>
-      )}
-      <div style={{
-        position: "absolute", top: 12, left: 12, display: "inline-flex", alignItems: "center", gap: 6,
-        padding: "5px 10px", borderRadius: R.pill, background: "rgba(14,17,22,0.72)", color: T.white,
-        ...TYPE.label, backdropFilter: "blur(4px)",
-      }}>
-        {meta.icon} {meta.label}
-      </div>
-      {watchInline && (
-        <div style={{
-          position: "absolute", inset: 0, display: "grid", placeItems: "center",
-          background: hover ? "rgba(14,17,22,0.28)" : "rgba(14,17,22,0)", transition: "background .2s",
-        }}>
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: R.pill,
-            background: T.white, color: T.ink, ...TYPE.small, fontWeight: 700,
-            opacity: hover ? 1 : 0, transform: hover ? "scale(1)" : "scale(0.9)", transition: "opacity .2s, transform .2s",
-          }}>
-            <Maximize2 size={13} /> Watch inline
-          </div>
-        </div>
-      )}
-    </div>
-  );
 
   return (
     <div
@@ -318,15 +291,31 @@ function ContentCard({ item, onDelete, onWatchInline }: { item: ContentItem; onD
         transition: "box-shadow .25s cubic-bezier(.16,1,.3,1), transform .25s cubic-bezier(.16,1,.3,1)",
       }}
     >
-      {watchInline ? (
-        <button type="button" onClick={onWatchInline} style={{ display: "block", textAlign: "left", border: "none", padding: 0, background: "none", cursor: "pointer" }}>
-          {thumb}
-        </button>
-      ) : (
-        <a href={item.url} target="_blank" rel="noreferrer" style={{ display: "block", textDecoration: "none", position: "relative" }}>
-          {thumb}
-        </a>
-      )}
+      <a href={item.url} target="_blank" rel="noreferrer" style={{ display: "block", textDecoration: "none", position: "relative" }}>
+        <div style={{ position: "relative", aspectRatio: "16 / 11", overflow: "hidden", background: T.grey2 }}>
+          {item.thumbnailUrl ? (
+            <img
+              src={item.thumbnailUrl}
+              alt=""
+              style={{
+                width: "100%", height: "100%", objectFit: "cover", display: "block",
+                transform: hover ? "scale(1.06)" : "scale(1)", transition: "transform .5s cubic-bezier(.16,1,.3,1)",
+              }}
+            />
+          ) : (
+            <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: T.grey5 }}>
+              <span style={{ transform: "scale(2.2)" }}>{meta.icon}</span>
+            </div>
+          )}
+          <div style={{
+            position: "absolute", top: 12, left: 12, display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "5px 10px", borderRadius: R.pill, background: "rgba(14,17,22,0.72)", color: T.white,
+            ...TYPE.label, backdropFilter: "blur(4px)",
+          }}>
+            {meta.icon} {meta.label}
+          </div>
+        </div>
+      </a>
       <div style={{ padding: SP.lg, display: "flex", flexDirection: "column", gap: SP.sm, flex: 1 }}>
         <a href={item.url} target="_blank" rel="noreferrer" style={{ ...TYPE.h3, color: T.ink, textDecoration: "none", display: "flex", gap: SP.xs, alignItems: "flex-start" }}>
           <span style={{ flex: 1 }}>{item.title || item.url}</span>
