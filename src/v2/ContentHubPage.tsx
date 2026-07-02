@@ -82,6 +82,51 @@ function InstagramEmbed({ url }: { url: string }) {
   );
 }
 
+// YouTube's embed player is a clean, officially supported iframe with no
+// extra chrome baked in (unlike Instagram) — no cropping tricks needed.
+function youtubeVideoId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function YouTubeEmbed({ url }: { url: string }) {
+  const id = youtubeVideoId(url);
+  if (!id) return null;
+  return (
+    <div style={{ position: "relative", aspectRatio: "16 / 9", background: T.ink }}>
+      <iframe
+        src={`https://www.youtube.com/embed/${id}`}
+        title="YouTube video"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowFullScreen
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
+      />
+    </div>
+  );
+}
+
+function isEmbeddable(item: ContentItem): boolean {
+  if (item.type === "instagram") return isEmbeddableInstagramPost(item.url);
+  if (item.type === "youtube") return !!youtubeVideoId(item.url);
+  return false;
+}
+
+function EmbedCard({ item, onDelete }: { item: ContentItem; onDelete: () => void }) {
+  return (
+    <div>
+      <div style={{ borderRadius: R.xl, overflow: "hidden", boxShadow: SHADOW.hover }}>
+        {item.type === "instagram" ? <InstagramEmbed url={item.url} /> : <YouTubeEmbed url={item.url} />}
+      </div>
+      {item.type === "youtube" && item.title && (
+        <a href={item.url} target="_blank" rel="noreferrer" style={{ ...TYPE.h3, fontSize: 16, color: T.ink, textDecoration: "none", display: "block", marginTop: SP.sm }}>
+          {item.title}
+        </a>
+      )}
+      <ItemMeta item={item} onDelete={onDelete} />
+    </div>
+  );
+}
+
 function HScroller({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const scroll = (dir: 1 | -1) => {
@@ -139,19 +184,11 @@ function ItemMeta({ item, onDelete }: { item: ContentItem; onDelete: () => void 
 }
 
 function SliderItem({ item, onDelete }: { item: ContentItem; onDelete: () => void }) {
-  const embeddable = item.type === "instagram" && isEmbeddableInstagramPost(item.url);
+  const embeddable = isEmbeddable(item);
+  const width = item.type === "instagram" && embeddable ? 340 : item.type === "youtube" && embeddable ? 360 : 280;
   return (
-    <div style={{ flex: "0 0 auto", width: embeddable ? 340 : 280, scrollSnapAlign: "start" }}>
-      {embeddable ? (
-        <>
-          <div style={{ borderRadius: R.xl, overflow: "hidden", boxShadow: SHADOW.hover }}>
-            <InstagramEmbed url={item.url} />
-          </div>
-          <ItemMeta item={item} onDelete={onDelete} />
-        </>
-      ) : (
-        <ContentCard item={item} onDelete={onDelete} />
-      )}
+    <div style={{ flex: "0 0 auto", width, scrollSnapAlign: "start" }}>
+      {embeddable ? <EmbedCard item={item} onDelete={onDelete} /> : <ContentCard item={item} onDelete={onDelete} />}
     </div>
   );
 }
@@ -207,23 +244,11 @@ function TypeAllView({
         <EmptyState />
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: SP.xxl }}>
-          {items.map((item) => {
-            const embeddable = item.type === "instagram" && isEmbeddableInstagramPost(item.url);
-            return (
-              <div key={item.id}>
-                {embeddable ? (
-                  <>
-                    <div style={{ borderRadius: R.xl, overflow: "hidden", boxShadow: SHADOW.hover }}>
-                      <InstagramEmbed url={item.url} />
-                    </div>
-                    <ItemMeta item={item} onDelete={() => onDelete(item.id)} />
-                  </>
-                ) : (
-                  <ContentCard item={item} onDelete={() => onDelete(item.id)} />
-                )}
-              </div>
-            );
-          })}
+          {items.map((item) => (
+            <div key={item.id}>
+              {isEmbeddable(item) ? <EmbedCard item={item} onDelete={() => onDelete(item.id)} /> : <ContentCard item={item} onDelete={() => onDelete(item.id)} />}
+            </div>
+          ))}
         </div>
       )}
     </div>
