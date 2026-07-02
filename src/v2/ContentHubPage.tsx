@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from "firebase/firestore";
-import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, X, Upload, ImageOff } from "lucide-react";
+import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, X, Upload, ImageOff, ChevronLeft, ChevronRight, ArrowRight, ArrowLeft } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 
 const TAGS = ["Digital design trends", "AI-assisted design tools", "No-code platforms", "Agentic web standards"] as const;
+const TYPE_ORDER: ContentType[] = ["instagram", "youtube", "blog", "website"];
+const SLIDER_CAP = 10;
 
 // Each fixed topic maps to one of GWI's four secondary colour families —
 // gives instant at-a-glance categorisation across the grid.
@@ -80,39 +82,159 @@ function InstagramEmbed({ url }: { url: string }) {
   );
 }
 
-function InstagramRow({ items, onDelete }: { items: ContentItem[]; onDelete: (id: string) => void }) {
-  if (!items.length) return null;
+function HScroller({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const scroll = (dir: 1 | -1) => {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.85, behavior: "smooth" });
+  };
   return (
-    <div style={{ marginTop: SP.xl }}>
-      <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.md }}>
-        <Instagram size={17} color={T.hub} />
-        <h2 style={{ ...TYPE.h3, margin: 0 }}>From Instagram</h2>
+    <div style={{ position: "relative" }}>
+      <button
+        type="button" onClick={() => scroll(-1)} aria-label="Scroll left"
+        style={{ ...arrowBtnStyle, left: -16 }}
+      >
+        <ChevronLeft size={18} />
+      </button>
+      <div ref={ref} style={{ display: "flex", gap: SP.lg, overflowX: "auto", scrollSnapType: "x proximity", paddingBottom: SP.md }}>
+        {children}
+      </div>
+      <button
+        type="button" onClick={() => scroll(1)} aria-label="Scroll right"
+        style={{ ...arrowBtnStyle, right: -16 }}
+      >
+        <ChevronRight size={18} />
+      </button>
+    </div>
+  );
+}
+
+const arrowBtnStyle: React.CSSProperties = {
+  position: "absolute", top: "40%", transform: "translateY(-50%)",
+  width: 36, height: 36, borderRadius: "50%", border: `1px solid ${T.grey3}`, background: T.white,
+  color: T.ink, display: "grid", placeItems: "center", cursor: "pointer", boxShadow: SHADOW.hover, zIndex: 2,
+};
+
+function ItemMeta({ item, onDelete }: { item: ContentItem; onDelete: () => void }) {
+  return (
+    <>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: SP.sm, marginTop: SP.sm }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1 }}>
+          {item.tags.map((t) => {
+            const c = TAG_COLORS[t] || { fg: T.hub, bg: T.hubBg };
+            return <span key={t} style={{ ...TYPE.label, color: c.fg, background: c.bg, padding: "4px 8px", borderRadius: R.pill }}>{t}</span>;
+          })}
+        </div>
+        <button
+          type="button" onClick={onDelete} title="Remove"
+          style={{ border: "none", background: "transparent", cursor: "pointer", color: T.grey5, padding: 4, flexShrink: 0 }}
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
+      <span style={{ ...TYPE.small, color: T.grey5, display: "block", marginTop: 4 }}>{item.addedBy || item.addedByEmail} · {fmtDate(item.createdAt)}</span>
+    </>
+  );
+}
+
+function SliderItem({ item, onDelete }: { item: ContentItem; onDelete: () => void }) {
+  const embeddable = item.type === "instagram" && isEmbeddableInstagramPost(item.url);
+  return (
+    <div style={{ flex: "0 0 auto", width: embeddable ? 340 : 280, scrollSnapAlign: "start" }}>
+      {embeddable ? (
+        <>
+          <div style={{ borderRadius: R.xl, overflow: "hidden", boxShadow: SHADOW.hover }}>
+            <InstagramEmbed url={item.url} />
+          </div>
+          <ItemMeta item={item} onDelete={onDelete} />
+        </>
+      ) : (
+        <ContentCard item={item} onDelete={onDelete} />
+      )}
+    </div>
+  );
+}
+
+function TypeSection({
+  type, items, onViewAll, onDelete,
+}: { type: ContentType; items: ContentItem[]; onViewAll: () => void; onDelete: (id: string) => void }) {
+  if (!items.length) return null;
+  const meta = TYPE_META[type];
+  const visible = items.slice(0, SLIDER_CAP);
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: SP.md }}>
+        <div style={{ display: "flex", alignItems: "center", gap: SP.sm }}>
+          <span style={{ color: T.hub }}>{meta.icon}</span>
+          <h2 style={{ ...TYPE.h3, margin: 0 }}>{meta.label}</h2>
+          <span style={{ ...TYPE.small, color: T.grey5 }}>{items.length}</span>
+        </div>
+        <button
+          type="button" onClick={onViewAll}
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, border: "none", background: "none", cursor: "pointer", ...TYPE.small, fontWeight: 700, color: T.hub, padding: 0 }}
+        >
+          View all <ArrowRight size={13} />
+        </button>
+      </div>
+      <HScroller>
+        {visible.map((item) => (
+          <SliderItem key={item.id} item={item} onDelete={() => onDelete(item.id)} />
+        ))}
+      </HScroller>
+    </div>
+  );
+}
+
+function TypeAllView({
+  type, items, onBack, onDelete,
+}: { type: ContentType; items: ContentItem[]; onBack: () => void; onDelete: (id: string) => void }) {
+  const meta = TYPE_META[type];
+  return (
+    <div>
+      <button
+        type="button" onClick={onBack}
+        style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "none", background: "none", cursor: "pointer", ...TYPE.small, fontWeight: 700, color: T.grey6, padding: 0, marginBottom: SP.lg }}
+      >
+        <ArrowLeft size={13} /> All content
+      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.xl }}>
+        <span style={{ color: T.hub }}>{meta.icon}</span>
+        <h2 style={{ ...TYPE.h2, margin: 0 }}>{meta.label}</h2>
         <span style={{ ...TYPE.small, color: T.grey5 }}>{items.length}</span>
       </div>
-      <div style={{ display: "flex", gap: SP.lg, overflowX: "auto", paddingBottom: SP.md, scrollSnapType: "x proximity" }}>
-        {items.map((item) => (
-          <div key={item.id} style={{ flex: "0 0 auto", width: 340, scrollSnapAlign: "start" }}>
-            <div style={{ borderRadius: R.xl, overflow: "hidden", boxShadow: SHADOW.hover }}>
-              <InstagramEmbed url={item.url} />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: SP.sm, marginTop: SP.sm }}>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1 }}>
-                {item.tags.map((t) => {
-                  const c = TAG_COLORS[t] || { fg: T.hub, bg: T.hubBg };
-                  return <span key={t} style={{ ...TYPE.label, color: c.fg, background: c.bg, padding: "4px 8px", borderRadius: R.pill }}>{t}</span>;
-                })}
+      {items.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: SP.xxl }}>
+          {items.map((item) => {
+            const embeddable = item.type === "instagram" && isEmbeddableInstagramPost(item.url);
+            return (
+              <div key={item.id}>
+                {embeddable ? (
+                  <>
+                    <div style={{ borderRadius: R.xl, overflow: "hidden", boxShadow: SHADOW.hover }}>
+                      <InstagramEmbed url={item.url} />
+                    </div>
+                    <ItemMeta item={item} onDelete={() => onDelete(item.id)} />
+                  </>
+                ) : (
+                  <ContentCard item={item} onDelete={() => onDelete(item.id)} />
+                )}
               </div>
-              <button
-                type="button" onClick={() => onDelete(item.id)} title="Remove"
-                style={{ border: "none", background: "transparent", cursor: "pointer", color: T.grey5, padding: 4, flexShrink: 0 }}
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-            <span style={{ ...TYPE.small, color: T.grey5, display: "block", marginTop: 4 }}>{item.addedBy || item.addedByEmail} · {fmtDate(item.createdAt)}</span>
-          </div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div style={{ border: `1.5px dashed ${T.grey4}`, borderRadius: R.xl, padding: SP.xxxl, textAlign: "center", color: T.grey6 }}>
+      <div style={{ ...TYPE.h3, color: T.grey7, marginBottom: SP.xs }}>Nothing here yet</div>
+      <p style={{ ...TYPE.small, margin: 0 }}>Be the first to add something worth sharing with the studio.</p>
     </div>
   );
 }
@@ -134,26 +256,22 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
   };
   useEffect(load, []);
 
-  // Embeddable Instagram posts/reels get their own scrollable row, played inline —
-  // everything else (including non-embeddable Instagram Stories) stays in the main grid.
-  const instagramEmbeds = useMemo(
-    () => items.filter((it) => it.type === "instagram" && isEmbeddableInstagramPost(it.url)),
-    [items]
-  );
-  const gridItems = useMemo(
-    () => items.filter((it) => !(it.type === "instagram" && isEmbeddableInstagramPost(it.url))),
-    [items]
-  );
-
-  const filtered = useMemo(() => {
+  // Tag/search apply regardless of type — the type pills switch layout mode
+  // (sectioned overview vs. a single type's full list), not what's matched.
+  const baseFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return gridItems.filter((it) => {
-      if (typeFilter !== "all" && it.type !== typeFilter) return false;
+    return items.filter((it) => {
       if (tagFilter.length && !tagFilter.some((t) => it.tags.includes(t))) return false;
       if (q && !`${it.title} ${it.note || ""}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [gridItems, typeFilter, tagFilter, search]);
+  }, [items, tagFilter, search]);
+
+  const grouped = useMemo(() => {
+    const map = { instagram: [], youtube: [], blog: [], website: [] } as Record<ContentType, ContentItem[]>;
+    for (const it of baseFiltered) map[it.type]?.push(it);
+    return map;
+  }, [baseFiltered]);
 
   const toggleTagFilter = (tag: string) => {
     setTagFilter((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
@@ -247,25 +365,17 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
           </div>
         </div>
 
-        <InstagramRow items={instagramEmbeds} onDelete={handleDelete} />
-
-        <div style={{ marginTop: SP.xxxl }}>
+        <div style={{ marginTop: SP.xxxl, display: "flex", flexDirection: "column", gap: SP.xxxl }}>
           {loading ? (
             <p style={{ ...TYPE.body, color: T.grey6 }}>Loading…</p>
-          ) : filtered.length === 0 ? (
-            <div style={{
-              border: `1.5px dashed ${T.grey4}`, borderRadius: R.xl, padding: SP.xxxl,
-              textAlign: "center", color: T.grey6,
-            }}>
-              <div style={{ ...TYPE.h3, color: T.grey7, marginBottom: SP.xs }}>Nothing here yet</div>
-              <p style={{ ...TYPE.small, margin: 0 }}>Be the first to add something worth sharing with the studio.</p>
-            </div>
+          ) : baseFiltered.length === 0 ? (
+            <EmptyState />
+          ) : typeFilter === "all" ? (
+            TYPE_ORDER.map((t) => (
+              <TypeSection key={t} type={t} items={grouped[t]} onViewAll={() => setTypeFilter(t)} onDelete={handleDelete} />
+            ))
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: SP.xxl }}>
-              {filtered.map((item) => (
-                <ContentCard key={item.id} item={item} onDelete={() => handleDelete(item.id)} />
-              ))}
-            </div>
+            <TypeAllView type={typeFilter} items={grouped[typeFilter]} onBack={() => setTypeFilter("all")} onDelete={handleDelete} />
           )}
         </div>
       </div>
