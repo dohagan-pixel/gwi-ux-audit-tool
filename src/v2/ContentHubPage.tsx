@@ -97,30 +97,38 @@ function loadInstagramEmbedScript(): Promise<void> {
   return w.__instgrmLoading;
 }
 
-function InstagramEmbed({ url }: { url: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    let timer: number | undefined;
-    // Heavier posts (carousels especially, vs. a single reel) can take longer
-    // to fetch and render than a couple of quick re-processes accounts for,
-    // leaving the card stuck blank. Keep nudging instgrm.Embeds.process()
-    // until an actual <iframe> shows up in place of the blockquote, or give
-    // up after ~12s so a genuinely broken/deleted post doesn't retry forever.
-    const attempt = (triesLeft: number) => {
-      if (cancelled) return;
-      if (containerRef.current?.querySelector("iframe")) return;
+// A page can have many InstagramEmbed cards mounting at once. Each one calling
+// instgrm.Embeds.process() — a single GLOBAL scan that (re)converts every
+// blockquote on the page — independently and repeatedly stacks up dozens of
+// redundant calls within seconds. That pile-up is the likely cause of posts
+// flashing in then going blank: a slower-loading post (a carousel, say) can
+// have its in-flight embed request clobbered by another card's retry sweep.
+// One shared, coordinated loop instead: convert what's there now, then keep
+// checking (just once, page-wide) whether any blockquotes are still
+// unconverted, backing off once none remain or after a max number of tries.
+let instagramSweepRunning = false;
+function scheduleInstagramSweep() {
+  loadInstagramEmbedScript().then(() => {
+    (window as any).instgrm?.Embeds?.process();
+    if (instagramSweepRunning) return;
+    instagramSweepRunning = true;
+    let tries = 0;
+    const tick = () => {
+      const remaining = document.querySelectorAll("blockquote.instagram-media").length;
+      if (remaining === 0 || tries >= 20) { instagramSweepRunning = false; return; }
+      tries++;
       (window as any).instgrm?.Embeds?.process();
-      if (triesLeft <= 0) return;
-      timer = window.setTimeout(() => attempt(triesLeft - 1), 800);
+      window.setTimeout(tick, 800);
     };
-    loadInstagramEmbedScript().then(() => attempt(15));
-    return () => { cancelled = true; if (timer) clearTimeout(timer); };
-  }, [url]);
+    window.setTimeout(tick, 800);
+  });
+}
+
+function InstagramEmbed({ url }: { url: string }) {
+  useEffect(() => { scheduleInstagramSweep(); }, [url]);
 
   return (
-    <div ref={containerRef} style={{ display: "flex", justifyContent: "center" }}>
+    <div style={{ display: "flex", justifyContent: "center" }}>
       <blockquote className="instagram-media" data-instgrm-permalink={url} data-instgrm-version="14" style={{ margin: 0, width: "100%", minWidth: 0 }} />
     </div>
   );
