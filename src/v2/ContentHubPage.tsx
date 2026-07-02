@@ -216,9 +216,14 @@ function SliderItem({ item, onDelete }: { item: ContentItem; onDelete: () => voi
   );
 }
 
+const pillBtnStyle: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", gap: 4, border: `1px solid ${T.grey3}`, background: T.white,
+  borderRadius: R.pill, cursor: "pointer", fontFamily: T.font, fontSize: 13, fontWeight: 700, color: T.ink,
+};
+
 function TypeSection({
-  type, items, onViewAll, onDelete,
-}: { type: ContentType; items: ContentItem[]; onViewAll: () => void; onDelete: (id: string) => void }) {
+  type, items, onViewAll, onQuickAdd, onDelete,
+}: { type: ContentType; items: ContentItem[]; onViewAll: () => void; onQuickAdd: () => void; onDelete: (id: string) => void }) {
   if (!items.length) return null;
   const meta = TYPE_META[type];
   const visible = items.slice(0, SLIDER_CAP);
@@ -230,12 +235,17 @@ function TypeSection({
           <h2 style={{ ...TYPE.h3, margin: 0 }}>{meta.label}</h2>
           <span style={{ ...TYPE.small, color: T.grey5 }}>{items.length}</span>
         </div>
-        <button
-          type="button" onClick={onViewAll}
-          style={{ display: "inline-flex", alignItems: "center", gap: 4, border: "none", background: "none", cursor: "pointer", ...TYPE.small, fontWeight: 700, color: T.hub, padding: 0 }}
-        >
-          View all <ArrowRight size={13} />
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: SP.sm }}>
+          <button
+            type="button" onClick={onQuickAdd} aria-label={`Add ${meta.label} content`} title={`Add ${meta.label} content`}
+            style={{ ...pillBtnStyle, width: 30, height: 30, padding: 0, justifyContent: "center" }}
+          >
+            <Plus size={14} />
+          </button>
+          <button type="button" onClick={onViewAll} style={{ ...pillBtnStyle, padding: "7px 14px" }}>
+            View all <ArrowRight size={13} />
+          </button>
+        </div>
       </div>
       <HScroller arrowTop={SECTION_MEDIA_HEIGHT[type] / 2}>
         {visible.map((item) => (
@@ -290,7 +300,7 @@ function EmptyState() {
 export function ContentHubPage({ user }: { user?: { displayName?: string | null; email?: string | null } | null }) {
   const [items, setItems] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
+  const [addModalType, setAddModalType] = useState<ContentType | null>(null);
   const [typeFilter, setTypeFilter] = useState<ContentType | "all">("all");
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [search, setSearch] = useState("");
@@ -320,6 +330,13 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
     for (const it of baseFiltered) map[it.type]?.push(it);
     return map;
   }, [baseFiltered]);
+
+  // Tag filter bar grows to include any custom tags people have added,
+  // not just the 4 fixed presets.
+  const allTags = useMemo(() => {
+    const custom = items.flatMap((it) => it.tags).filter((t) => !(TAGS as readonly string[]).includes(t));
+    return [...TAGS, ...Array.from(new Set(custom))];
+  }, [items]);
 
   const toggleTagFilter = (tag: string) => {
     setTagFilter((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
@@ -354,7 +371,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
           </div>
           <button
             type="button"
-            onClick={() => setShowAdd(true)}
+            onClick={() => setAddModalType("youtube")}
             style={{
               display: "inline-flex", alignItems: "center", gap: SP.sm, padding: "12px 22px",
               borderRadius: R.pill, border: "none", background: T.ink, color: T.white,
@@ -399,9 +416,9 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
           />
 
           <div style={{ display: "flex", gap: SP.xs, flexWrap: "wrap" }}>
-            {TAGS.map((tag) => {
+            {allTags.map((tag) => {
               const active = tagFilter.includes(tag);
-              const c = TAG_COLORS[tag];
+              const c = TAG_COLORS[tag] || { fg: T.hub, bg: T.hubBg };
               return (
                 <button
                   key={tag}
@@ -427,7 +444,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
             <EmptyState />
           ) : typeFilter === "all" ? (
             TYPE_ORDER.map((t) => (
-              <TypeSection key={t} type={t} items={grouped[t]} onViewAll={() => setTypeFilter(t)} onDelete={handleDelete} />
+              <TypeSection key={t} type={t} items={grouped[t]} onViewAll={() => setTypeFilter(t)} onQuickAdd={() => setAddModalType(t)} onDelete={handleDelete} />
             ))
           ) : (
             <TypeAllView type={typeFilter} items={grouped[typeFilter]} onBack={() => setTypeFilter("all")} onDelete={handleDelete} />
@@ -435,11 +452,12 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
         </div>
       </div>
 
-      {showAdd && (
+      {addModalType && (
         <AddContentModal
           user={user}
-          onClose={() => setShowAdd(false)}
-          onAdded={(item) => { setItems((prev) => [item, ...prev]); setShowAdd(false); }}
+          initialType={addModalType}
+          onClose={() => setAddModalType(null)}
+          onAdded={(item) => { setItems((prev) => [item, ...prev]); setAddModalType(null); }}
         />
       )}
     </div>
@@ -542,19 +560,21 @@ function resizeImageToDataUrl(file: File, maxDim = 640, quality = 0.72): Promise
 }
 
 function AddContentModal({
-  user, onClose, onAdded,
+  user, initialType, onClose, onAdded,
 }: {
   user?: { displayName?: string | null; email?: string | null } | null;
+  initialType?: ContentType;
   onClose: () => void;
   onAdded: (item: ContentItem) => void;
 }) {
-  const [type, setType] = useState<ContentType>("youtube");
+  const [type, setType] = useState<ContentType>(initialType || "youtube");
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [note, setNote] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [customTag, setCustomTag] = useState("");
   const [fetching, setFetching] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -604,6 +624,13 @@ function AddContentModal({
 
   const toggleTag = (tag: string) => {
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  };
+
+  const addCustomTag = () => {
+    const t = customTag.trim();
+    if (!t) return;
+    setTags((prev) => (prev.includes(t) ? prev : [...prev, t]));
+    setCustomTag("");
   };
 
   const handleSave = async () => {
@@ -729,7 +756,7 @@ function AddContentModal({
         </Field>
 
         <Field label="Tags">
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: SP.sm }}>
             {TAGS.map((tag) => {
               const active = tags.includes(tag);
               const c = TAG_COLORS[tag];
@@ -746,6 +773,36 @@ function AddContentModal({
                 </button>
               );
             })}
+            {tags.filter((t) => !(TAGS as readonly string[]).includes(t)).map((tag) => (
+              <button
+                key={tag} type="button" onClick={() => toggleTag(tag)}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 4, border: `1px solid ${T.hub}`, cursor: "pointer",
+                  fontFamily: T.font, fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: R.pill,
+                  background: T.hubBg, color: T.hub,
+                }}
+              >
+                {tag} <X size={11} />
+              </button>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: SP.sm }}>
+            <input
+              value={customTag}
+              onChange={(e) => setCustomTag(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomTag(); } }}
+              placeholder="Add your own category…"
+              style={{ ...inputStyle, fontSize: 13, padding: "8px 12px" }}
+            />
+            <button
+              type="button" onClick={addCustomTag} disabled={!customTag.trim()} aria-label="Add category"
+              style={{
+                display: "grid", placeItems: "center", width: 36, height: 36, borderRadius: R.md, flexShrink: 0,
+                border: `1px solid ${T.grey4}`, background: T.grey2, color: T.ink, cursor: customTag.trim() ? "pointer" : "default",
+              }}
+            >
+              <Plus size={15} />
+            </button>
           </div>
         </Field>
 
