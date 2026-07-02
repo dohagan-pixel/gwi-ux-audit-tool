@@ -584,6 +584,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
 function ContentCard({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () => void; onDelete: () => void }) {
   const [hover, setHover] = useState(false);
   const meta = TYPE_META[item.type];
+  const aspectRatio = item.type === "blog" || item.type === "website" ? "16 / 9" : "16 / 11";
 
   return (
     <div
@@ -596,7 +597,7 @@ function ContentCard({ item, onEdit, onDelete }: { item: ContentItem; onEdit: ()
       }}
     >
       <a href={item.url} target="_blank" rel="noreferrer" style={{ display: "block", textDecoration: "none", position: "relative" }}>
-        <div style={{ position: "relative", aspectRatio: "16 / 11", overflow: "hidden", background: T.grey2 }}>
+        <div style={{ position: "relative", aspectRatio, overflow: "hidden", background: T.grey2 }}>
           {item.thumbnailUrl ? (
             <img
               src={item.thumbnailUrl}
