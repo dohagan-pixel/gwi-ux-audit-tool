@@ -4354,7 +4354,7 @@ function SharePage({shareId}:{shareId:string}){
 
 export default function App(){
 
-  var VALID_VIEWS=["dashboard","audit","generated-audits","summary","personas","persona-detail","mapping","journey","lifecycle","affinity","flows","analytics","settings","wireframes","feedback","guide","landing","qa-walkthrough"];
+  var VALID_VIEWS=["dashboard","audit","generated-audits","summary","personas","persona-detail","mapping","journey","lifecycle","affinity","flows","analytics","settings","wireframes","feedback","guide","landing","qa-walkthrough","content-hub"];
   function hashToView(h){var v=(h||"").replace(/^#\//,"").split("/")[0];return VALID_VIEWS.indexOf(v)>=0?v:"dashboard";}
   function hashToSubId(h){var parts=(h||"").replace(/^#\//,"").split("/");return parts.length>1?decodeURIComponent(parts[1]):null;}
   var [view,setViewRaw]=useState(function(){return hashToView(window.location.hash);});

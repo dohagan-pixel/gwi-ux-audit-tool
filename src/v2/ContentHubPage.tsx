@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { getFirestore, collection, getDocs, getDoc, setDoc, deleteDoc, doc, query, orderBy, where, arrayUnion } from "firebase/firestore";
-import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, Cog, X, Upload, ImageOff, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, ArrowLeft, RotateCcw } from "lucide-react";
+import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, Cog, X, Upload, ImageOff, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, ArrowLeft, RotateCcw, GripVertical } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 
 const TAGS = ["Digital design trends", "AI-assisted design tools", "No-code platforms", "Agentic web standards"] as const;
-const TYPE_ORDER: ContentType[] = ["instagram", "youtube", "blog", "website"];
+const TYPE_ORDER: ContentType[] = ["instagram", "youtube", "website", "blog"];
 const SLIDER_CAP = 10;
 
 // Each fixed topic maps to one of GWI's four secondary colour families —
@@ -30,7 +30,15 @@ export type ContentItem = {
   addedBy: string;
   addedByEmail: string;
   createdAt: number;
+  order?: number;
 };
+
+// Manual order (assigned by the reorder mode, per type) wins; items never
+// reordered fall back to newest-first, and land above ordered ones so fresh
+// additions stay visible at the front.
+function itemSortKey(it: ContentItem): number {
+  return it.order ?? -it.createdAt;
+}
 
 const TYPE_META: Record<ContentType, { label: string; icon: React.ReactNode }> = {
   instagram: { label: "Instagram", icon: <Instagram size={14} /> },
@@ -200,8 +208,8 @@ const arrowBtnStyle: React.CSSProperties = {
 const SECTION_MEDIA_HEIGHT: Record<ContentType, number> = {
   instagram: 500,
   youtube: Math.round((460 * 9) / 16),
-  blog: Math.round((280 * 11) / 16),
-  website: Math.round((280 * 11) / 16),
+  website: Math.round((330 * 9) / 16),
+  blog: Math.round((280 * 9) / 16),
 };
 
 function ItemMeta({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () => void; onDelete: () => void }) {
@@ -238,7 +246,8 @@ function ItemMeta({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () =>
 
 function SliderItem({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () => void; onDelete: () => void }) {
   const embeddable = isEmbeddable(item);
-  const width = item.type === "instagram" && embeddable ? 340 : item.type === "youtube" && embeddable ? 460 : 280;
+  // Website: 3 full columns with a 4th peeking at the edge (like Instagram's cut-off).
+  const width = item.type === "instagram" && embeddable ? 340 : item.type === "youtube" && embeddable ? 460 : item.type === "website" ? 330 : 280;
   return (
     <div style={{ flex: "0 0 auto", width, scrollSnapAlign: "start" }}>
       {embeddable ? <EmbedCard item={item} onEdit={onEdit} onDelete={onDelete} /> : <ContentCard item={item} onEdit={onEdit} onDelete={onDelete} />}
@@ -287,9 +296,29 @@ function TypeSection({
 }
 
 function TypeAllView({
-  type, items, onBack, onEdit, onDelete,
-}: { type: ContentType; items: ContentItem[]; onBack: () => void; onEdit: (item: ContentItem) => void; onDelete: (id: string) => void }) {
+  type, items, canReorder, onBack, onEdit, onDelete, onReorder,
+}: {
+  type: ContentType; items: ContentItem[]; canReorder: boolean;
+  onBack: () => void; onEdit: (item: ContentItem) => void; onDelete: (id: string) => void;
+  onReorder: (orderedIds: string[]) => void;
+}) {
   const meta = TYPE_META[type];
+  const [reorderOn, setReorderOn] = useState(false);
+  const dragIdRef = useRef<string | null>(null);
+
+  const dropOn = (targetId: string) => {
+    const dragId = dragIdRef.current;
+    dragIdRef.current = null;
+    if (!dragId || dragId === targetId) return;
+    const ids = items.map((i) => i.id);
+    const from = ids.indexOf(dragId);
+    const to = ids.indexOf(targetId);
+    if (from < 0 || to < 0) return;
+    ids.splice(from, 1);
+    ids.splice(to, 0, dragId);
+    onReorder(ids);
+  };
+
   return (
     <div>
       <button
@@ -302,16 +331,50 @@ function TypeAllView({
         <span style={{ color: T.hub }}>{meta.icon}</span>
         <h2 style={{ ...TYPE.h2, margin: 0 }}>{meta.label}</h2>
         <span style={{ ...TYPE.small, color: T.grey5 }}>{items.length}</span>
+        {canReorder && items.length > 1 && (
+          <button
+            type="button" onClick={() => setReorderOn((o) => !o)}
+            style={{
+              ...pillBtnStyle, padding: "7px 14px", marginLeft: "auto",
+              border: `1px solid ${reorderOn ? T.hub : T.grey3}`,
+              background: reorderOn ? T.hubBg : T.white, color: reorderOn ? T.hub : T.ink,
+            }}
+          >
+            <GripVertical size={13} /> {reorderOn ? "Done" : "Reorder"}
+          </button>
+        )}
       </div>
       {items.length === 0 ? (
         <EmptyState />
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${type === "youtube" ? 400 : 300}px, 1fr))`, gap: SP.xxl }}>
           {items.map((item) => (
-            <div key={item.id}>
+            <div
+              key={item.id}
+              style={{ position: "relative" }}
+              onDragOver={reorderOn ? (e) => e.preventDefault() : undefined}
+              onDrop={reorderOn ? () => dropOn(item.id) : undefined}
+            >
               {isEmbeddable(item)
                 ? <EmbedCard item={item} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} />
                 : <ContentCard item={item} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} />}
+              {reorderOn && (
+                // Full-card draggable cover: embeds are iframes, which swallow
+                // mouse events — without this overlay they'd be undraggable.
+                <div
+                  draggable
+                  onDragStart={() => { dragIdRef.current = item.id; }}
+                  style={{
+                    position: "absolute", inset: 0, zIndex: 5, cursor: "grab", borderRadius: R.xl,
+                    border: `2px dashed ${T.hub}`, background: "rgba(0,130,145,0.06)",
+                    display: "grid", placeItems: "center",
+                  }}
+                >
+                  <span style={{ ...pillBtnStyle, padding: "7px 14px", cursor: "grab", boxShadow: SHADOW.hover }}>
+                    <GripVertical size={13} /> Drag to reorder
+                  </span>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -427,10 +490,20 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
   const [search, setSearch] = useState("");
   const [customCategories, setCustomCategories] = useState<string[]>([]);
 
+  // item.id → actual Firestore doc id. Usually identical, but legacy items
+  // (saved via addDoc before the setDoc fix) differ — reorder writes must
+  // target the real doc or they'd create partial stray docs.
+  const docIdsRef = useRef<Record<string, string>>({});
+
   const load = () => {
     setLoading(true);
     getDocs(query(collection(db(), "contentHub"), orderBy("createdAt", "desc")))
-      .then((snap) => setItems(snap.docs.map((d) => d.data() as ContentItem)))
+      .then((snap) => {
+        const map: Record<string, string> = {};
+        const arr = snap.docs.map((d) => { const it = d.data() as ContentItem; map[it.id] = d.id; return it; });
+        docIdsRef.current = map;
+        setItems(arr);
+      })
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
   };
@@ -451,6 +524,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
   const grouped = useMemo(() => {
     const map = { instagram: [], youtube: [], blog: [], website: [] } as Record<ContentType, ContentItem[]>;
     for (const it of baseFiltered) map[it.type]?.push(it);
+    for (const t of TYPE_ORDER) map[t].sort((a, b) => itemSortKey(a) - itemSortKey(b));
     return map;
   }, [baseFiltered]);
 
@@ -497,6 +571,17 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
     setModal(m);
   };
 
+  const handleReorder = (orderedIds: string[]) => {
+    if (!canEdit) { requireAuth(); return; }
+    setItems((prev) => prev.map((it) => {
+      const idx = orderedIds.indexOf(it.id);
+      return idx >= 0 ? { ...it, order: idx } : it;
+    }));
+    Promise.all(orderedIds.map((id, i) =>
+      setDoc(doc(db(), "contentHub", docIdsRef.current[id] || id), { order: i }, { merge: true })
+    )).catch((e: any) => alert(`Couldn't save the new order: ${e?.message || "unknown error"}`));
+  };
+
   return (
     <div style={{ background: T.grey1, minHeight: "100%", overflow: "auto", fontFamily: T.font, color: T.ink }}>
       <div style={{ maxWidth: MAXW, margin: "0 auto", padding: `${SP.xxxl}px ${SP.xl}px ${SP.huge}px` }}>
@@ -528,7 +613,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
         </header>
 
         <div style={{ display: "flex", gap: SP.sm, marginTop: SP.xl, flexWrap: "wrap", alignItems: "center" }}>
-          {(["all", "instagram", "youtube", "blog", "website"] as const).map((t) => (
+          {(["all", "instagram", "youtube", "website", "blog"] as const).map((t) => (
             <button
               key={t}
               type="button"
@@ -573,21 +658,26 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
           ) : baseFiltered.length === 0 ? (
             <EmptyState />
           ) : typeFilter === "all" ? (
-            TYPE_ORDER.map((t) => (
-              <TypeSection
-                key={t} type={t} items={grouped[t]}
-                onViewAll={() => setTypeFilter(t)}
-                onQuickAdd={() => openModal({ type: t })}
-                onEdit={(item) => openModal({ type: item.type, editItem: item })}
-                onDelete={handleDelete}
-              />
+            TYPE_ORDER.filter((t) => grouped[t].length > 0).map((t, i) => (
+              <Fragment key={t}>
+                {i > 0 && <div style={{ height: 1, background: T.grey2 }} aria-hidden />}
+                <TypeSection
+                  type={t} items={grouped[t]}
+                  onViewAll={() => setTypeFilter(t)}
+                  onQuickAdd={() => openModal({ type: t })}
+                  onEdit={(item) => openModal({ type: item.type, editItem: item })}
+                  onDelete={handleDelete}
+                />
+              </Fragment>
             ))
           ) : (
             <TypeAllView
               type={typeFilter} items={grouped[typeFilter]}
+              canReorder={canEdit}
               onBack={() => setTypeFilter("all")}
               onEdit={(item) => openModal({ type: item.type, editItem: item })}
               onDelete={handleDelete}
+              onReorder={handleReorder}
             />
           )}
         </div>
@@ -809,6 +899,7 @@ function AddContentModal({
       addedBy: editItem?.addedBy || user?.displayName || "",
       addedByEmail: editItem?.addedByEmail || user?.email || "",
       createdAt: editItem?.createdAt || Date.now(),
+      order: editItem?.order,
     };
     try {
       // Firestore rejects fields explicitly set to `undefined` — strip them before writing.
