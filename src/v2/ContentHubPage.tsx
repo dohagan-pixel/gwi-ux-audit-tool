@@ -289,10 +289,12 @@ function AddContentModal({
       createdAt: Date.now(),
     };
     try {
-      await addDoc(collection(db(), "contentHub"), item);
+      // Firestore rejects fields explicitly set to `undefined` — strip them before writing.
+      const docData = Object.fromEntries(Object.entries(item).filter(([, v]) => v !== undefined));
+      await addDoc(collection(db(), "contentHub"), docData);
       onAdded(item);
-    } catch {
-      setError("Couldn't save — try again.");
+    } catch (e: any) {
+      setError(e?.message ? `Couldn't save — ${e.message}` : "Couldn't save — try again.");
       setSaving(false);
     }
   };
