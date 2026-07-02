@@ -1,0 +1,411 @@
+import { useEffect, useMemo, useState } from "react";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from "firebase/firestore";
+import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, X } from "lucide-react";
+import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
+
+const TAGS = ["Digital design trends", "AI-assisted design tools", "No-code platforms", "Agentic web standards"] as const;
+
+export type ContentType = "instagram" | "youtube" | "blog" | "website";
+
+export type ContentItem = {
+  id: string;
+  type: ContentType;
+  url: string;
+  title: string;
+  description?: string;
+  thumbnailUrl?: string;
+  tags: string[];
+  note?: string;
+  addedBy: string;
+  addedByEmail: string;
+  createdAt: number;
+};
+
+const TYPE_META: Record<ContentType, { label: string; icon: React.ReactNode }> = {
+  instagram: { label: "Instagram", icon: <Instagram size={14} /> },
+  youtube: { label: "YouTube", icon: <Youtube size={14} /> },
+  blog: { label: "Blog", icon: <FileText size={14} /> },
+  website: { label: "Website", icon: <Globe size={14} /> },
+};
+
+function db() { return getFirestore(); }
+
+export function ContentHubPage({ user }: { user?: { displayName?: string | null; email?: string | null } | null }) {
+  const [items, setItems] = useState<ContentItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<ContentType | "all">("all");
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
+
+  const load = () => {
+    setLoading(true);
+    getDocs(query(collection(db(), "contentHub"), orderBy("createdAt", "desc")))
+      .then((snap) => setItems(snap.docs.map((d) => d.data() as ContentItem)))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  };
+  useEffect(load, []);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return items.filter((it) => {
+      if (typeFilter !== "all" && it.type !== typeFilter) return false;
+      if (tagFilter.length && !tagFilter.some((t) => it.tags.includes(t))) return false;
+      if (q && !`${it.title} ${it.note || ""}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [items, typeFilter, tagFilter, search]);
+
+  const toggleTagFilter = (tag: string) => {
+    setTagFilter((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Remove this item from the hub?")) return;
+    setItems((prev) => prev.filter((i) => i.id !== id));
+    try { await deleteDoc(doc(db(), "contentHub", id)); } catch {}
+  };
+
+  return (
+    <div style={{ background: T.grey1, minHeight: "100%", overflow: "auto", fontFamily: T.font, color: T.ink }}>
+      <div style={{ maxWidth: MAXW, margin: "0 auto", padding: `${SP.xxxl}px ${SP.xl}px ${SP.huge}px` }}>
+        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: SP.lg, flexWrap: "wrap" }}>
+          <div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: SP.sm, ...TYPE.eyebrow, color: T.hub }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.hub }} />
+              Studio resource
+            </div>
+            <h1 style={{ ...TYPE.h1, margin: `${SP.sm}px 0 ${SP.xs}px` }}>Content Hub</h1>
+            <p style={{ ...TYPE.body, color: T.grey7, margin: 0, maxWidth: 560 }}>
+              Digital design trends, AI-assisted design tools, no-code platforms and agentic web standards — save what's worth sharing with the studio.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAdd(true)}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: SP.sm, padding: "10px 18px",
+              borderRadius: R.pill, border: "none", background: T.hub, color: T.white,
+              fontFamily: T.font, fontWeight: 700, fontSize: 14, cursor: "pointer", flexShrink: 0,
+            }}
+          >
+            <Plus size={16} /> Add content
+          </button>
+        </header>
+
+        <div style={{ display: "flex", gap: SP.md, marginTop: SP.xxl, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: SP.xs, background: T.grey2, borderRadius: R.pill, padding: 3 }}>
+            {(["all", "instagram", "youtube", "blog", "website"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTypeFilter(t)}
+                style={{
+                  border: "none", cursor: "pointer", fontFamily: T.font, fontSize: 13, fontWeight: 600,
+                  padding: "7px 14px", borderRadius: R.pill,
+                  background: typeFilter === t ? T.white : "transparent",
+                  color: typeFilter === t ? T.ink : T.grey6,
+                  boxShadow: typeFilter === t ? SHADOW.hover : "none",
+                }}
+              >
+                {t === "all" ? "All" : TYPE_META[t].label}
+              </button>
+            ))}
+          </div>
+
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search title or note…"
+            style={{
+              fontFamily: T.font, fontSize: 13, padding: "8px 14px", borderRadius: R.pill,
+              border: `1px solid ${T.grey4}`, background: T.white, color: T.ink, minWidth: 200,
+            }}
+          />
+
+          <div style={{ display: "flex", gap: SP.xs, flexWrap: "wrap" }}>
+            {TAGS.map((tag) => {
+              const active = tagFilter.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTagFilter(tag)}
+                  style={{
+                    border: `1px solid ${active ? T.hub : T.grey4}`, cursor: "pointer", fontFamily: T.font,
+                    fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: R.pill,
+                    background: active ? T.hubBg : T.white, color: active ? T.hub : T.grey6,
+                  }}
+                >
+                  {tag}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ marginTop: SP.xxl }}>
+          {loading ? (
+            <p style={{ ...TYPE.body, color: T.grey6 }}>Loading…</p>
+          ) : filtered.length === 0 ? (
+            <div style={{
+              border: `1.5px dashed ${T.grey4}`, borderRadius: R.xl, padding: SP.xxxl,
+              textAlign: "center", color: T.grey6,
+            }}>
+              <div style={{ ...TYPE.h3, color: T.grey7, marginBottom: SP.xs }}>Nothing here yet</div>
+              <p style={{ ...TYPE.small, margin: 0 }}>Be the first to add something worth sharing with the studio.</p>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: SP.xl }}>
+              {filtered.map((item) => (
+                <ContentCard key={item.id} item={item} onDelete={() => handleDelete(item.id)} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showAdd && (
+        <AddContentModal
+          user={user}
+          onClose={() => setShowAdd(false)}
+          onAdded={(item) => { setItems((prev) => [item, ...prev]); setShowAdd(false); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ContentCard({ item, onDelete }: { item: ContentItem; onDelete: () => void }) {
+  const [hover, setHover] = useState(false);
+  const meta = TYPE_META[item.type];
+  return (
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        background: T.white, border: `1px solid ${hover ? T.hub : T.grey3}`, borderRadius: R.xl,
+        overflow: "hidden", display: "flex", flexDirection: "column",
+        boxShadow: hover ? SHADOW.hover : SHADOW.none, transition: "box-shadow .2s, border-color .2s",
+      }}
+    >
+      <a href={item.url} target="_blank" rel="noreferrer" style={{ display: "block", textDecoration: "none" }}>
+        <div style={{
+          height: 150, background: item.thumbnailUrl ? `url(${item.thumbnailUrl}) center/cover no-repeat` : T.grey2,
+          display: "grid", placeItems: "center", color: T.grey5,
+        }}>
+          {!item.thumbnailUrl && <span style={{ transform: "scale(2)" }}>{meta.icon}</span>}
+        </div>
+      </a>
+      <div style={{ padding: SP.lg, display: "flex", flexDirection: "column", gap: SP.sm, flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: SP.xs, color: T.grey6, ...TYPE.label }}>
+          {meta.icon} {meta.label}
+        </div>
+        <a href={item.url} target="_blank" rel="noreferrer" style={{ ...TYPE.h3, color: T.ink, textDecoration: "none", display: "flex", gap: SP.xs, alignItems: "flex-start" }}>
+          <span style={{ flex: 1 }}>{item.title || item.url}</span>
+          <ExternalLink size={14} style={{ flexShrink: 0, marginTop: 4, color: T.grey5 }} />
+        </a>
+        {item.note && <p style={{ ...TYPE.small, color: T.grey7, margin: 0 }}>{item.note}</p>}
+        {item.tags.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: SP.xs }}>
+            {item.tags.map((t) => (
+              <span key={t} style={{ ...TYPE.label, color: T.hub, background: T.hubBg, padding: "4px 8px", borderRadius: R.pill }}>{t}</span>
+            ))}
+          </div>
+        )}
+        <div style={{ marginTop: "auto", paddingTop: SP.sm, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ ...TYPE.small, color: T.grey5 }}>{item.addedBy || item.addedByEmail} · {fmtDate(item.createdAt)}</span>
+          <button
+            type="button"
+            onClick={onDelete}
+            title="Remove"
+            style={{ border: "none", background: "transparent", cursor: "pointer", color: T.grey5, padding: 4 }}
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function fmtDate(ts: number): string {
+  try { return new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch { return ""; }
+}
+
+function AddContentModal({
+  user, onClose, onAdded,
+}: {
+  user?: { displayName?: string | null; email?: string | null } | null;
+  onClose: () => void;
+  onAdded: (item: ContentItem) => void;
+}) {
+  const [type, setType] = useState<ContentType>("youtube");
+  const [url, setUrl] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [note, setNote] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [fetching, setFetching] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const canFetchPreview = type === "youtube" || type === "blog" || type === "website";
+
+  const fetchPreview = async () => {
+    if (!url.trim()) return;
+    setFetching(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/link-preview?url=${encodeURIComponent(url.trim())}`);
+      const data = await res.json();
+      if (data.title) setTitle(data.title);
+      if (data.description) setDescription(data.description);
+      if (data.thumbnailUrl) setThumbnailUrl(data.thumbnailUrl);
+      if (!data.title) setError("Couldn't fetch a preview — enter a title manually.");
+    } catch {
+      setError("Couldn't fetch a preview — enter a title manually.");
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  const toggleTag = (tag: string) => {
+    setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  };
+
+  const handleSave = async () => {
+    if (!url.trim() || !title.trim()) { setError("A URL and title are required."); return; }
+    setSaving(true);
+    const item: ContentItem = {
+      id: `ch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type, url: url.trim(), title: title.trim(),
+      description: description.trim() || undefined,
+      thumbnailUrl: thumbnailUrl.trim() || undefined,
+      tags, note: note.trim() || undefined,
+      addedBy: user?.displayName || "", addedByEmail: user?.email || "",
+      createdAt: Date.now(),
+    };
+    try {
+      await addDoc(collection(db(), "contentHub"), item);
+      onAdded(item);
+    } catch {
+      setError("Couldn't save — try again.");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, background: "rgba(14,17,22,0.4)", display: "grid",
+        placeItems: "center", zIndex: 100, padding: SP.xl,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: T.white, borderRadius: R.xl, padding: SP.xxl, width: "100%", maxWidth: 480,
+          maxHeight: "90vh", overflow: "auto", boxShadow: SHADOW.pop, fontFamily: T.font,
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: SP.lg }}>
+          <h2 style={{ ...TYPE.h2, margin: 0 }}>Add content</h2>
+          <button type="button" onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer", color: T.grey6 }}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <div style={{ display: "flex", gap: SP.xs, marginBottom: SP.lg }}>
+          {(Object.keys(TYPE_META) as ContentType[]).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setType(t)}
+              style={{
+                flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                padding: "10px 4px", borderRadius: R.md, cursor: "pointer", fontFamily: T.font, fontSize: 12, fontWeight: 600,
+                border: `1.5px solid ${type === t ? T.hub : T.grey3}`,
+                background: type === t ? T.hubBg : T.white, color: type === t ? T.hub : T.grey6,
+              }}
+            >
+              {TYPE_META[t].icon} {TYPE_META[t].label}
+            </button>
+          ))}
+        </div>
+
+        <Field label="URL">
+          <div style={{ display: "flex", gap: SP.sm }}>
+            <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" style={inputStyle} />
+            {canFetchPreview && (
+              <button
+                type="button" onClick={fetchPreview} disabled={fetching || !url.trim()}
+                style={{
+                  ...TYPE.small, fontWeight: 700, whiteSpace: "nowrap", padding: "0 14px", borderRadius: R.md,
+                  border: `1px solid ${T.grey4}`, background: T.grey2, color: T.ink, cursor: fetching ? "default" : "pointer",
+                }}
+              >
+                {fetching ? "Fetching…" : "Fetch preview"}
+              </button>
+            )}
+          </div>
+        </Field>
+
+        <Field label="Title"><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Give it a title" style={inputStyle} /></Field>
+        <Field label="Notes (optional)">
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why does this matter to the studio?" rows={3} style={{ ...inputStyle, resize: "vertical" as const }} />
+        </Field>
+
+        <Field label="Tags">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {TAGS.map((tag) => {
+              const active = tags.includes(tag);
+              return (
+                <button
+                  key={tag} type="button" onClick={() => toggleTag(tag)}
+                  style={{
+                    border: `1px solid ${active ? T.hub : T.grey4}`, cursor: "pointer", fontFamily: T.font,
+                    fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: R.pill,
+                    background: active ? T.hubBg : T.white, color: active ? T.hub : T.grey6,
+                  }}
+                >
+                  {tag}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+
+        {error && <p style={{ ...TYPE.small, color: T.flag, margin: `0 0 ${SP.md}px` }}>{error}</p>}
+
+        <button
+          type="button" onClick={handleSave} disabled={saving}
+          style={{
+            width: "100%", padding: "12px", borderRadius: R.pill, border: "none", marginTop: SP.sm,
+            background: T.hub, color: T.white, fontFamily: T.font, fontWeight: 700, fontSize: 14,
+            cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1,
+          }}
+        >
+          {saving ? "Saving…" : "Save to hub"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: SP.lg }}>
+      <div style={{ ...TYPE.label, color: T.grey6, marginBottom: SP.xs }}>{label}</div>
+      {children}
+    </div>
+  );
+}
+
+const inputStyle: React.CSSProperties = {
+  width: "100%", fontFamily: T.font, fontSize: 14, padding: "9px 12px", borderRadius: R.md,
+  border: `1px solid ${T.grey4}`, background: T.white, color: T.ink, boxSizing: "border-box",
+};

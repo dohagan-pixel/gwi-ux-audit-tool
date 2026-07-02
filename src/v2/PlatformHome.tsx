@@ -1,7 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 
 // ── Live stats pulled from local state / storage ──────────────────────────
+function useContentHubStats() {
+  const [count, setCount] = useState<number | null>(null);
+  useEffect(() => {
+    getDocs(collection(getFirestore(), "contentHub"))
+      .then((snap) => setCount(snap.size))
+      .catch(() => setCount(null));
+  }, []);
+  return { count };
+}
+
 function useQaStats() {
   return useMemo(() => {
     if (typeof window === "undefined") return { audits: 0, flags: 0 };
@@ -42,6 +53,7 @@ export function PlatformHome({
   auditCount?: number;
 }) {
   const qa = useQaStats();
+  const hub = useContentHubStats();
   const [ready, setReady] = useState(false);
   useEffect(() => { const id = setTimeout(() => setReady(true), 20); return () => clearTimeout(id); }, []);
 
@@ -88,6 +100,26 @@ export function PlatformHome({
         </svg>
       ),
     },
+    {
+      key: "content-hub",
+      eyebrow: "Studio resource",
+      title: "Content Hub",
+      desc: "Digital design trends, AI-assisted design tools, no-code platforms and agentic web standards — save what's worth sharing with the studio.",
+      accent: T.hub,
+      accentBg: T.hubBg,
+      enter: () => setView("content-hub"),
+      cta: "Open Content Hub",
+      stats: [
+        { value: hub.count != null ? String(hub.count) : "—", label: "Items saved" },
+        { value: "4", label: "Topics" },
+      ],
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" />
+        </svg>
+      ),
+    },
   ];
 
   return (
@@ -129,7 +161,7 @@ export function PlatformHome({
             <div style={{ width: 40, height: 40, borderRadius: R.md, background: T.grey2, display: "grid", placeItems: "center", marginBottom: SP.md, fontSize: 20, color: T.grey5 }}>+</div>
             <div style={{ ...TYPE.h3, color: T.grey7 }}>More modules</div>
             <p style={{ ...TYPE.small, color: T.grey6, margin: `${SP.xs}px 0 0`, maxWidth: 220 }}>
-              Benchmarks, content, and more — slotting in here as the platform grows.
+              Benchmarks and more — slotting in here as the platform grows.
             </p>
           </div>
         </div>
