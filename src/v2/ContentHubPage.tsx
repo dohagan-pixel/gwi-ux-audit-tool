@@ -660,7 +660,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
           ) : typeFilter === "all" ? (
             TYPE_ORDER.filter((t) => grouped[t].length > 0).map((t, i) => (
               <Fragment key={t}>
-                {i > 0 && <div style={{ height: 1, background: T.grey2 }} aria-hidden />}
+                {i > 0 && <div style={{ height: 1, background: T.grey4 }} aria-hidden />}
                 <TypeSection
                   type={t} items={grouped[t]}
                   onViewAll={() => setTypeFilter(t)}
