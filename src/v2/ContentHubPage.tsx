@@ -98,24 +98,29 @@ function loadInstagramEmbedScript(): Promise<void> {
 }
 
 function InstagramEmbed({ url }: { url: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     let cancelled = false;
-    const timers: number[] = [];
-    loadInstagramEmbedScript().then(() => {
+    let timer: number | undefined;
+    // Heavier posts (carousels especially, vs. a single reel) can take longer
+    // to fetch and render than a couple of quick re-processes accounts for,
+    // leaving the card stuck blank. Keep nudging instgrm.Embeds.process()
+    // until an actual <iframe> shows up in place of the blockquote, or give
+    // up after ~12s so a genuinely broken/deleted post doesn't retry forever.
+    const attempt = (triesLeft: number) => {
       if (cancelled) return;
-      const process = () => (window as any).instgrm?.Embeds?.process();
-      process();
-      // Instagram's script can take its height reading before a horizontally
-      // scrolling flex row has fully settled, leaving some posts stuck at the
-      // wrong size — a couple of delayed re-processes catches those.
-      timers.push(window.setTimeout(process, 500));
-      timers.push(window.setTimeout(process, 1500));
-    });
-    return () => { cancelled = true; timers.forEach((t) => clearTimeout(t)); };
+      if (containerRef.current?.querySelector("iframe")) return;
+      (window as any).instgrm?.Embeds?.process();
+      if (triesLeft <= 0) return;
+      timer = window.setTimeout(() => attempt(triesLeft - 1), 800);
+    };
+    loadInstagramEmbedScript().then(() => attempt(15));
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
   }, [url]);
 
   return (
-    <div style={{ display: "flex", justifyContent: "center" }}>
+    <div ref={containerRef} style={{ display: "flex", justifyContent: "center" }}>
       <blockquote className="instagram-media" data-instgrm-permalink={url} data-instgrm-version="14" style={{ margin: 0, width: "100%", minWidth: 0 }} />
     </div>
   );
