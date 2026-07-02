@@ -97,30 +97,33 @@ function loadInstagramEmbedScript(): Promise<void> {
   return w.__instgrmLoading;
 }
 
-// A page can have many InstagramEmbed cards mounting at once. Each one calling
-// instgrm.Embeds.process() — a single GLOBAL scan that (re)converts every
-// blockquote on the page — independently and repeatedly stacks up dozens of
-// redundant calls within seconds. That pile-up is the likely cause of posts
-// flashing in then going blank: a slower-loading post (a carousel, say) can
-// have its in-flight embed request clobbered by another card's retry sweep.
-// One shared, coordinated loop instead: convert what's there now, then keep
-// checking (just once, page-wide) whether any blockquotes are still
-// unconverted, backing off once none remain or after a max number of tries.
-let instagramSweepRunning = false;
+// instgrm.Embeds.process() is a single GLOBAL scan that kicks off loading
+// for every not-yet-converted blockquote on the page in one pass — each
+// blockquote's fetch then completes asynchronously on its own, it doesn't
+// need process() called again to finish. Repeatedly re-calling it (as a
+// polling retry loop did previously) doesn't make slow posts load faster;
+// it just re-scans the whole page over and over while other posts are still
+// mid-load, which is what was disturbing already-successful ones — visible
+// as an earlier post flashing in then going blank once a later one finished.
+// One debounced call per batch of newly-mounted cards, plus a single gentle
+// follow-up for anything still stuck, is enough.
+let instagramProcessQueued = false;
 function scheduleInstagramSweep() {
+  if (instagramProcessQueued) return;
+  instagramProcessQueued = true;
   loadInstagramEmbedScript().then(() => {
-    (window as any).instgrm?.Embeds?.process();
-    if (instagramSweepRunning) return;
-    instagramSweepRunning = true;
-    let tries = 0;
-    const tick = () => {
-      const remaining = document.querySelectorAll("blockquote.instagram-media").length;
-      if (remaining === 0 || tries >= 20) { instagramSweepRunning = false; return; }
-      tries++;
+    // Coalesce simultaneous mounts (a whole row appearing at once) into one call.
+    requestAnimationFrame(() => {
       (window as any).instgrm?.Embeds?.process();
-      window.setTimeout(tick, 800);
-    };
-    window.setTimeout(tick, 800);
+      instagramProcessQueued = false;
+      // One gentle follow-up, well after the first pass, only for whatever's
+      // still stuck — not a loop, so it can't keep clobbering finished posts.
+      window.setTimeout(() => {
+        if (document.querySelectorAll("blockquote.instagram-media").length > 0) {
+          (window as any).instgrm?.Embeds?.process();
+        }
+      }, 4000);
+    });
   });
 }
 
