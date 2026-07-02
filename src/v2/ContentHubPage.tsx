@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from "firebase/firestore";
-import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, X, Upload, ImageOff } from "lucide-react";
+import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, X, Upload, ImageOff, Maximize2 } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 
 const TAGS = ["Digital design trends", "AI-assisted design tools", "No-code platforms", "Agentic web standards"] as const;
@@ -39,6 +39,76 @@ const TYPE_META: Record<ContentType, { label: string; icon: React.ReactNode }> =
 
 function db() { return getFirestore(); }
 
+// Instagram only offers a public embed widget for permalinked posts/reels —
+// Stories have no permalink and were never embeddable, by Instagram's own design.
+function isEmbeddableInstagramPost(url: string): boolean {
+  return /instagram\.com\/(p|reel|reels)\//i.test(url);
+}
+
+function loadInstagramEmbedScript(): Promise<void> {
+  const w = window as any;
+  if (w.instgrm) return Promise.resolve();
+  if (w.__instgrmLoading) return w.__instgrmLoading;
+  w.__instgrmLoading = new Promise<void>((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://www.instagram.com/embed.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => resolve();
+    document.body.appendChild(script);
+  });
+  return w.__instgrmLoading;
+}
+
+function InstagramEmbed({ url }: { url: string }) {
+  useEffect(() => {
+    let cancelled = false;
+    loadInstagramEmbedScript().then(() => {
+      if (!cancelled) (window as any).instgrm?.Embeds?.process();
+    });
+    return () => { cancelled = true; };
+  }, [url]);
+
+  return (
+    <div style={{ display: "flex", justifyContent: "center" }}>
+      <blockquote className="instagram-media" data-instgrm-permalink={url} data-instgrm-version="14" style={{ margin: 0, width: "100%", minWidth: 0 }} />
+    </div>
+  );
+}
+
+function InstagramLightbox({ item, onClose }: { item: ContentItem; onClose: () => void }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, background: "rgba(14,17,22,0.6)", display: "grid",
+        placeItems: "center", zIndex: 100, padding: SP.xl, overflow: "auto",
+      }}
+    >
+      <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 420, maxHeight: "90vh", overflow: "auto", borderRadius: R.xl }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: SP.sm, marginBottom: SP.sm }}>
+          <a
+            href={item.url} target="_blank" rel="noreferrer"
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6, ...TYPE.small, fontWeight: 700,
+              padding: "8px 14px", borderRadius: R.pill, background: T.white, color: T.ink, textDecoration: "none",
+            }}
+          >
+            Open on Instagram <ExternalLink size={13} />
+          </a>
+          <button
+            type="button" onClick={onClose}
+            style={{ display: "grid", placeItems: "center", width: 34, height: 34, borderRadius: "50%", border: "none", background: T.white, color: T.ink, cursor: "pointer" }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <InstagramEmbed url={item.url} />
+      </div>
+    </div>
+  );
+}
+
 export function ContentHubPage({ user }: { user?: { displayName?: string | null; email?: string | null } | null }) {
   const [items, setItems] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +116,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
   const [typeFilter, setTypeFilter] = useState<ContentType | "all">("all");
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [search, setSearch] = useState("");
+  const [lightboxItem, setLightboxItem] = useState<ContentItem | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -172,7 +243,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: SP.xxl }}>
               {filtered.map((item) => (
-                <ContentCard key={item.id} item={item} onDelete={() => handleDelete(item.id)} />
+                <ContentCard key={item.id} item={item} onDelete={() => handleDelete(item.id)} onWatchInline={() => setLightboxItem(item)} />
               ))}
             </div>
           )}
@@ -186,13 +257,57 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
           onAdded={(item) => { setItems((prev) => [item, ...prev]); setShowAdd(false); }}
         />
       )}
+
+      {lightboxItem && <InstagramLightbox item={lightboxItem} onClose={() => setLightboxItem(null)} />}
     </div>
   );
 }
 
-function ContentCard({ item, onDelete }: { item: ContentItem; onDelete: () => void }) {
+function ContentCard({ item, onDelete, onWatchInline }: { item: ContentItem; onDelete: () => void; onWatchInline: () => void }) {
   const [hover, setHover] = useState(false);
   const meta = TYPE_META[item.type];
+  const watchInline = item.type === "instagram" && isEmbeddableInstagramPost(item.url);
+
+  const thumb = (
+    <div style={{ position: "relative", aspectRatio: "16 / 11", overflow: "hidden", background: T.grey2 }}>
+      {item.thumbnailUrl ? (
+        <img
+          src={item.thumbnailUrl}
+          alt=""
+          style={{
+            width: "100%", height: "100%", objectFit: "cover", display: "block",
+            transform: hover ? "scale(1.06)" : "scale(1)", transition: "transform .5s cubic-bezier(.16,1,.3,1)",
+          }}
+        />
+      ) : (
+        <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: T.grey5 }}>
+          <span style={{ transform: "scale(2.2)" }}>{meta.icon}</span>
+        </div>
+      )}
+      <div style={{
+        position: "absolute", top: 12, left: 12, display: "inline-flex", alignItems: "center", gap: 6,
+        padding: "5px 10px", borderRadius: R.pill, background: "rgba(14,17,22,0.72)", color: T.white,
+        ...TYPE.label, backdropFilter: "blur(4px)",
+      }}>
+        {meta.icon} {meta.label}
+      </div>
+      {watchInline && (
+        <div style={{
+          position: "absolute", inset: 0, display: "grid", placeItems: "center",
+          background: hover ? "rgba(14,17,22,0.28)" : "rgba(14,17,22,0)", transition: "background .2s",
+        }}>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: R.pill,
+            background: T.white, color: T.ink, ...TYPE.small, fontWeight: 700,
+            opacity: hover ? 1 : 0, transform: hover ? "scale(1)" : "scale(0.9)", transition: "opacity .2s, transform .2s",
+          }}>
+            <Maximize2 size={13} /> Watch inline
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div
       onMouseEnter={() => setHover(true)}
@@ -203,31 +318,15 @@ function ContentCard({ item, onDelete }: { item: ContentItem; onDelete: () => vo
         transition: "box-shadow .25s cubic-bezier(.16,1,.3,1), transform .25s cubic-bezier(.16,1,.3,1)",
       }}
     >
-      <a href={item.url} target="_blank" rel="noreferrer" style={{ display: "block", textDecoration: "none", position: "relative" }}>
-        <div style={{ position: "relative", aspectRatio: "16 / 11", overflow: "hidden", background: T.grey2 }}>
-          {item.thumbnailUrl ? (
-            <img
-              src={item.thumbnailUrl}
-              alt=""
-              style={{
-                width: "100%", height: "100%", objectFit: "cover", display: "block",
-                transform: hover ? "scale(1.06)" : "scale(1)", transition: "transform .5s cubic-bezier(.16,1,.3,1)",
-              }}
-            />
-          ) : (
-            <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: T.grey5 }}>
-              <span style={{ transform: "scale(2.2)" }}>{meta.icon}</span>
-            </div>
-          )}
-          <div style={{
-            position: "absolute", top: 12, left: 12, display: "inline-flex", alignItems: "center", gap: 6,
-            padding: "5px 10px", borderRadius: R.pill, background: "rgba(14,17,22,0.72)", color: T.white,
-            ...TYPE.label, backdropFilter: "blur(4px)",
-          }}>
-            {meta.icon} {meta.label}
-          </div>
-        </div>
-      </a>
+      {watchInline ? (
+        <button type="button" onClick={onWatchInline} style={{ display: "block", textAlign: "left", border: "none", padding: 0, background: "none", cursor: "pointer" }}>
+          {thumb}
+        </button>
+      ) : (
+        <a href={item.url} target="_blank" rel="noreferrer" style={{ display: "block", textDecoration: "none", position: "relative" }}>
+          {thumb}
+        </a>
+      )}
       <div style={{ padding: SP.lg, display: "flex", flexDirection: "column", gap: SP.sm, flex: 1 }}>
         <a href={item.url} target="_blank" rel="noreferrer" style={{ ...TYPE.h3, color: T.ink, textDecoration: "none", display: "flex", gap: SP.xs, alignItems: "flex-start" }}>
           <span style={{ flex: 1 }}>{item.title || item.url}</span>
