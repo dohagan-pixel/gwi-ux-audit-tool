@@ -152,16 +152,16 @@ function isEmbeddable(item: ContentItem): boolean {
 
 function EmbedCard({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () => void; onDelete: () => void }) {
   return (
-    <div>
-      <div style={{ borderRadius: R.xl, overflow: "hidden", border: `1px solid ${T.grey3}` }}>
-        {item.type === "instagram" ? <InstagramEmbed url={item.url} /> : <YouTubeEmbed url={item.url} />}
+    <div style={{ background: T.white, border: `1px solid ${T.grey3}`, borderRadius: R.xl, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      {item.type === "instagram" ? <InstagramEmbed url={item.url} /> : <YouTubeEmbed url={item.url} />}
+      <div style={{ padding: SP.lg, display: "flex", flexDirection: "column", gap: SP.sm }}>
+        {item.type === "youtube" && item.title && (
+          <a href={item.url} target="_blank" rel="noreferrer" style={{ ...TYPE.h3, fontSize: 16, color: T.ink, textDecoration: "none" }}>
+            {item.title}
+          </a>
+        )}
+        <ItemMeta item={item} onEdit={onEdit} onDelete={onDelete} />
       </div>
-      {item.type === "youtube" && item.title && (
-        <a href={item.url} target="_blank" rel="noreferrer" style={{ ...TYPE.h3, fontSize: 16, color: T.ink, textDecoration: "none", display: "block", marginTop: SP.sm }}>
-          {item.title}
-        </a>
-      )}
-      <ItemMeta item={item} onEdit={onEdit} onDelete={onDelete} />
     </div>
   );
 }
