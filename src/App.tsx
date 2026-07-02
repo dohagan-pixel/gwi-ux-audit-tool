@@ -4443,6 +4443,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
   var _reportPath=window.location.pathname.match(/^\/report\/([a-z0-9]+)$/);
   if(_reportPath)return(<ReportPage shareId={_reportPath[1]}/>);
   if(_authLoading)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:C.grey2,color:C.grey7,fontSize:14,fontFamily:FF}}>Loading…</div>);
+  if(!_user&&hashToView(window.location.hash)==="content-hub")return(<ContentHubPage user={null}/>);
   if(!_user)return(
     <div style={{position:"relative"}}>
       <LandingPage isPreview={false} onSignIn={function(){_setShowLoginModal(true);_setLoginError(null);}}/>

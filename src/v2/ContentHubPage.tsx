@@ -396,6 +396,11 @@ function TagFilterDropdown({
 }
 
 export function ContentHubPage({ user }: { user?: { displayName?: string | null; email?: string | null } | null }) {
+  // The hub is publicly viewable without signing in — only managing content
+  // (add/edit/delete/new categories) requires a signed-in @gwi.com account.
+  const canEdit = !!user?.email;
+  const requireAuth = () => { alert("Sign in with your @gwi.com account to manage content."); };
+
   const [items, setItems] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<{ type: ContentType; editItem?: ContentItem } | null>(null);
@@ -440,6 +445,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
   }, [items, customCategories]);
 
   const addCategory = (name: string) => {
+    if (!canEdit) { requireAuth(); return; }
     const t = name.trim();
     if (!t) return;
     setCustomCategories((prev) => (prev.includes(t) ? prev : [...prev, t]));
@@ -451,6 +457,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
   };
 
   const handleDelete = async (id: string) => {
+    if (!canEdit) { requireAuth(); return; }
     if (!window.confirm("Remove this item from the hub?")) return;
     try {
       await deleteDoc(doc(db(), "contentHub", id));
@@ -465,6 +472,11 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
     } catch (e: any) {
       alert(`Couldn't delete this item: ${e?.message || "unknown error"}`);
     }
+  };
+
+  const openModal = (m: { type: ContentType; editItem?: ContentItem }) => {
+    if (!canEdit) { requireAuth(); return; }
+    setModal(m);
   };
 
   return (
@@ -483,7 +495,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
           </div>
           <button
             type="button"
-            onClick={() => setModal({ type: "youtube" })}
+            onClick={() => openModal({ type: "youtube" })}
             style={{
               display: "inline-flex", alignItems: "center", gap: SP.sm, padding: "12px 22px",
               borderRadius: R.pill, border: "none", background: T.ink, color: T.white,
@@ -547,8 +559,8 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
               <TypeSection
                 key={t} type={t} items={grouped[t]}
                 onViewAll={() => setTypeFilter(t)}
-                onQuickAdd={() => setModal({ type: t })}
-                onEdit={(item) => setModal({ type: item.type, editItem: item })}
+                onQuickAdd={() => openModal({ type: t })}
+                onEdit={(item) => openModal({ type: item.type, editItem: item })}
                 onDelete={handleDelete}
               />
             ))
@@ -556,7 +568,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
             <TypeAllView
               type={typeFilter} items={grouped[typeFilter]}
               onBack={() => setTypeFilter("all")}
-              onEdit={(item) => setModal({ type: item.type, editItem: item })}
+              onEdit={(item) => openModal({ type: item.type, editItem: item })}
               onDelete={handleDelete}
             />
           )}
