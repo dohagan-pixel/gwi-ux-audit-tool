@@ -72,10 +72,18 @@ function loadInstagramEmbedScript(): Promise<void> {
 function InstagramEmbed({ url }: { url: string }) {
   useEffect(() => {
     let cancelled = false;
+    const timers: number[] = [];
     loadInstagramEmbedScript().then(() => {
-      if (!cancelled) (window as any).instgrm?.Embeds?.process();
+      if (cancelled) return;
+      const process = () => (window as any).instgrm?.Embeds?.process();
+      process();
+      // Instagram's script can take its height reading before a horizontally
+      // scrolling flex row has fully settled, leaving some posts stuck at the
+      // wrong size — a couple of delayed re-processes catches those.
+      timers.push(window.setTimeout(process, 500));
+      timers.push(window.setTimeout(process, 1500));
     });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; timers.forEach((t) => clearTimeout(t)); };
   }, [url]);
 
   return (
