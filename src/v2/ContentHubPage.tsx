@@ -41,6 +41,12 @@ const TYPE_META: Record<ContentType, { label: string; icon: React.ReactNode }> =
 
 function db() { return getFirestore(); }
 
+// #/content-hub/<type> deep-links straight to that section's full view.
+function typeFilterFromHash(): ContentType | "all" {
+  const parts = window.location.hash.replace(/^#\//, "").split("/");
+  return parts[0] === "content-hub" && (TYPE_ORDER as string[]).includes(parts[1]) ? (parts[1] as ContentType) : "all";
+}
+
 // Custom categories are shared across the studio (not per-item), stored in one
 // doc so a category can exist — and show up as a filter/preset everywhere —
 // before any item has actually used it yet.
@@ -404,7 +410,19 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
   const [items, setItems] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<{ type: ContentType; editItem?: ContentItem } | null>(null);
-  const [typeFilter, setTypeFilter] = useState<ContentType | "all">("all");
+  const [typeFilter, setTypeFilterRaw] = useState<ContentType | "all">(typeFilterFromHash);
+  // Each section gets its own shareable URL (#/content-hub/youtube etc.) —
+  // the type filter is just a view of the hash, so deep links and browser
+  // back/forward both work.
+  const setTypeFilter = (t: ContentType | "all") => {
+    setTypeFilterRaw(t);
+    window.location.hash = t === "all" ? "#/content-hub" : `#/content-hub/${t}`;
+  };
+  useEffect(() => {
+    const onHash = () => setTypeFilterRaw(typeFilterFromHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [customCategories, setCustomCategories] = useState<string[]>([]);
