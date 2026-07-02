@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getFirestore, collection, getDocs, setDoc, deleteDoc, doc, query, orderBy, where } from "firebase/firestore";
-import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, X, Upload, ImageOff, ChevronLeft, ChevronRight, ArrowRight, ArrowLeft } from "lucide-react";
+import { getFirestore, collection, getDocs, getDoc, setDoc, deleteDoc, doc, query, orderBy, where, arrayUnion } from "firebase/firestore";
+import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, X, Upload, ImageOff, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, ArrowLeft, RotateCcw } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 
 const TAGS = ["Digital design trends", "AI-assisted design tools", "No-code platforms", "Agentic web standards"] as const;
@@ -40,6 +40,20 @@ const TYPE_META: Record<ContentType, { label: string; icon: React.ReactNode }> =
 };
 
 function db() { return getFirestore(); }
+
+// Custom categories are shared across the studio (not per-item), stored in one
+// doc so a category can exist — and show up as a filter/preset everywhere —
+// before any item has actually used it yet.
+async function loadCustomCategories(): Promise<string[]> {
+  try {
+    const snap = await getDoc(doc(db(), "contentHubMeta", "categories"));
+    return snap.exists() ? (snap.data().list as string[]) || [] : [];
+  } catch { return []; }
+}
+
+async function saveCustomCategory(name: string): Promise<void> {
+  await setDoc(doc(db(), "contentHubMeta", "categories"), { list: arrayUnion(name) }, { merge: true });
+}
 
 // Instagram only offers a public embed widget for permalinked posts/reels —
 // Stories have no permalink and were never embeddable, by Instagram's own design.
@@ -299,6 +313,78 @@ function EmptyState() {
   );
 }
 
+const filterBtnStyle: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", gap: 6, borderRadius: R.md, cursor: "pointer",
+  fontFamily: T.font, fontSize: 13, fontWeight: 600, padding: "9px 14px", background: T.white,
+};
+
+function TagFilterDropdown({
+  allTags, active, onToggle, onAddCategory,
+}: { allTags: string[]; active: string[]; onToggle: (tag: string) => void; onAddCategory: (name: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [newTag, setNewTag] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [open]);
+
+  const submitNew = () => {
+    const t = newTag.trim();
+    if (!t) return;
+    onAddCategory(t);
+    setNewTag("");
+  };
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button" onClick={() => setOpen((o) => !o)}
+        style={{ ...filterBtnStyle, border: `1px solid ${active.length ? T.hub : T.grey4}`, color: active.length ? T.hub : T.ink }}
+      >
+        Category{active.length ? ` (${active.length})` : ""} <ChevronDown size={14} />
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 20, width: 260,
+          background: T.white, border: `1px solid ${T.grey3}`, borderRadius: R.lg, boxShadow: SHADOW.pop, padding: SP.md,
+        }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: 220, overflowY: "auto" }}>
+            {allTags.map((tag) => {
+              const isActive = active.includes(tag);
+              const c = TAG_COLORS[tag] || { fg: T.hub, bg: T.hubBg };
+              return (
+                <label key={tag} style={{ display: "flex", alignItems: "center", gap: SP.sm, padding: "6px 8px", borderRadius: R.md, cursor: "pointer", background: isActive ? c.bg : "transparent" }}>
+                  <input type="checkbox" checked={isActive} onChange={() => onToggle(tag)} style={{ accentColor: c.fg }} />
+                  <span style={{ ...TYPE.small, color: isActive ? c.fg : T.ink, fontWeight: isActive ? 700 : 500 }}>{tag}</span>
+                </label>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 6, marginTop: SP.sm, paddingTop: SP.sm, borderTop: `1px solid ${T.grey3}` }}>
+            <input
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submitNew(); } }}
+              placeholder="New category…"
+              style={{ flex: 1, fontFamily: T.font, fontSize: 13, padding: "6px 10px", borderRadius: R.sm, border: `1px solid ${T.grey4}`, boxSizing: "border-box" }}
+            />
+            <button
+              type="button" onClick={submitNew} disabled={!newTag.trim()} aria-label="Add category"
+              style={{ display: "grid", placeItems: "center", width: 30, flexShrink: 0, borderRadius: R.sm, border: `1px solid ${T.grey4}`, background: T.grey2, color: T.ink, cursor: newTag.trim() ? "pointer" : "default" }}
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ContentHubPage({ user }: { user?: { displayName?: string | null; email?: string | null } | null }) {
   const [items, setItems] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -306,6 +392,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
   const [typeFilter, setTypeFilter] = useState<ContentType | "all">("all");
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [search, setSearch] = useState("");
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
 
   const load = () => {
     setLoading(true);
@@ -315,6 +402,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
       .finally(() => setLoading(false));
   };
   useEffect(load, []);
+  useEffect(() => { loadCustomCategories().then(setCustomCategories); }, []);
 
   // Tag/search apply regardless of type — the type pills switch layout mode
   // (sectioned overview vs. a single type's full list), not what's matched.
@@ -333,12 +421,20 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
     return map;
   }, [baseFiltered]);
 
-  // Tag filter bar grows to include any custom tags people have added,
-  // not just the 4 fixed presets.
+  // Tag list grows to include shared custom categories (creatable ahead of
+  // any item existing) plus whatever's actually in use on items — not just
+  // the 4 fixed presets.
   const allTags = useMemo(() => {
-    const custom = items.flatMap((it) => it.tags).filter((t) => !(TAGS as readonly string[]).includes(t));
-    return [...TAGS, ...Array.from(new Set(custom))];
-  }, [items]);
+    const fromItems = items.flatMap((it) => it.tags);
+    return Array.from(new Set([...TAGS, ...customCategories, ...fromItems]));
+  }, [items, customCategories]);
+
+  const addCategory = (name: string) => {
+    const t = name.trim();
+    if (!t) return;
+    setCustomCategories((prev) => (prev.includes(t) ? prev : [...prev, t]));
+    saveCustomCategory(t).catch(() => {});
+  };
 
   const toggleTagFilter = (tag: string) => {
     setTagFilter((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
@@ -391,56 +487,44 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
           </button>
         </header>
 
-        <div style={{ display: "flex", gap: SP.md, marginTop: SP.xl, flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ display: "flex", gap: SP.xs, background: T.grey2, borderRadius: R.pill, padding: 3 }}>
-            {(["all", "instagram", "youtube", "blog", "website"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTypeFilter(t)}
-                style={{
-                  border: "none", cursor: "pointer", fontFamily: T.font, fontSize: 13, fontWeight: 600,
-                  padding: "7px 14px", borderRadius: R.pill,
-                  background: typeFilter === t ? T.white : "transparent",
-                  color: typeFilter === t ? T.ink : T.grey6,
-                  boxShadow: typeFilter === t ? SHADOW.hover : "none",
-                }}
-              >
-                {t === "all" ? "All" : TYPE_META[t].label}
-              </button>
-            ))}
-          </div>
+        <div style={{ display: "flex", gap: SP.sm, marginTop: SP.xl, flexWrap: "wrap", alignItems: "center" }}>
+          {(["all", "instagram", "youtube", "blog", "website"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTypeFilter(t)}
+              style={{
+                ...filterBtnStyle,
+                border: `1px solid ${typeFilter === t ? T.ink : T.grey4}`,
+                background: typeFilter === t ? T.ink : T.white,
+                color: typeFilter === t ? T.white : T.ink,
+              }}
+            >
+              {t === "all" ? "All" : TYPE_META[t].label}
+            </button>
+          ))}
+
+          <TagFilterDropdown allTags={allTags} active={tagFilter} onToggle={toggleTagFilter} onAddCategory={addCategory} />
 
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search title or note…"
             style={{
-              fontFamily: T.font, fontSize: 13, padding: "8px 14px", borderRadius: R.pill,
+              fontFamily: T.font, fontSize: 13, padding: "9px 14px", borderRadius: R.md,
               border: `1px solid ${T.grey4}`, background: T.white, color: T.ink, minWidth: 200,
             }}
           />
 
-          <div style={{ display: "flex", gap: SP.xs, flexWrap: "wrap" }}>
-            {allTags.map((tag) => {
-              const active = tagFilter.includes(tag);
-              const c = TAG_COLORS[tag] || { fg: T.hub, bg: T.hubBg };
-              return (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => toggleTagFilter(tag)}
-                  style={{
-                    border: `1px solid ${active ? c.fg : T.grey4}`, cursor: "pointer", fontFamily: T.font,
-                    fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: R.pill,
-                    background: active ? c.bg : T.white, color: active ? c.fg : T.grey6,
-                  }}
-                >
-                  {tag}
-                </button>
-              );
-            })}
-          </div>
+          {(typeFilter !== "all" || tagFilter.length > 0 || search.trim()) && (
+            <button
+              type="button"
+              onClick={() => { setTypeFilter("all"); setTagFilter([]); setSearch(""); }}
+              style={{ ...filterBtnStyle, border: "none", background: "none", color: T.grey6, marginLeft: "auto" }}
+            >
+              Reset filters <RotateCcw size={13} />
+            </button>
+          )}
         </div>
 
         <div style={{ marginTop: SP.xxxl, display: "flex", flexDirection: "column", gap: SP.xxxl }}>
@@ -462,6 +546,8 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
         <AddContentModal
           user={user}
           initialType={addModalType}
+          availableTags={allTags}
+          onAddCategory={addCategory}
           onClose={() => setAddModalType(null)}
           onAdded={(item) => { setItems((prev) => [item, ...prev]); setAddModalType(null); }}
         />
@@ -566,10 +652,12 @@ function resizeImageToDataUrl(file: File, maxDim = 640, quality = 0.72): Promise
 }
 
 function AddContentModal({
-  user, initialType, onClose, onAdded,
+  user, initialType, availableTags, onAddCategory, onClose, onAdded,
 }: {
   user?: { displayName?: string | null; email?: string | null } | null;
   initialType?: ContentType;
+  availableTags: string[];
+  onAddCategory: (name: string) => void;
   onClose: () => void;
   onAdded: (item: ContentItem) => void;
 }) {
@@ -636,6 +724,7 @@ function AddContentModal({
     const t = customTag.trim();
     if (!t) return;
     setTags((prev) => (prev.includes(t) ? prev : [...prev, t]));
+    onAddCategory(t);
     setCustomTag("");
   };
 
@@ -763,9 +852,9 @@ function AddContentModal({
 
         <Field label="Tags">
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: SP.sm }}>
-            {TAGS.map((tag) => {
+            {availableTags.map((tag) => {
               const active = tags.includes(tag);
-              const c = TAG_COLORS[tag];
+              const c = TAG_COLORS[tag] || { fg: T.hub, bg: T.hubBg };
               return (
                 <button
                   key={tag} type="button" onClick={() => toggleTag(tag)}
@@ -779,18 +868,6 @@ function AddContentModal({
                 </button>
               );
             })}
-            {tags.filter((t) => !(TAGS as readonly string[]).includes(t)).map((tag) => (
-              <button
-                key={tag} type="button" onClick={() => toggleTag(tag)}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 4, border: `1px solid ${T.hub}`, cursor: "pointer",
-                  fontFamily: T.font, fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: R.pill,
-                  background: T.hubBg, color: T.hub,
-                }}
-              >
-                {tag} <X size={11} />
-              </button>
-            ))}
           </div>
           <div style={{ display: "flex", gap: SP.sm }}>
             <input
