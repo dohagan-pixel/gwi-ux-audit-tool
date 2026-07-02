@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getFirestore, collection, getDocs, getDoc, setDoc, deleteDoc, doc, query, orderBy, where, arrayUnion } from "firebase/firestore";
-import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, X, Upload, ImageOff, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, ArrowLeft, RotateCcw } from "lucide-react";
+import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, Cog, X, Upload, ImageOff, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, ArrowLeft, RotateCcw } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 
 const TAGS = ["Digital design trends", "AI-assisted design tools", "No-code platforms", "Agentic web standards"] as const;
@@ -136,7 +136,7 @@ function isEmbeddable(item: ContentItem): boolean {
   return false;
 }
 
-function EmbedCard({ item, onDelete }: { item: ContentItem; onDelete: () => void }) {
+function EmbedCard({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () => void; onDelete: () => void }) {
   return (
     <div>
       <div style={{ borderRadius: R.xl, overflow: "hidden", border: `1px solid ${T.grey3}` }}>
@@ -147,7 +147,7 @@ function EmbedCard({ item, onDelete }: { item: ContentItem; onDelete: () => void
           {item.title}
         </a>
       )}
-      <ItemMeta item={item} onDelete={onDelete} />
+      <ItemMeta item={item} onEdit={onEdit} onDelete={onDelete} />
     </div>
   );
 }
@@ -198,7 +198,7 @@ const SECTION_MEDIA_HEIGHT: Record<ContentType, number> = {
   website: Math.round((280 * 11) / 16),
 };
 
-function ItemMeta({ item, onDelete }: { item: ContentItem; onDelete: () => void }) {
+function ItemMeta({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () => void; onDelete: () => void }) {
   return (
     <>
       {item.tags.length > 0 && (
@@ -211,23 +211,31 @@ function ItemMeta({ item, onDelete }: { item: ContentItem; onDelete: () => void 
       )}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: SP.sm }}>
         <span style={{ ...TYPE.small, color: T.grey5 }}>{item.addedBy || item.addedByEmail} · {fmtDate(item.createdAt)}</span>
-        <button
-          type="button" onClick={onDelete} title="Remove"
-          style={{ border: "none", background: "transparent", cursor: "pointer", color: T.grey5, padding: 4, flexShrink: 0 }}
-        >
-          <Trash2 size={14} />
-        </button>
+        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+          <button
+            type="button" onClick={onEdit} title="Edit"
+            style={{ border: "none", background: "transparent", cursor: "pointer", color: T.grey5, padding: 4 }}
+          >
+            <Cog size={14} />
+          </button>
+          <button
+            type="button" onClick={onDelete} title="Remove"
+            style={{ border: "none", background: "transparent", cursor: "pointer", color: T.grey5, padding: 4 }}
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
       </div>
     </>
   );
 }
 
-function SliderItem({ item, onDelete }: { item: ContentItem; onDelete: () => void }) {
+function SliderItem({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () => void; onDelete: () => void }) {
   const embeddable = isEmbeddable(item);
   const width = item.type === "instagram" && embeddable ? 340 : item.type === "youtube" && embeddable ? 460 : 280;
   return (
     <div style={{ flex: "0 0 auto", width, scrollSnapAlign: "start" }}>
-      {embeddable ? <EmbedCard item={item} onDelete={onDelete} /> : <ContentCard item={item} onDelete={onDelete} />}
+      {embeddable ? <EmbedCard item={item} onEdit={onEdit} onDelete={onDelete} /> : <ContentCard item={item} onEdit={onEdit} onDelete={onDelete} />}
     </div>
   );
 }
@@ -238,8 +246,8 @@ const pillBtnStyle: React.CSSProperties = {
 };
 
 function TypeSection({
-  type, items, onViewAll, onQuickAdd, onDelete,
-}: { type: ContentType; items: ContentItem[]; onViewAll: () => void; onQuickAdd: () => void; onDelete: (id: string) => void }) {
+  type, items, onViewAll, onQuickAdd, onEdit, onDelete,
+}: { type: ContentType; items: ContentItem[]; onViewAll: () => void; onQuickAdd: () => void; onEdit: (item: ContentItem) => void; onDelete: (id: string) => void }) {
   if (!items.length) return null;
   const meta = TYPE_META[type];
   const visible = items.slice(0, SLIDER_CAP);
@@ -265,7 +273,7 @@ function TypeSection({
       </div>
       <HScroller arrowTop={SECTION_MEDIA_HEIGHT[type] / 2}>
         {visible.map((item) => (
-          <SliderItem key={item.id} item={item} onDelete={() => onDelete(item.id)} />
+          <SliderItem key={item.id} item={item} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} />
         ))}
       </HScroller>
     </div>
@@ -273,8 +281,8 @@ function TypeSection({
 }
 
 function TypeAllView({
-  type, items, onBack, onDelete,
-}: { type: ContentType; items: ContentItem[]; onBack: () => void; onDelete: (id: string) => void }) {
+  type, items, onBack, onEdit, onDelete,
+}: { type: ContentType; items: ContentItem[]; onBack: () => void; onEdit: (item: ContentItem) => void; onDelete: (id: string) => void }) {
   const meta = TYPE_META[type];
   return (
     <div>
@@ -295,7 +303,9 @@ function TypeAllView({
         <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${type === "youtube" ? 400 : 300}px, 1fr))`, gap: SP.xxl }}>
           {items.map((item) => (
             <div key={item.id}>
-              {isEmbeddable(item) ? <EmbedCard item={item} onDelete={() => onDelete(item.id)} /> : <ContentCard item={item} onDelete={() => onDelete(item.id)} />}
+              {isEmbeddable(item)
+                ? <EmbedCard item={item} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} />
+                : <ContentCard item={item} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} />}
             </div>
           ))}
         </div>
@@ -388,7 +398,7 @@ function TagFilterDropdown({
 export function ContentHubPage({ user }: { user?: { displayName?: string | null; email?: string | null } | null }) {
   const [items, setItems] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [addModalType, setAddModalType] = useState<ContentType | null>(null);
+  const [modal, setModal] = useState<{ type: ContentType; editItem?: ContentItem } | null>(null);
   const [typeFilter, setTypeFilter] = useState<ContentType | "all">("all");
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [search, setSearch] = useState("");
@@ -473,7 +483,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
           </div>
           <button
             type="button"
-            onClick={() => setAddModalType("youtube")}
+            onClick={() => setModal({ type: "youtube" })}
             style={{
               display: "inline-flex", alignItems: "center", gap: SP.sm, padding: "12px 22px",
               borderRadius: R.pill, border: "none", background: T.ink, color: T.white,
@@ -534,29 +544,44 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
             <EmptyState />
           ) : typeFilter === "all" ? (
             TYPE_ORDER.map((t) => (
-              <TypeSection key={t} type={t} items={grouped[t]} onViewAll={() => setTypeFilter(t)} onQuickAdd={() => setAddModalType(t)} onDelete={handleDelete} />
+              <TypeSection
+                key={t} type={t} items={grouped[t]}
+                onViewAll={() => setTypeFilter(t)}
+                onQuickAdd={() => setModal({ type: t })}
+                onEdit={(item) => setModal({ type: item.type, editItem: item })}
+                onDelete={handleDelete}
+              />
             ))
           ) : (
-            <TypeAllView type={typeFilter} items={grouped[typeFilter]} onBack={() => setTypeFilter("all")} onDelete={handleDelete} />
+            <TypeAllView
+              type={typeFilter} items={grouped[typeFilter]}
+              onBack={() => setTypeFilter("all")}
+              onEdit={(item) => setModal({ type: item.type, editItem: item })}
+              onDelete={handleDelete}
+            />
           )}
         </div>
       </div>
 
-      {addModalType && (
+      {modal && (
         <AddContentModal
           user={user}
-          initialType={addModalType}
+          initialType={modal.type}
+          editItem={modal.editItem}
           availableTags={allTags}
           onAddCategory={addCategory}
-          onClose={() => setAddModalType(null)}
-          onAdded={(item) => { setItems((prev) => [item, ...prev]); setAddModalType(null); }}
+          onClose={() => setModal(null)}
+          onSaved={(item) => {
+            setItems((prev) => (prev.some((i) => i.id === item.id) ? prev.map((i) => (i.id === item.id ? item : i)) : [item, ...prev]));
+            setModal(null);
+          }}
         />
       )}
     </div>
   );
 }
 
-function ContentCard({ item, onDelete }: { item: ContentItem; onDelete: () => void }) {
+function ContentCard({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () => void; onDelete: () => void }) {
   const [hover, setHover] = useState(false);
   const meta = TYPE_META[item.type];
 
@@ -611,14 +636,24 @@ function ContentCard({ item, onDelete }: { item: ContentItem; onDelete: () => vo
         )}
         <div style={{ marginTop: "auto", paddingTop: SP.sm, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ ...TYPE.small, color: T.grey5 }}>{item.addedBy || item.addedByEmail} · {fmtDate(item.createdAt)}</span>
-          <button
-            type="button"
-            onClick={onDelete}
-            title="Remove"
-            style={{ border: "none", background: "transparent", cursor: "pointer", color: T.grey5, padding: 4 }}
-          >
-            <Trash2 size={14} />
-          </button>
+          <div style={{ display: "flex", gap: 4 }}>
+            <button
+              type="button"
+              onClick={onEdit}
+              title="Edit"
+              style={{ border: "none", background: "transparent", cursor: "pointer", color: T.grey5, padding: 4 }}
+            >
+              <Cog size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              title="Remove"
+              style={{ border: "none", background: "transparent", cursor: "pointer", color: T.grey5, padding: 4 }}
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -652,22 +687,23 @@ function resizeImageToDataUrl(file: File, maxDim = 640, quality = 0.72): Promise
 }
 
 function AddContentModal({
-  user, initialType, availableTags, onAddCategory, onClose, onAdded,
+  user, initialType, editItem, availableTags, onAddCategory, onClose, onSaved,
 }: {
   user?: { displayName?: string | null; email?: string | null } | null;
   initialType?: ContentType;
+  editItem?: ContentItem;
   availableTags: string[];
   onAddCategory: (name: string) => void;
   onClose: () => void;
-  onAdded: (item: ContentItem) => void;
+  onSaved: (item: ContentItem) => void;
 }) {
-  const [type, setType] = useState<ContentType>(initialType || "youtube");
-  const [url, setUrl] = useState("");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [thumbnailUrl, setThumbnailUrl] = useState("");
-  const [note, setNote] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  const [type, setType] = useState<ContentType>(editItem?.type || initialType || "youtube");
+  const [url, setUrl] = useState(editItem?.url || "");
+  const [title, setTitle] = useState(editItem?.title || "");
+  const [description, setDescription] = useState(editItem?.description || "");
+  const [thumbnailUrl, setThumbnailUrl] = useState(editItem?.thumbnailUrl || "");
+  const [note, setNote] = useState(editItem?.note || "");
+  const [tags, setTags] = useState<string[]>(editItem?.tags || []);
   const [customTag, setCustomTag] = useState("");
   const [fetching, setFetching] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -732,21 +768,23 @@ function AddContentModal({
     if (!url.trim() || !title.trim()) { setError("A URL and title are required."); return; }
     setSaving(true);
     const item: ContentItem = {
-      id: `ch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: editItem?.id || `ch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       type, url: url.trim(), title: title.trim(),
       description: description.trim() || undefined,
       thumbnailUrl: thumbnailUrl.trim() || undefined,
       tags, note: note.trim() || undefined,
-      addedBy: user?.displayName || "", addedByEmail: user?.email || "",
-      createdAt: Date.now(),
+      addedBy: editItem?.addedBy || user?.displayName || "",
+      addedByEmail: editItem?.addedByEmail || user?.email || "",
+      createdAt: editItem?.createdAt || Date.now(),
     };
     try {
       // Firestore rejects fields explicitly set to `undefined` — strip them before writing.
       // Written at a doc keyed by item.id (not addDoc's auto-id) so later
-      // deletes-by-id actually hit the right document.
+      // deletes-by-id actually hit the right document; editing an existing
+      // item just overwrites the same doc.
       const docData = Object.fromEntries(Object.entries(item).filter(([, v]) => v !== undefined));
       await setDoc(doc(db(), "contentHub", item.id), docData);
-      onAdded(item);
+      onSaved(item);
     } catch (e: any) {
       setError(e?.message ? `Couldn't save — ${e.message}` : "Couldn't save — try again.");
       setSaving(false);
@@ -769,7 +807,7 @@ function AddContentModal({
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: SP.lg }}>
-          <h2 style={{ ...TYPE.h2, margin: 0 }}>Add content</h2>
+          <h2 style={{ ...TYPE.h2, margin: 0 }}>{editItem ? "Edit content" : "Add content"}</h2>
           <button type="button" onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer", color: T.grey6 }}>
             <X size={20} />
           </button>
@@ -899,7 +937,7 @@ function AddContentModal({
             cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1,
           }}
         >
-          {saving ? "Saving…" : "Save to hub"}
+          {saving ? "Saving…" : editItem ? "Save changes" : "Save to hub"}
         </button>
       </div>
     </div>
