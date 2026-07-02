@@ -811,16 +811,23 @@ function AddContentModal({
     }
   };
 
+  // Only close if BOTH the press and the release happened on the backdrop
+  // itself — otherwise dragging to select text (mousedown inside the panel,
+  // mouseup drifting past its edge onto the backdrop) closes the modal
+  // mid-edit, since a bare onClick can't tell a drag-select from a real
+  // click-to-dismiss.
+  const backdropPressedRef = useRef(false);
+
   return (
     <div
-      onClick={onClose}
+      onMouseDown={(e) => { backdropPressedRef.current = e.target === e.currentTarget; }}
+      onClick={(e) => { if (backdropPressedRef.current && e.target === e.currentTarget) onClose(); }}
       style={{
         position: "fixed", inset: 0, background: "rgba(14,17,22,0.4)", display: "grid",
         placeItems: "center", zIndex: 100, padding: SP.xl,
       }}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
         style={{
           background: T.white, borderRadius: R.xl, padding: SP.xxl, width: "100%", maxWidth: 480,
