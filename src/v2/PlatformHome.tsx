@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { getFirestore, collection, getCountFromServer } from "firebase/firestore";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 
 // ── Live stats pulled from local state / storage ──────────────────────────
 function useContentHubStats() {
   const [count, setCount] = useState<number | null>(null);
   useEffect(() => {
-    getDocs(collection(getFirestore(), "contentHub"))
-      .then((snap) => setCount(snap.size))
+    // Count-only query — content items can embed images inline, so avoid
+    // pulling every full document just to show a number on the dashboard.
+    getCountFromServer(collection(getFirestore(), "contentHub"))
+      .then((snap) => setCount(snap.data().count))
       .catch(() => setCount(null));
   }, []);
   return { count };

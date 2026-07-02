@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, X, Upload, ImageOff } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 
@@ -263,6 +262,28 @@ function fmtDate(ts: number): string {
   try { return new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch { return ""; }
 }
 
+function resizeImageToDataUrl(file: File, maxDim = 640, quality = 0.72): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale) || 1;
+      const h = Math.round(img.height * scale) || 1;
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("Canvas not supported")); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Couldn't read image")); };
+    img.src = url;
+  });
+}
+
 function AddContentModal({
   user, onClose, onAdded,
 }: {
@@ -308,17 +329,17 @@ function AddContentModal({
     e.target.value = "";
     if (!file) return;
     if (!file.type.startsWith("image/")) { setError("Please choose an image file."); return; }
-    if (file.size > 5 * 1024 * 1024) { setError("Image must be under 5MB."); return; }
+    if (file.size > 15 * 1024 * 1024) { setError("Image must be under 15MB."); return; }
     setUploading(true);
     setError("");
     try {
-      const path = `contentHub/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "")}`;
-      const storageRef = ref(getStorage(), path);
-      await uploadBytes(storageRef, file, { contentType: file.type });
-      const downloadUrl = await getDownloadURL(storageRef);
-      setThumbnailUrl(downloadUrl);
+      // No Firebase Storage on the Spark plan — compress client-side and store
+      // inline as a data URL instead, well within Firestore's 1MB doc limit.
+      const dataUrl = await resizeImageToDataUrl(file);
+      if (dataUrl.length > 700_000) { setError("Image is still too large after compressing — try a smaller one."); return; }
+      setThumbnailUrl(dataUrl);
     } catch {
-      setError("Couldn't upload that image — try again.");
+      setError("Couldn't process that image — try again.");
     } finally {
       setUploading(false);
     }
@@ -430,7 +451,7 @@ function AddContentModal({
                   color: T.ink, cursor: uploading ? "default" : "pointer", alignSelf: "flex-start",
                 }}
               >
-                <Upload size={13} /> {uploading ? "Uploading…" : thumbnailUrl ? "Replace image" : "Upload image"}
+                <Upload size={13} /> {uploading ? "Processing…" : thumbnailUrl ? "Replace image" : "Upload image"}
               </button>
               {thumbnailUrl && (
                 <button
