@@ -48,36 +48,39 @@ function isEmbeddableInstagramPost(url: string): boolean {
 }
 
 // Instagram's officially documented embed.js/blockquote widget always ships
-// its own header, like/comment icons and "Add a comment" box baked into a
-// cross-origin iframe we can't reach with CSS or JS to strip. Pointing an
-// iframe straight at the same /embed/ page Instagram's widget uses under the
-// hood, then cropping its visible height, hides that footer chrome for most
-// posts — this is the same endpoint, just used directly rather than through
-// their JS wrapper. It's not a documented API, so the crop height is a
-// best-effort guess per post type and could need retuning if Instagram
-// changes their embed layout.
-function instagramEmbedIframeSrc(url: string): string | null {
-  const m = url.match(/instagram\.com\/(p|reel|reels)\/([^/?]+)/i);
-  if (!m) return null;
-  const kind = m[1] === "p" ? "p" : "reel";
-  return `https://www.instagram.com/${kind}/${m[2]}/embed/`;
+// its own header, like/comment icons and "Add a comment"/"View more on
+// Instagram" link baked into a cross-origin iframe — that attribution link is
+// mandatory on every Instagram embed, official or not, so a custom-cropped
+// iframe doesn't actually get rid of it, just clips it inconsistently.
+// Using their widget directly instead: no cropping, whatever Instagram
+// renders is what shows, sized naturally.
+function loadInstagramEmbedScript(): Promise<void> {
+  const w = window as any;
+  if (w.instgrm) return Promise.resolve();
+  if (w.__instgrmLoading) return w.__instgrmLoading;
+  w.__instgrmLoading = new Promise<void>((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://www.instagram.com/embed.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => resolve();
+    document.body.appendChild(script);
+  });
+  return w.__instgrmLoading;
 }
 
 function InstagramEmbed({ url }: { url: string }) {
-  const src = instagramEmbedIframeSrc(url);
-  if (!src) return null;
-  const isReel = /\/(reel|reels)\//i.test(url);
-  const cropHeight = isReel ? 560 : 480;
+  useEffect(() => {
+    let cancelled = false;
+    loadInstagramEmbedScript().then(() => {
+      if (!cancelled) (window as any).instgrm?.Embeds?.process();
+    });
+    return () => { cancelled = true; };
+  }, [url]);
+
   return (
-    <div style={{ position: "relative", height: cropHeight, overflow: "hidden", background: T.white }}>
-      <iframe
-        src={src}
-        title="Instagram post"
-        width="100%"
-        height={900}
-        scrolling="no"
-        style={{ position: "absolute", top: 0, left: 0, width: "100%", border: "none" }}
-      />
+    <div style={{ display: "flex", justifyContent: "center" }}>
+      <blockquote className="instagram-media" data-instgrm-permalink={url} data-instgrm-version="14" style={{ margin: 0, width: "100%", minWidth: 0 }} />
     </div>
   );
 }
