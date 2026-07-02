@@ -209,7 +209,7 @@ const SECTION_MEDIA_HEIGHT: Record<ContentType, number> = {
   instagram: 500,
   youtube: Math.round((460 * 9) / 16),
   website: Math.round((330 * 9) / 16),
-  blog: Math.round((280 * 9) / 16),
+  blog: Math.round((330 * 9) / 16),
 };
 
 function ItemMeta({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () => void; onDelete: () => void }) {
@@ -246,8 +246,8 @@ function ItemMeta({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () =>
 
 function SliderItem({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () => void; onDelete: () => void }) {
   const embeddable = isEmbeddable(item);
-  // Website: 3 full columns with a 4th peeking at the edge (like Instagram's cut-off).
-  const width = item.type === "instagram" && embeddable ? 340 : item.type === "youtube" && embeddable ? 460 : item.type === "website" ? 330 : 280;
+  // Website/blog: 3 full columns with a 4th peeking at the edge (like Instagram's cut-off).
+  const width = item.type === "instagram" && embeddable ? 340 : item.type === "youtube" && embeddable ? 460 : item.type === "website" || item.type === "blog" ? 330 : 280;
   return (
     <div style={{ flex: "0 0 auto", width, scrollSnapAlign: "start" }}>
       {embeddable ? <EmbedCard item={item} onEdit={onEdit} onDelete={onDelete} /> : <ContentCard item={item} onEdit={onEdit} onDelete={onDelete} />}
