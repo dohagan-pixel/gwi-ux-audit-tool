@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from "firebase/firestore";
+import { getFirestore, collection, getDocs, setDoc, deleteDoc, doc, query, orderBy, where } from "firebase/firestore";
 import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, X, Upload, ImageOff, ChevronLeft, ChevronRight, ArrowRight, ArrowLeft } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 
@@ -328,7 +328,14 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
   const handleDelete = async (id: string) => {
     if (!window.confirm("Remove this item from the hub?")) return;
     setItems((prev) => prev.filter((i) => i.id !== id));
-    try { await deleteDoc(doc(db(), "contentHub", id)); } catch {}
+    try {
+      await deleteDoc(doc(db(), "contentHub", id));
+      // Items saved before the addDoc→setDoc fix got a Firestore doc id that
+      // doesn't match their `id` field, so the delete above silently misses
+      // them — sweep by field value too to actually clean those up.
+      const stray = await getDocs(query(collection(db(), "contentHub"), where("id", "==", id)));
+      await Promise.all(stray.docs.map((d) => deleteDoc(d.ref)));
+    } catch {}
   };
 
   return (
@@ -613,8 +620,10 @@ function AddContentModal({
     };
     try {
       // Firestore rejects fields explicitly set to `undefined` — strip them before writing.
+      // Written at a doc keyed by item.id (not addDoc's auto-id) so later
+      // deletes-by-id actually hit the right document.
       const docData = Object.fromEntries(Object.entries(item).filter(([, v]) => v !== undefined));
-      await addDoc(collection(db(), "contentHub"), docData);
+      await setDoc(doc(db(), "contentHub", item.id), docData);
       onAdded(item);
     } catch (e: any) {
       setError(e?.message ? `Couldn't save — ${e.message}` : "Couldn't save — try again.");
