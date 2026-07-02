@@ -128,10 +128,41 @@ function scheduleInstagramSweep() {
 }
 
 function InstagramEmbed({ url }: { url: string }) {
-  useEffect(() => { scheduleInstagramSweep(); }, [url]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+    scheduleInstagramSweep();
+    // Some environments (corporate proxies/security policies, network
+    // issues, or Instagram itself rate-limiting) never let the embed
+    // render at all, for reasons entirely outside this app's control. A
+    // permanently blank card is a dead end — fall back to a plain link
+    // after a generous wait instead of leaving nothing to click.
+    const timer = window.setTimeout(() => {
+      if (!containerRef.current?.querySelector("iframe")) setFailed(true);
+    }, 7000);
+    return () => clearTimeout(timer);
+  }, [url]);
+
+  if (failed) {
+    return (
+      <a
+        href={url} target="_blank" rel="noreferrer"
+        style={{
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: SP.sm,
+          aspectRatio: "4 / 5", background: T.grey2, color: T.grey6, textDecoration: "none", padding: SP.xl, textAlign: "center",
+        }}
+      >
+        <Instagram size={28} />
+        <span style={{ ...TYPE.small, fontWeight: 700, color: T.ink }}>Couldn't load preview</span>
+        <span style={{ ...TYPE.small, color: T.hub, fontWeight: 700 }}>View on Instagram →</span>
+      </a>
+    );
+  }
 
   return (
-    <div style={{ display: "flex", justifyContent: "center" }}>
+    <div ref={containerRef} style={{ display: "flex", justifyContent: "center" }}>
       <blockquote className="instagram-media" data-instgrm-permalink={url} data-instgrm-version="14" style={{ margin: 0, width: "100%", minWidth: 0 }} />
     </div>
   );
