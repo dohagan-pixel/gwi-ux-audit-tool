@@ -785,6 +785,13 @@ function AddContentModal({
       // item just overwrites the same doc.
       const docData = Object.fromEntries(Object.entries(item).filter(([, v]) => v !== undefined));
       await setDoc(doc(db(), "contentHub", item.id), docData);
+      if (editItem) {
+        // Items saved before the addDoc→setDoc fix live at a Firestore doc id
+        // that doesn't match their `id` field — editing one without this
+        // would leave that stray original behind as a visible duplicate.
+        const stray = await getDocs(query(collection(db(), "contentHub"), where("id", "==", item.id)));
+        await Promise.all(stray.docs.filter((d) => d.id !== item.id).map((d) => deleteDoc(d.ref)));
+      }
       onSaved(item);
     } catch (e: any) {
       setError(e?.message ? `Couldn't save — ${e.message}` : "Couldn't save — try again.");
