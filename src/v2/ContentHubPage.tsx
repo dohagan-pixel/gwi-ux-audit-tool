@@ -624,13 +624,15 @@ function ContentCard({ item, onEdit, onDelete }: { item: ContentItem; onEdit: ()
               <span style={{ transform: "scale(2.2)" }}>{meta.icon}</span>
             </div>
           )}
-          <div style={{
-            position: "absolute", top: 12, left: 12, display: "inline-flex", alignItems: "center", gap: 6,
-            padding: "5px 10px", borderRadius: R.pill, background: "rgba(14,17,22,0.72)", color: T.white,
-            ...TYPE.label, backdropFilter: "blur(4px)",
-          }}>
-            {meta.icon} {meta.label}
-          </div>
+          {item.type !== "blog" && item.type !== "website" && (
+            <div style={{
+              position: "absolute", top: 12, left: 12, display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "5px 10px", borderRadius: R.pill, background: "rgba(14,17,22,0.72)", color: T.white,
+              ...TYPE.label, backdropFilter: "blur(4px)",
+            }}>
+              {meta.icon} {meta.label}
+            </div>
+          )}
         </div>
       </a>
       <div style={{ padding: SP.lg, display: "flex", flexDirection: "column", gap: SP.sm, flex: 1 }}>
