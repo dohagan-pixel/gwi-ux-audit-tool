@@ -114,7 +114,7 @@ function isEmbeddable(item: ContentItem): boolean {
 function EmbedCard({ item, onDelete }: { item: ContentItem; onDelete: () => void }) {
   return (
     <div>
-      <div style={{ borderRadius: R.xl, overflow: "hidden", boxShadow: SHADOW.hover }}>
+      <div style={{ borderRadius: R.xl, overflow: "hidden", border: `1px solid ${T.grey3}` }}>
         {item.type === "instagram" ? <InstagramEmbed url={item.url} /> : <YouTubeEmbed url={item.url} />}
       </div>
       {item.type === "youtube" && item.title && (
@@ -185,7 +185,7 @@ function ItemMeta({ item, onDelete }: { item: ContentItem; onDelete: () => void 
 
 function SliderItem({ item, onDelete }: { item: ContentItem; onDelete: () => void }) {
   const embeddable = isEmbeddable(item);
-  const width = item.type === "instagram" && embeddable ? 340 : item.type === "youtube" && embeddable ? 360 : 280;
+  const width = item.type === "instagram" && embeddable ? 340 : item.type === "youtube" && embeddable ? 460 : 280;
   return (
     <div style={{ flex: "0 0 auto", width, scrollSnapAlign: "start" }}>
       {embeddable ? <EmbedCard item={item} onDelete={onDelete} /> : <ContentCard item={item} onDelete={onDelete} />}
@@ -243,7 +243,7 @@ function TypeAllView({
       {items.length === 0 ? (
         <EmptyState />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: SP.xxl }}>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${type === "youtube" ? 400 : 300}px, 1fr))`, gap: SP.xxl }}>
           {items.map((item) => (
             <div key={item.id}>
               {isEmbeddable(item) ? <EmbedCard item={item} onDelete={() => onDelete(item.id)} /> : <ContentCard item={item} onDelete={() => onDelete(item.id)} />}
@@ -425,9 +425,9 @@ function ContentCard({ item, onDelete }: { item: ContentItem; onDelete: () => vo
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        background: T.white, borderRadius: R.xl, overflow: "hidden", display: "flex", flexDirection: "column",
-        boxShadow: hover ? SHADOW.pop : SHADOW.none, transform: hover ? "translateY(-4px)" : "none",
-        transition: "box-shadow .25s cubic-bezier(.16,1,.3,1), transform .25s cubic-bezier(.16,1,.3,1)",
+        background: T.white, border: `1px solid ${hover ? T.hub : T.grey3}`, borderRadius: R.xl, overflow: "hidden",
+        display: "flex", flexDirection: "column", transform: hover ? "translateY(-4px)" : "none",
+        transition: "transform .25s cubic-bezier(.16,1,.3,1), border-color .2s",
       }}
     >
       <a href={item.url} target="_blank" rel="noreferrer" style={{ display: "block", textDecoration: "none", position: "relative" }}>
