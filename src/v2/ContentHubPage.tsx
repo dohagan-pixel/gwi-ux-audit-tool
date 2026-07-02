@@ -187,13 +187,16 @@ const SECTION_MEDIA_HEIGHT: Record<ContentType, number> = {
 function ItemMeta({ item, onDelete }: { item: ContentItem; onDelete: () => void }) {
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: SP.sm, marginTop: SP.sm }}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1 }}>
+      {item.tags.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: SP.sm }}>
           {item.tags.map((t) => {
             const c = TAG_COLORS[t] || { fg: T.hub, bg: T.hubBg };
             return <span key={t} style={{ ...TYPE.label, color: c.fg, background: c.bg, padding: "4px 8px", borderRadius: R.pill }}>{t}</span>;
           })}
         </div>
+      )}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: SP.sm }}>
+        <span style={{ ...TYPE.small, color: T.grey5 }}>{item.addedBy || item.addedByEmail} · {fmtDate(item.createdAt)}</span>
         <button
           type="button" onClick={onDelete} title="Remove"
           style={{ border: "none", background: "transparent", cursor: "pointer", color: T.grey5, padding: 4, flexShrink: 0 }}
@@ -201,7 +204,6 @@ function ItemMeta({ item, onDelete }: { item: ContentItem; onDelete: () => void 
           <Trash2 size={14} />
         </button>
       </div>
-      <span style={{ ...TYPE.small, color: T.grey5, display: "block", marginTop: 4 }}>{item.addedBy || item.addedByEmail} · {fmtDate(item.createdAt)}</span>
     </>
   );
 }
@@ -344,7 +346,6 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Remove this item from the hub?")) return;
-    setItems((prev) => prev.filter((i) => i.id !== id));
     try {
       await deleteDoc(doc(db(), "contentHub", id));
       // Items saved before the addDoc→setDoc fix got a Firestore doc id that
@@ -352,7 +353,12 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
       // them — sweep by field value too to actually clean those up.
       const stray = await getDocs(query(collection(db(), "contentHub"), where("id", "==", id)));
       await Promise.all(stray.docs.map((d) => deleteDoc(d.ref)));
-    } catch {}
+      // Only drop it from the visible list once Firestore actually confirms
+      // the delete — removing it optimistically hid failures until refresh.
+      setItems((prev) => prev.filter((i) => i.id !== id));
+    } catch (e: any) {
+      alert(`Couldn't delete this item: ${e?.message || "unknown error"}`);
+    }
   };
 
   return (
