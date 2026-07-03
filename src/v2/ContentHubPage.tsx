@@ -349,7 +349,8 @@ function LockedOverlay({ onSignIn }: { onSignIn: () => void }) {
       alignItems: "center", justifyContent: "center", gap: SP.md, background: "rgba(246,248,252,0.8)",
       backdropFilter: "blur(6px)", borderRadius: R.xl, textAlign: "center", padding: SP.xl,
     }}>
-      <span style={{ ...TYPE.small, fontWeight: 700, color: T.ink }}>Sign in to view this content</span>
+      <img src="/gwi-logo.svg" alt="GWI" height={20} />
+      <span style={{ ...TYPE.small, fontWeight: 700, color: T.ink }}>Sign in to view GWI content</span>
       <button
         type="button" onClick={onSignIn}
         style={{ ...pillBtnStyle, padding: "9px 18px", background: T.ink, color: T.white, border: "none" }}
