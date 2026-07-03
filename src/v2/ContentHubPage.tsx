@@ -1,10 +1,10 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { getFirestore, collection, getDocs, getDoc, setDoc, deleteDoc, doc, query, orderBy, where, arrayUnion } from "firebase/firestore";
-import { ExternalLink, Instagram, Youtube, FileText, Globe, Presentation, Plus, Trash2, Cog, X, Upload, ImageOff, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, ArrowLeft, RotateCcw, GripVertical } from "lucide-react";
+import { ExternalLink, Instagram, Youtube, FileText, Globe, Presentation, Component, Plus, Trash2, Cog, X, Upload, ImageOff, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, ArrowLeft, RotateCcw, GripVertical } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 
 const TAGS = ["Digital design trends", "AI-assisted design tools", "No-code platforms", "Agentic web standards"] as const;
-const TYPE_ORDER: ContentType[] = ["instagram", "youtube", "website", "blog", "webinar"];
+const TYPE_ORDER: ContentType[] = ["instagram", "youtube", "designsystem", "website", "blog", "webinar"];
 const SLIDER_CAP = 10;
 
 // Each fixed topic maps to one of GWI's four secondary colour families —
@@ -16,7 +16,7 @@ const TAG_COLORS: Record<string, { fg: string; bg: string }> = {
   "Agentic web standards": { fg: "#003C71", bg: "#DCEFFB" },      // Blue
 };
 
-export type ContentType = "instagram" | "youtube" | "blog" | "website" | "webinar";
+export type ContentType = "instagram" | "youtube" | "blog" | "website" | "webinar" | "designsystem";
 
 export type ContentItem = {
   id: string;
@@ -46,6 +46,7 @@ const TYPE_META: Record<ContentType, { label: string; icon: React.ReactNode }> =
   blog: { label: "Blog", icon: <FileText size={14} /> },
   website: { label: "Website", icon: <Globe size={14} /> },
   webinar: { label: "Webinars", icon: <Presentation size={14} /> },
+  designsystem: { label: "Design System", icon: <Component size={14} /> },
 };
 
 function db() { return getFirestore(); }
@@ -195,20 +196,26 @@ function YouTubeEmbed({ url }: { url: string }) {
 // Google Drive's official /preview iframe — the same embed Drive itself
 // generates via "Get embeddable link". The file must be shared as "Anyone
 // with the link can view", otherwise viewers without explicit access see
-// Google's "Request access" screen instead of the recording.
+// Google's "Request access" screen instead of the video. Shared by any
+// content type whose videos are hosted on Drive (webinars, design system
+// walkthroughs) rather than YouTube/Instagram.
 function driveFileId(url: string): string | null {
   const m = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
   return m ? m[1] : null;
 }
 
-function WebinarEmbed({ url }: { url: string }) {
+function isDriveEmbedType(type: ContentType): boolean {
+  return type === "webinar" || type === "designsystem";
+}
+
+function DriveEmbed({ url }: { url: string }) {
   const id = driveFileId(url);
   if (!id) return null;
   return (
     <div style={{ position: "relative", aspectRatio: "16 / 9", background: T.ink }}>
       <iframe
         src={`https://drive.google.com/file/d/${id}/preview`}
-        title="Webinar recording"
+        title="Video"
         allow="autoplay"
         allowFullScreen
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
@@ -220,16 +227,16 @@ function WebinarEmbed({ url }: { url: string }) {
 function isEmbeddable(item: ContentItem): boolean {
   if (item.type === "instagram") return isEmbeddableInstagramPost(item.url);
   if (item.type === "youtube") return !!youtubeVideoId(item.url);
-  if (item.type === "webinar") return !!driveFileId(item.url);
+  if (isDriveEmbedType(item.type)) return !!driveFileId(item.url);
   return false;
 }
 
 function EmbedCard({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () => void; onDelete: () => void }) {
   return (
     <div style={{ background: T.white, border: `1px solid ${T.grey3}`, borderRadius: R.xl, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      {item.type === "instagram" ? <InstagramEmbed url={item.url} /> : item.type === "webinar" ? <WebinarEmbed url={item.url} /> : <YouTubeEmbed url={item.url} />}
+      {item.type === "instagram" ? <InstagramEmbed url={item.url} /> : isDriveEmbedType(item.type) ? <DriveEmbed url={item.url} /> : <YouTubeEmbed url={item.url} />}
       <div style={{ padding: SP.lg, display: "flex", flexDirection: "column", gap: SP.sm }}>
-        {(item.type === "youtube" || item.type === "webinar") && item.title && (
+        {(item.type === "youtube" || isDriveEmbedType(item.type)) && item.title && (
           <a href={item.url} target="_blank" rel="noreferrer" style={{ ...TYPE.h3, fontSize: 16, color: T.ink, textDecoration: "none" }}>
             {item.title}
           </a>
@@ -285,6 +292,7 @@ const SECTION_MEDIA_HEIGHT: Record<ContentType, number> = {
   website: Math.round((330 * 9) / 16),
   blog: Math.round((330 * 9) / 16),
   webinar: Math.round((460 * 9) / 16),
+  designsystem: Math.round((460 * 9) / 16),
 };
 
 function ItemMeta({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () => void; onDelete: () => void }) {
@@ -323,7 +331,7 @@ function SliderItem({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () 
   const embeddable = isEmbeddable(item);
   // Website/blog: 3 full columns with a 4th peeking at the edge (like Instagram's cut-off).
   const width = item.type === "instagram" && embeddable ? 340
-    : (item.type === "youtube" || item.type === "webinar") && embeddable ? 460
+    : (item.type === "youtube" || isDriveEmbedType(item.type)) && embeddable ? 460
     : item.type === "website" || item.type === "blog" ? 330 : 280;
   return (
     <div style={{ flex: "0 0 auto", width, scrollSnapAlign: "start" }}>
@@ -337,11 +345,12 @@ const pillBtnStyle: React.CSSProperties = {
   borderRadius: R.pill, cursor: "pointer", fontFamily: T.font, fontSize: 13, fontWeight: 700, color: T.ink,
 };
 
-// Some content (Drive-hosted webinars, sharing-restricted to the GWI Google
-// Workspace) can't be verified as viewable from outside — same cross-origin
-// blind spot as Instagram's embed. Rather than let a signed-out visitor hit
-// Google's own "can't access your account" error, gate viewing behind our
-// own sign-in state instead, which we can actually see and control.
+// Drive-hosted content (webinars, design system videos) is often
+// sharing-restricted to the GWI Google Workspace and can't be verified as
+// viewable from outside — same cross-origin blind spot as Instagram's embed.
+// Rather than let a signed-out visitor hit Google's own "can't access your
+// account" error, gate viewing behind our own sign-in state instead, which
+// we can actually see and control.
 function LockedOverlay({ onSignIn }: { onSignIn: () => void }) {
   return (
     <div style={{
@@ -458,7 +467,7 @@ function TypeAllView({
       ) : (
         <div style={{ position: "relative" }}>
           <div style={{
-            display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${type === "youtube" || type === "webinar" ? 400 : 300}px, 1fr))`, gap: SP.xxl,
+            display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${type === "youtube" || isDriveEmbedType(type) ? 400 : 300}px, 1fr))`, gap: SP.xxl,
             opacity: locked ? 0.4 : 1, filter: locked ? "grayscale(0.4)" : "none", pointerEvents: locked ? "none" : "auto",
           }}>
             {items.map((item) => (
@@ -640,7 +649,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
   }, [items, tagFilter, search]);
 
   const grouped = useMemo(() => {
-    const map = { instagram: [], youtube: [], blog: [], website: [], webinar: [] } as Record<ContentType, ContentItem[]>;
+    const map = { instagram: [], youtube: [], blog: [], website: [], webinar: [], designsystem: [] } as Record<ContentType, ContentItem[]>;
     for (const it of baseFiltered) map[it.type]?.push(it);
     for (const t of TYPE_ORDER) map[t].sort((a, b) => itemSortKey(a) - itemSortKey(b));
     return map;
@@ -731,7 +740,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
         </header>
 
         <div style={{ display: "flex", gap: SP.sm, marginTop: SP.xl, flexWrap: "wrap", alignItems: "center" }}>
-          {(["all", "instagram", "youtube", "website", "blog", "webinar"] as const).map((t) => (
+          {(["all", "instagram", "youtube", "designsystem", "website", "blog", "webinar"] as const).map((t) => (
             <button
               key={t}
               type="button"
@@ -785,7 +794,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
                   onQuickAdd={() => openModal({ type: t })}
                   onEdit={(item) => openModal({ type: item.type, editItem: item })}
                   onDelete={handleDelete}
-                  locked={t === "webinar" && !canEdit}
+                  locked={isDriveEmbedType(t) && !canEdit}
                   onSignIn={goToSignIn}
                 />
               </Fragment>
@@ -794,7 +803,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
             <TypeAllView
               type={typeFilter} items={grouped[typeFilter]}
               canReorder={canEdit}
-              locked={typeFilter === "webinar" && !canEdit}
+              locked={isDriveEmbedType(typeFilter) && !canEdit}
               onBack={() => setTypeFilter("all")}
               onEdit={(item) => openModal({ type: item.type, editItem: item })}
               onDelete={handleDelete}
