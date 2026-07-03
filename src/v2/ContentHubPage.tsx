@@ -1,10 +1,10 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { getFirestore, collection, getDocs, getDoc, setDoc, deleteDoc, doc, query, orderBy, where, arrayUnion } from "firebase/firestore";
-import { ExternalLink, Instagram, Youtube, FileText, Globe, Plus, Trash2, Cog, X, Upload, ImageOff, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, ArrowLeft, RotateCcw, GripVertical } from "lucide-react";
+import { ExternalLink, Instagram, Youtube, FileText, Globe, Presentation, Plus, Trash2, Cog, X, Upload, ImageOff, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, ArrowLeft, RotateCcw, GripVertical } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 
 const TAGS = ["Digital design trends", "AI-assisted design tools", "No-code platforms", "Agentic web standards"] as const;
-const TYPE_ORDER: ContentType[] = ["instagram", "youtube", "website", "blog"];
+const TYPE_ORDER: ContentType[] = ["instagram", "youtube", "website", "blog", "webinar"];
 const SLIDER_CAP = 10;
 
 // Each fixed topic maps to one of GWI's four secondary colour families —
@@ -16,7 +16,7 @@ const TAG_COLORS: Record<string, { fg: string; bg: string }> = {
   "Agentic web standards": { fg: "#003C71", bg: "#DCEFFB" },      // Blue
 };
 
-export type ContentType = "instagram" | "youtube" | "blog" | "website";
+export type ContentType = "instagram" | "youtube" | "blog" | "website" | "webinar";
 
 export type ContentItem = {
   id: string;
@@ -45,6 +45,7 @@ const TYPE_META: Record<ContentType, { label: string; icon: React.ReactNode }> =
   youtube: { label: "YouTube", icon: <Youtube size={14} /> },
   blog: { label: "Blog", icon: <FileText size={14} /> },
   website: { label: "Website", icon: <Globe size={14} /> },
+  webinar: { label: "Webinars", icon: <Presentation size={14} /> },
 };
 
 function db() { return getFirestore(); }
@@ -191,18 +192,44 @@ function YouTubeEmbed({ url }: { url: string }) {
   );
 }
 
+// Google Drive's official /preview iframe — the same embed Drive itself
+// generates via "Get embeddable link". The file must be shared as "Anyone
+// with the link can view", otherwise viewers without explicit access see
+// Google's "Request access" screen instead of the recording.
+function driveFileId(url: string): string | null {
+  const m = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+function WebinarEmbed({ url }: { url: string }) {
+  const id = driveFileId(url);
+  if (!id) return null;
+  return (
+    <div style={{ position: "relative", aspectRatio: "16 / 9", background: T.ink }}>
+      <iframe
+        src={`https://drive.google.com/file/d/${id}/preview`}
+        title="Webinar recording"
+        allow="autoplay"
+        allowFullScreen
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
+      />
+    </div>
+  );
+}
+
 function isEmbeddable(item: ContentItem): boolean {
   if (item.type === "instagram") return isEmbeddableInstagramPost(item.url);
   if (item.type === "youtube") return !!youtubeVideoId(item.url);
+  if (item.type === "webinar") return !!driveFileId(item.url);
   return false;
 }
 
 function EmbedCard({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () => void; onDelete: () => void }) {
   return (
     <div style={{ background: T.white, border: `1px solid ${T.grey3}`, borderRadius: R.xl, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      {item.type === "instagram" ? <InstagramEmbed url={item.url} /> : <YouTubeEmbed url={item.url} />}
+      {item.type === "instagram" ? <InstagramEmbed url={item.url} /> : item.type === "webinar" ? <WebinarEmbed url={item.url} /> : <YouTubeEmbed url={item.url} />}
       <div style={{ padding: SP.lg, display: "flex", flexDirection: "column", gap: SP.sm }}>
-        {item.type === "youtube" && item.title && (
+        {(item.type === "youtube" || item.type === "webinar") && item.title && (
           <a href={item.url} target="_blank" rel="noreferrer" style={{ ...TYPE.h3, fontSize: 16, color: T.ink, textDecoration: "none" }}>
             {item.title}
           </a>
@@ -257,6 +284,7 @@ const SECTION_MEDIA_HEIGHT: Record<ContentType, number> = {
   youtube: Math.round((460 * 9) / 16),
   website: Math.round((330 * 9) / 16),
   blog: Math.round((330 * 9) / 16),
+  webinar: Math.round((460 * 9) / 16),
 };
 
 function ItemMeta({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () => void; onDelete: () => void }) {
@@ -294,7 +322,9 @@ function ItemMeta({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () =>
 function SliderItem({ item, onEdit, onDelete }: { item: ContentItem; onEdit: () => void; onDelete: () => void }) {
   const embeddable = isEmbeddable(item);
   // Website/blog: 3 full columns with a 4th peeking at the edge (like Instagram's cut-off).
-  const width = item.type === "instagram" && embeddable ? 340 : item.type === "youtube" && embeddable ? 460 : item.type === "website" || item.type === "blog" ? 330 : 280;
+  const width = item.type === "instagram" && embeddable ? 340
+    : (item.type === "youtube" || item.type === "webinar") && embeddable ? 460
+    : item.type === "website" || item.type === "blog" ? 330 : 280;
   return (
     <div style={{ flex: "0 0 auto", width, scrollSnapAlign: "start" }}>
       {embeddable ? <EmbedCard item={item} onEdit={onEdit} onDelete={onDelete} /> : <ContentCard item={item} onEdit={onEdit} onDelete={onDelete} />}
@@ -394,7 +424,7 @@ function TypeAllView({
       {items.length === 0 ? (
         <EmptyState />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${type === "youtube" ? 400 : 300}px, 1fr))`, gap: SP.xxl }}>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${type === "youtube" || type === "webinar" ? 400 : 300}px, 1fr))`, gap: SP.xxl }}>
           {items.map((item) => (
             <div
               key={item.id}
@@ -569,7 +599,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
   }, [items, tagFilter, search]);
 
   const grouped = useMemo(() => {
-    const map = { instagram: [], youtube: [], blog: [], website: [] } as Record<ContentType, ContentItem[]>;
+    const map = { instagram: [], youtube: [], blog: [], website: [], webinar: [] } as Record<ContentType, ContentItem[]>;
     for (const it of baseFiltered) map[it.type]?.push(it);
     for (const t of TYPE_ORDER) map[t].sort((a, b) => itemSortKey(a) - itemSortKey(b));
     return map;
@@ -660,7 +690,7 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
         </header>
 
         <div style={{ display: "flex", gap: SP.sm, marginTop: SP.xl, flexWrap: "wrap", alignItems: "center" }}>
-          {(["all", "instagram", "youtube", "website", "blog"] as const).map((t) => (
+          {(["all", "instagram", "youtube", "website", "blog", "webinar"] as const).map((t) => (
             <button
               key={t}
               type="button"
