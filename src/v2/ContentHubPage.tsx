@@ -337,9 +337,35 @@ const pillBtnStyle: React.CSSProperties = {
   borderRadius: R.pill, cursor: "pointer", fontFamily: T.font, fontSize: 13, fontWeight: 700, color: T.ink,
 };
 
+// Some content (Drive-hosted webinars, sharing-restricted to the GWI Google
+// Workspace) can't be verified as viewable from outside — same cross-origin
+// blind spot as Instagram's embed. Rather than let a signed-out visitor hit
+// Google's own "can't access your account" error, gate viewing behind our
+// own sign-in state instead, which we can actually see and control.
+function LockedOverlay({ onSignIn }: { onSignIn: () => void }) {
+  return (
+    <div style={{
+      position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", gap: SP.md, background: "rgba(246,248,252,0.8)",
+      backdropFilter: "blur(6px)", borderRadius: R.xl, textAlign: "center", padding: SP.xl,
+    }}>
+      <span style={{ ...TYPE.small, fontWeight: 700, color: T.ink }}>Sign in to view this content</span>
+      <button
+        type="button" onClick={onSignIn}
+        style={{ ...pillBtnStyle, padding: "9px 18px", background: T.ink, color: T.white, border: "none" }}
+      >
+        Sign in
+      </button>
+    </div>
+  );
+}
+
 function TypeSection({
-  type, items, onViewAll, onQuickAdd, onEdit, onDelete,
-}: { type: ContentType; items: ContentItem[]; onViewAll: () => void; onQuickAdd: () => void; onEdit: (item: ContentItem) => void; onDelete: (id: string) => void }) {
+  type, items, onViewAll, onQuickAdd, onEdit, onDelete, locked, onSignIn,
+}: {
+  type: ContentType; items: ContentItem[]; onViewAll: () => void; onQuickAdd: () => void;
+  onEdit: (item: ContentItem) => void; onDelete: (id: string) => void; locked: boolean; onSignIn: () => void;
+}) {
   if (!items.length) return null;
   const meta = TYPE_META[type];
   const visible = items.slice(0, SLIDER_CAP);
@@ -363,21 +389,26 @@ function TypeSection({
           </button>
         </div>
       </div>
-      <HScroller arrowTop={SECTION_MEDIA_HEIGHT[type] / 2}>
-        {visible.map((item) => (
-          <SliderItem key={item.id} item={item} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} />
-        ))}
-      </HScroller>
+      <div style={{ position: "relative" }}>
+        <div style={{ opacity: locked ? 0.4 : 1, filter: locked ? "grayscale(0.4)" : "none", pointerEvents: locked ? "none" : "auto" }}>
+          <HScroller arrowTop={SECTION_MEDIA_HEIGHT[type] / 2}>
+            {visible.map((item) => (
+              <SliderItem key={item.id} item={item} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} />
+            ))}
+          </HScroller>
+        </div>
+        {locked && <LockedOverlay onSignIn={onSignIn} />}
+      </div>
     </div>
   );
 }
 
 function TypeAllView({
-  type, items, canReorder, onBack, onEdit, onDelete, onReorder,
+  type, items, canReorder, locked, onBack, onEdit, onDelete, onReorder, onSignIn,
 }: {
-  type: ContentType; items: ContentItem[]; canReorder: boolean;
+  type: ContentType; items: ContentItem[]; canReorder: boolean; locked: boolean;
   onBack: () => void; onEdit: (item: ContentItem) => void; onDelete: (id: string) => void;
-  onReorder: (orderedIds: string[]) => void;
+  onReorder: (orderedIds: string[]) => void; onSignIn: () => void;
 }) {
   const meta = TYPE_META[type];
   const [reorderOn, setReorderOn] = useState(false);
@@ -424,36 +455,42 @@ function TypeAllView({
       {items.length === 0 ? (
         <EmptyState />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${type === "youtube" || type === "webinar" ? 400 : 300}px, 1fr))`, gap: SP.xxl }}>
-          {items.map((item) => (
-            <div
-              key={item.id}
-              style={{ position: "relative" }}
-              onDragOver={reorderOn ? (e) => e.preventDefault() : undefined}
-              onDrop={reorderOn ? () => dropOn(item.id) : undefined}
-            >
-              {isEmbeddable(item)
-                ? <EmbedCard item={item} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} />
-                : <ContentCard item={item} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} />}
-              {reorderOn && (
-                // Full-card draggable cover: embeds are iframes, which swallow
-                // mouse events — without this overlay they'd be undraggable.
-                <div
-                  draggable
-                  onDragStart={() => { dragIdRef.current = item.id; }}
-                  style={{
-                    position: "absolute", inset: 0, zIndex: 5, cursor: "grab", borderRadius: R.xl,
-                    border: `2px dashed ${T.hub}`, background: "rgba(0,130,145,0.06)",
-                    display: "grid", placeItems: "center",
-                  }}
-                >
-                  <span style={{ ...pillBtnStyle, padding: "7px 14px", cursor: "grab", boxShadow: SHADOW.hover }}>
-                    <GripVertical size={13} /> Drag to reorder
-                  </span>
-                </div>
-              )}
-            </div>
-          ))}
+        <div style={{ position: "relative" }}>
+          <div style={{
+            display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${type === "youtube" || type === "webinar" ? 400 : 300}px, 1fr))`, gap: SP.xxl,
+            opacity: locked ? 0.4 : 1, filter: locked ? "grayscale(0.4)" : "none", pointerEvents: locked ? "none" : "auto",
+          }}>
+            {items.map((item) => (
+              <div
+                key={item.id}
+                style={{ position: "relative" }}
+                onDragOver={reorderOn ? (e) => e.preventDefault() : undefined}
+                onDrop={reorderOn ? () => dropOn(item.id) : undefined}
+              >
+                {isEmbeddable(item)
+                  ? <EmbedCard item={item} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} />
+                  : <ContentCard item={item} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} />}
+                {reorderOn && (
+                  // Full-card draggable cover: embeds are iframes, which swallow
+                  // mouse events — without this overlay they'd be undraggable.
+                  <div
+                    draggable
+                    onDragStart={() => { dragIdRef.current = item.id; }}
+                    style={{
+                      position: "absolute", inset: 0, zIndex: 5, cursor: "grab", borderRadius: R.xl,
+                      border: `2px dashed ${T.hub}`, background: "rgba(0,130,145,0.06)",
+                      display: "grid", placeItems: "center",
+                    }}
+                  >
+                    <span style={{ ...pillBtnStyle, padding: "7px 14px", cursor: "grab", boxShadow: SHADOW.hover }}>
+                      <GripVertical size={13} /> Drag to reorder
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {locked && <LockedOverlay onSignIn={onSignIn} />}
         </div>
       )}
     </div>
@@ -546,6 +583,9 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
   // (add/edit/delete/new categories) requires a signed-in @gwi.com account.
   const canEdit = !!user?.email;
   const requireAuth = () => { alert("Sign in with your @gwi.com account to manage content."); };
+  // Signed-out visitors here are on the standalone public route (no app
+  // shell) — send them to the normal app root so the sign-in wall renders.
+  const goToSignIn = () => { window.location.hash = "#/dashboard"; };
 
   const [items, setItems] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -744,6 +784,8 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
                   onQuickAdd={() => openModal({ type: t })}
                   onEdit={(item) => openModal({ type: item.type, editItem: item })}
                   onDelete={handleDelete}
+                  locked={t === "webinar" && !canEdit}
+                  onSignIn={goToSignIn}
                 />
               </Fragment>
             ))
@@ -751,10 +793,12 @@ export function ContentHubPage({ user }: { user?: { displayName?: string | null;
             <TypeAllView
               type={typeFilter} items={grouped[typeFilter]}
               canReorder={canEdit}
+              locked={typeFilter === "webinar" && !canEdit}
               onBack={() => setTypeFilter("all")}
               onEdit={(item) => openModal({ type: item.type, editItem: item })}
               onDelete={handleDelete}
               onReorder={handleReorder}
+              onSignIn={goToSignIn}
             />
           )}
         </div>
