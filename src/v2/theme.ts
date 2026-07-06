@@ -39,6 +39,8 @@ export const T = {
   qaBg: "#FFE8EE",
   hub: "#008291",        // GWI brand teal
   hubBg: "rgba(0,130,145,0.10)",
+  shots: "#003C71",      // GWI brand blue
+  shotsBg: "#DCEFFB",
 
   font: "Faktum, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 } as const;

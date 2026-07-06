@@ -1,5 +1,8 @@
 {
   "buildCommand": "vite build",
+  "functions": {
+    "api/screenshot.ts": { "memory": 2048, "maxDuration": 60 }
+  },
   "rewrites": [
     {"source": "/share/:path*", "destination": "/index.html"},
     {"source": "/report/:path*", "destination": "/index.html"}

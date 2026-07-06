@@ -15,6 +15,19 @@ function useContentHubStats() {
   return { count };
 }
 
+function useScreenshotStats() {
+  return useMemo(() => {
+    if (typeof window === "undefined") return { total: 0, runs: 0 };
+    try {
+      const raw = localStorage.getItem("gwi-ux-audit-tool/screenshots/v1");
+      const arr = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(arr)) return { total: 0, runs: 0 };
+      const total = arr.reduce((sum: number, run: any) => sum + (run?.count || 0), 0);
+      return { total, runs: arr.length };
+    } catch { return { total: 0, runs: 0 }; }
+  }, []);
+}
+
 function useQaStats() {
   return useMemo(() => {
     if (typeof window === "undefined") return { audits: 0, flags: 0 };
@@ -56,6 +69,7 @@ export function PlatformHome({
 }) {
   const qa = useQaStats();
   const hub = useContentHubStats();
+  const shots = useScreenshotStats();
   const [ready, setReady] = useState(false);
   useEffect(() => { const id = setTimeout(() => setReady(true), 20); return () => clearTimeout(id); }, []);
 
@@ -119,6 +133,26 @@ export function PlatformHome({
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" />
           <rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" />
+        </svg>
+      ),
+    },
+    {
+      key: "screenshots",
+      eyebrow: "Website QA",
+      title: "Page Screenshots",
+      desc: "Capture full-length screenshots of gwi.com's main pages — or any URL — at desktop, tablet and mobile widths, for QA, design review and archiving.",
+      accent: T.shots,
+      accentBg: T.shotsBg,
+      enter: () => setView("screenshots"),
+      cta: "Open Screenshots",
+      stats: [
+        { value: String(shots.total), label: "Screenshots taken" },
+        { value: String(shots.runs), label: "Capture runs" },
+      ],
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+          <circle cx="12" cy="13" r="4" />
         </svg>
       ),
     },
