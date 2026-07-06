@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Camera, Search, Loader2, Download, X, Check, RefreshCw, Globe } from "lucide-react";
+import { Camera, Loader2, Download, Check, RefreshCw } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 
 const HISTORY_KEY = "gwi-ux-audit-tool/screenshots/v1";
@@ -9,7 +9,101 @@ const WIDTH_OPTIONS = [
   { key: "mobile", label: "Mobile", width: 390 },
 ] as const;
 
-type PageEntry = { url: string; label: string; checked: boolean };
+type Item = { label: string; url: string };
+type Group = { title: string; items: Item[] };
+
+// gwi.com's actual main-nav structure, verified against the live site (2026-07-06).
+// Kept as a fixed list rather than a live crawl — gwi.com's nav is client-rendered,
+// so a plain HTTP fetch can't reliably discover it, and slug guesses 404 easily
+// (e.g. teams/strategy, /agent-spark, /about all looked plausible but don't exist).
+const NAV_GROUPS: Group[] = [
+  { title: "Products", items: [
+    { label: "Agent Spark", url: "https://www.gwi.com/platform/spark" },
+    { label: "Platform", url: "https://www.gwi.com/platform" },
+    { label: "Integrations", url: "https://www.gwi.com/integrations" },
+    { label: "GWI data", url: "https://www.gwi.com/data" },
+  ]},
+  { title: "Services", items: [
+    { label: "Services (main)", url: "https://www.gwi.com/services" },
+    { label: "Brand tracking", url: "https://www.gwi.com/services/brand-tracking" },
+    { label: "Segmentation", url: "https://www.gwi.com/services/market-segmentation" },
+    { label: "Audience profiling", url: "https://www.gwi.com/services/audience-profiling" },
+    { label: "Analyst hours", url: "https://www.gwi.com/services/analysis-and-reporting-services" },
+    { label: "Ad effectiveness", url: "https://www.gwi.com/services/ad-effectivenes" },
+    { label: "Concept testing", url: "https://www.gwi.com/services/concept-testing" },
+  ]},
+  { title: "Solutions — Teams", items: [
+    { label: "Teams (main)", url: "https://www.gwi.com/teams" },
+    { label: "Marketing", url: "https://www.gwi.com/teams/marketing" },
+    { label: "Sales", url: "https://www.gwi.com/teams/sales" },
+    { label: "Product", url: "https://www.gwi.com/teams/product-development" },
+    { label: "Research", url: "https://www.gwi.com/teams/research" },
+  ]},
+  { title: "Solutions — Use cases", items: [
+    { label: "Use cases (main)", url: "https://www.gwi.com/use-cases" },
+    { label: "Pitching", url: "https://www.gwi.com/use-cases/agency-pitching" },
+    { label: "Media planning", url: "https://www.gwi.com/use-cases/media-planning-data" },
+    { label: "Content marketing", url: "https://www.gwi.com/use-cases/content-strategy" },
+    { label: "Partnerships", url: "https://www.gwi.com/use-cases/sponsorship-partnership" },
+    { label: "Retail media", url: "https://www.gwi.com/retail-media" },
+    { label: "Synthetic audiences", url: "https://www.gwi.com/use-cases/synthetic-audiences" },
+  ]},
+  { title: "Solutions — Industries", items: [
+    { label: "Industries (main)", url: "https://www.gwi.com/industries" },
+    { label: "Agencies", url: "https://www.gwi.com/industries/agencies" },
+    { label: "Media", url: "https://www.gwi.com/industries/media" },
+    { label: "Sports", url: "https://www.gwi.com/industries/sports" },
+    { label: "Gaming", url: "https://www.gwi.com/industries/gaming" },
+    { label: "Finance", url: "https://www.gwi.com/industries/finance" },
+  ]},
+  { title: "Resources", items: [
+    { label: "Blog", url: "https://www.gwi.com/blog" },
+    { label: "Reports", url: "https://www.gwi.com/reports" },
+    { label: "Case studies", url: "https://www.gwi.com/case-studies" },
+    { label: "Newsletter: On the dot", url: "https://www.gwi.com/on-the-dot-subscribe" },
+    { label: "Webinar & events", url: "https://www.gwi.com/webinars" },
+  ]},
+  { title: "CTAs", items: [
+    { label: "Pricing", url: "https://www.gwi.com/pricing" },
+    { label: "Sign in", url: "https://signin.globalwebindex.com/" },
+    { label: "Book a demo", url: "https://www.gwi.com/book-demo" },
+  ]},
+];
+
+// gwi.com's footer, verified against the live site (2026-07-06).
+const FOOTER_GROUPS: Group[] = [
+  { title: "Products", items: [
+    { label: "Human insights platform", url: "https://www.gwi.com/platform" },
+    { label: "Agent Spark: Human insights analyst", url: "https://www.gwi.com/platform/spark" },
+    { label: "Learn about our data", url: "https://www.gwi.com/data" },
+    { label: "Pricing", url: "https://www.gwi.com/pricing" },
+  ]},
+  { title: "Solutions & Integrations", items: [
+    { label: "RLD", url: "https://www.gwi.com/respondent-level-data" },
+    { label: "Audience activation", url: "https://www.gwi.com/audience-activation" },
+    { label: "Data partnerships", url: "https://www.gwi.com/fusions" },
+    { label: "Become a GWI partner", url: "https://www.gwi.com/partners" },
+  ]},
+  { title: "Resources", items: [
+    { label: "Blog", url: "https://www.gwi.com/blog" },
+    { label: "Reports", url: "https://www.gwi.com/reports" },
+    { label: "Help center", url: "https://help.globalwebindex.com/" },
+  ]},
+  { title: "Company", items: [
+    { label: "Our story", url: "https://www.gwi.com/about-us" },
+    { label: "Careers", url: "https://www.gwi.com/careers" },
+    { label: "Press", url: "https://www.gwi.com/press-center" },
+    { label: "Contact", url: "https://www.gwi.com/contact" },
+    { label: "Trust center", url: "https://trust.gwi.com/" },
+  ]},
+  { title: "Legal stuff", items: [
+    { label: "Website terms and conditions", url: "https://www.gwi.com/terms" },
+    { label: "Website privacy policy", url: "https://www.gwi.com/legal/privacy-policy" },
+    { label: "Website cookie policy", url: "https://www.gwi.com/cookie-policy" },
+    { label: "Modern slavery statement", url: "https://www.gwi.com/legal/modern-slavery-statement" },
+  ]},
+];
+
 type ResultItem = {
   id: string;
   url: string;
@@ -21,6 +115,19 @@ type ResultItem = {
   height?: number;
   error?: string;
 };
+
+function allItems(): Item[] {
+  const seen = new Set<string>();
+  const out: Item[] = [];
+  for (const g of [...NAV_GROUPS, ...FOOTER_GROUPS]) {
+    for (const it of g.items) {
+      if (seen.has(it.url)) continue;
+      seen.add(it.url);
+      out.push(it);
+    }
+  }
+  return out;
+}
 
 function recordRun(count: number) {
   try {
@@ -42,65 +149,53 @@ function filenameFor(url: string, widthLabel: string): string {
 }
 
 export function ScreenshotToolPage() {
-  const [baseUrl, setBaseUrl] = useState("https://www.gwi.com");
-  const [discovering, setDiscovering] = useState(false);
-  const [discoverError, setDiscoverError] = useState<string | null>(null);
-  const [pages, setPages] = useState<PageEntry[]>([]);
+  const [selected, setSelected] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    for (const it of allItems()) init[it.url] = true;
+    return init;
+  });
+  const [customItems, setCustomItems] = useState<Item[]>([]);
   const [manualText, setManualText] = useState("");
   const [selectedWidths, setSelectedWidths] = useState<Set<string>>(new Set(["desktop"]));
   const [capturing, setCapturing] = useState(false);
   const [results, setResults] = useState<ResultItem[]>([]);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
 
-  const discoverPages = async () => {
-    setDiscovering(true);
-    setDiscoverError(null);
-    try {
-      const res = await fetch(`/api/discover-pages?url=${encodeURIComponent(baseUrl)}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Discovery failed");
-      const found: PageEntry[] = (data.pages || []).map((p: any) => ({ url: p.url, label: p.label, checked: true }));
-      setPages((prev) => {
-        const seen = new Set(prev.map((p) => p.url.replace(/\/$/, "")));
-        const merged = prev.slice();
-        for (const p of found) if (!seen.has(p.url.replace(/\/$/, ""))) { merged.push(p); seen.add(p.url.replace(/\/$/, "")); }
-        return merged;
-      });
-      if (data.truncated) setDiscoverError(`Showing the first ${data.pages.length} of ${data.totalFound} pages found.`);
-    } catch (e: any) {
-      setDiscoverError(e?.message || "Couldn't discover pages for this site");
-    } finally {
-      setDiscovering(false);
-    }
-  };
+  const toggle = (url: string) => setSelected((prev) => ({ ...prev, [url]: !prev[url] }));
 
   const addManualUrls = () => {
     const lines = manualText.split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
     if (!lines.length) return;
-    setPages((prev) => {
-      const seen = new Set(prev.map((p) => p.url.replace(/\/$/, "")));
-      const merged = prev.slice();
-      for (let raw of lines) {
-        if (!/^https?:\/\//i.test(raw)) raw = `https://${raw}`;
-        try {
-          const u = new URL(raw);
-          const key = u.href.replace(/\/$/, "");
-          if (seen.has(key)) continue;
-          seen.add(key);
-          merged.push({ url: u.href, label: u.pathname === "/" ? "Home" : u.pathname, checked: true });
-        } catch {}
-      }
-      return merged;
-    });
+    const added: Item[] = [];
+    for (let raw of lines) {
+      if (!/^https?:\/\//i.test(raw)) raw = `https://${raw}`;
+      try {
+        const u = new URL(raw);
+        added.push({ url: u.href, label: u.pathname === "/" ? "Home" : u.pathname });
+      } catch {}
+    }
+    if (added.length) {
+      setCustomItems((prev) => [...prev, ...added]);
+      setSelected((prev) => {
+        const next = { ...prev };
+        for (const it of added) next[it.url] = true;
+        return next;
+      });
+    }
     setManualText("");
   };
 
-  const togglePage = (url: string) => {
-    setPages((prev) => prev.map((p) => (p.url === url ? { ...p, checked: !p.checked } : p)));
+  const removeCustom = (url: string) => {
+    setCustomItems((prev) => prev.filter((it) => it.url !== url));
+    setSelected((prev) => { const next = { ...prev }; delete next[url]; return next; });
   };
 
-  const removePage = (url: string) => {
-    setPages((prev) => prev.filter((p) => p.url !== url));
+  const setAll = (value: boolean) => {
+    setSelected((prev) => {
+      const next: Record<string, boolean> = {};
+      for (const url of Object.keys(prev)) next[url] = value;
+      return next;
+    });
   };
 
   const toggleWidth = (key: string) => {
@@ -111,16 +206,24 @@ export function ScreenshotToolPage() {
     });
   };
 
-  const selectedPages = pages.filter((p) => p.checked);
+  const combinedGroups = [...NAV_GROUPS, ...FOOTER_GROUPS.map((g) => ({ title: `Footer — ${g.title}`, items: g.items }))];
+  const selectedUrls = Object.keys(selected).filter((u) => selected[u]);
+  const totalCount = Object.keys(selected).length;
   const activeWidths = WIDTH_OPTIONS.filter((w) => selectedWidths.has(w.key));
-  const jobCount = selectedPages.length * activeWidths.length;
+  const jobCount = selectedUrls.length * activeWidths.length;
+
+  const labelFor = (url: string): string => {
+    for (const it of allItems()) if (it.url === url) return it.label;
+    for (const it of customItems) if (it.url === url) return it.label;
+    return url;
+  };
 
   const runCapture = async () => {
     if (!jobCount || capturing) return;
     const jobs: ResultItem[] = [];
-    for (const p of selectedPages) {
+    for (const url of selectedUrls) {
       for (const w of activeWidths) {
-        jobs.push({ id: `${p.url}__${w.key}`, url: p.url, label: p.label, width: w.width, widthLabel: w.label, status: "queued" });
+        jobs.push({ id: `${url}__${w.key}`, url, label: labelFor(url), width: w.width, widthLabel: w.label, status: "queued" });
       }
     }
     setResults(jobs);
@@ -142,7 +245,7 @@ export function ScreenshotToolPage() {
       setProgress({ done: doneCount, total: jobs.length });
     }
     setCapturing(false);
-    recordRun(jobs.filter((j) => true).length);
+    recordRun(jobs.length);
   };
 
   return (
@@ -151,47 +254,23 @@ export function ScreenshotToolPage() {
         <header style={{ paddingBottom: SP.xxl, borderBottom: `1px solid ${T.grey3}` }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: SP.sm, ...TYPE.eyebrow, color: T.shots }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.shots }} />
-            Website QA
+            Website QA · gwi.com
           </div>
           <h1 style={{ ...TYPE.h1, margin: `${SP.md}px 0 ${SP.sm}px` }}>Page Screenshots</h1>
           <p style={{ ...TYPE.body, color: T.grey7, margin: 0, maxWidth: 640 }}>
-            Discover a site's main pages (or paste your own URLs), pick your widths, and capture full-length screenshots for QA and design review.
+            Every page in gwi.com's main navigation and footer, grouped the same way they appear on the live site. Pick your widths and capture full-length screenshots for QA and design review.
           </p>
         </header>
 
         {/* ── Controls ─────────────────────────────────── */}
         <div style={{ marginTop: SP.xxl, background: T.white, border: `1px solid ${T.grey3}`, borderRadius: R.xl, padding: SP.xl, display: "flex", flexDirection: "column", gap: SP.xl }}>
           <div>
-            <div style={{ ...TYPE.label, color: T.grey6, marginBottom: SP.sm }}>Site to scan</div>
-            <div style={{ display: "flex", gap: SP.sm, flexWrap: "wrap" }}>
-              <div style={{ position: "relative", flex: "1 1 320px" }}>
-                <Globe size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: T.grey5 }} />
-                <input
-                  value={baseUrl}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                  placeholder="https://www.gwi.com"
-                  style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px 10px 34px", borderRadius: R.md, border: `1px solid ${T.grey4}`, fontSize: 14, fontFamily: T.font, color: T.ink }}
-                />
-              </div>
-              <button
-                onClick={discoverPages}
-                disabled={discovering || !baseUrl.trim()}
-                style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 16px", borderRadius: R.md, border: "none", fontWeight: 700, fontSize: 13, cursor: discovering ? "wait" : "pointer", background: T.shots, color: T.white, opacity: discovering || !baseUrl.trim() ? 0.6 : 1 }}
-              >
-                {discovering ? <Loader2 size={14} className="spin" style={{ animation: "spin 0.8s linear infinite" }} /> : <Search size={14} />}
-                {discovering ? "Discovering…" : "Discover pages"}
-              </button>
-            </div>
-            {discoverError && <div style={{ ...TYPE.small, color: T.warn, marginTop: SP.sm }}>{discoverError}</div>}
-          </div>
-
-          <div>
-            <div style={{ ...TYPE.label, color: T.grey6, marginBottom: SP.sm }}>Or add specific URLs</div>
+            <div style={{ ...TYPE.label, color: T.grey6, marginBottom: SP.sm }}>Add a specific URL (not in the nav or footer)</div>
             <div style={{ display: "flex", gap: SP.sm, alignItems: "flex-start" }}>
               <textarea
                 value={manualText}
                 onChange={(e) => setManualText(e.target.value)}
-                placeholder={"One URL per line, e.g.\nhttps://www.gwi.com/pricing\nhttps://www.gwi.com/about"}
+                placeholder={"One URL per line, e.g.\nhttps://www.gwi.com/reports/some-report"}
                 rows={2}
                 style={{ flex: 1, boxSizing: "border-box", padding: "10px 12px", borderRadius: R.md, border: `1px solid ${T.grey4}`, fontSize: 13, fontFamily: T.font, color: T.ink, resize: "vertical" }}
               />
@@ -205,28 +284,54 @@ export function ScreenshotToolPage() {
             </div>
           </div>
 
-          {pages.length > 0 && (
-            <div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: SP.sm }}>
-                <div style={{ ...TYPE.label, color: T.grey6 }}>Pages ({selectedPages.length} of {pages.length} selected)</div>
-                <div style={{ display: "flex", gap: SP.md }}>
-                  <button onClick={() => setPages((prev) => prev.map((p) => ({ ...p, checked: true })))} style={{ background: "none", border: "none", color: T.shots, fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 0 }}>Select all</button>
-                  <button onClick={() => setPages((prev) => prev.map((p) => ({ ...p, checked: false })))} style={{ background: "none", border: "none", color: T.grey6, fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 0 }}>Clear</button>
-                </div>
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm, maxHeight: 220, overflow: "auto", padding: SP.sm, background: T.grey1, borderRadius: R.md }}>
-                {pages.map((p) => (
-                  <div key={p.url} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 6px 6px 10px", borderRadius: R.pill, background: p.checked ? T.shotsBg : T.white, border: `1px solid ${p.checked ? T.shots : T.grey4}`, fontSize: 12.5 }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-                      <input type="checkbox" checked={p.checked} onChange={() => togglePage(p.url)} style={{ margin: 0 }} />
-                      <span style={{ color: p.checked ? T.shots : T.grey7, fontWeight: 600, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={p.url}>{p.label}</span>
-                    </label>
-                    <button onClick={() => removePage(p.url)} title="Remove" style={{ display: "flex", background: "none", border: "none", cursor: "pointer", color: T.grey5, padding: 2 }}><X size={12} /></button>
-                  </div>
-                ))}
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: SP.md }}>
+              <div style={{ ...TYPE.label, color: T.grey6 }}>Pages ({selectedUrls.length} of {totalCount} selected)</div>
+              <div style={{ display: "flex", gap: SP.md }}>
+                <button onClick={() => setAll(true)} style={{ background: "none", border: "none", color: T.shots, fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 0 }}>Select all</button>
+                <button onClick={() => setAll(false)} style={{ background: "none", border: "none", color: T.grey6, fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 0 }}>Clear</button>
               </div>
             </div>
-          )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: SP.lg, maxHeight: 420, overflow: "auto", padding: SP.md, background: T.grey1, borderRadius: R.md }}>
+              {combinedGroups.map((g) => (
+                <div key={g.title}>
+                  <div style={{ ...TYPE.small, fontWeight: 700, color: T.grey7, marginBottom: SP.xs }}>{g.title}</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm }}>
+                    {g.items.map((it) => {
+                      const on = !!selected[it.url];
+                      return (
+                        <label key={it.url} title={it.url} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: R.pill, background: on ? T.shotsBg : T.white, border: `1px solid ${on ? T.shots : T.grey4}`, fontSize: 12.5, cursor: "pointer" }}>
+                          <input type="checkbox" checked={on} onChange={() => toggle(it.url)} style={{ margin: 0 }} />
+                          <span style={{ color: on ? T.shots : T.grey7, fontWeight: 600, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              {customItems.length > 0 && (
+                <div>
+                  <div style={{ ...TYPE.small, fontWeight: 700, color: T.grey7, marginBottom: SP.xs }}>Custom URLs</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm }}>
+                    {customItems.map((it) => {
+                      const on = !!selected[it.url];
+                      return (
+                        <div key={it.url} title={it.url} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 6px 6px 10px", borderRadius: R.pill, background: on ? T.shotsBg : T.white, border: `1px solid ${on ? T.shots : T.grey4}`, fontSize: 12.5 }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                            <input type="checkbox" checked={on} onChange={() => toggle(it.url)} style={{ margin: 0 }} />
+                            <span style={{ color: on ? T.shots : T.grey7, fontWeight: 600, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.label}</span>
+                          </label>
+                          <button onClick={() => removeCustom(it.url)} title="Remove" style={{ display: "flex", background: "none", border: "none", cursor: "pointer", color: T.grey5, padding: 2, fontSize: 13 }}>×</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
           <div>
             <div style={{ ...TYPE.label, color: T.grey6, marginBottom: SP.sm }}>Widths</div>
