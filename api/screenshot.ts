@@ -18,6 +18,11 @@ async function captureScreenshot(url: string, width: number) {
     const page = await browser.newPage();
     await page.setUserAgent(UA);
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 25000 });
+    // Strip gwi.com's CookieYes consent banner (and its dimming overlay) plus
+    // the hero video popup — neither should appear in QA screenshots.
+    await page.evaluate(() => {
+      document.querySelectorAll('.cky-consent-container, .cky-overlay, .cky-consent-bar, #gwi-hero-full-width-popup-id').forEach((el) => el.remove());
+    }).catch(() => {});
     // Let lazy-loaded images/animations settle before capturing.
     await new Promise((r) => setTimeout(r, 700));
     const height = await page.evaluate(() => document.documentElement.scrollHeight);

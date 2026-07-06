@@ -160,6 +160,7 @@ export function ScreenshotToolPage() {
   const [capturing, setCapturing] = useState(false);
   const [results, setResults] = useState<ResultItem[]>([]);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
+  const [lightbox, setLightbox] = useState<ResultItem | null>(null);
 
   const toggle = (url: string) => setSelected((prev) => ({ ...prev, [url]: !prev[url] }));
 
@@ -364,44 +365,68 @@ export function ScreenshotToolPage() {
             {capturing && <span style={{ ...TYPE.small, color: T.grey6 }}>This can take a while for full-length pages — please keep this tab open.</span>}
           </div>
         </div>
-
-        {/* ── Results ──────────────────────────────────── */}
-        {results.length > 0 && (
-          <div style={{ marginTop: SP.xxl }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: SP.lg }}>
-              <div style={{ ...TYPE.h3 }}>Results</div>
-              {!capturing && <button onClick={runCapture} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: T.shots, fontWeight: 700, fontSize: 13, cursor: "pointer" }}><RefreshCw size={13} /> Re-run</button>}
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: SP.lg }}>
-              {results.map((r) => (
-                <div key={r.id} style={{ background: T.white, border: `1px solid ${T.grey3}`, borderRadius: R.lg, overflow: "hidden", boxShadow: SHADOW.none }}>
-                  <div style={{ height: 160, background: T.grey2, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                    {r.status === "done" && r.image && (
-                      <img src={r.image} alt={r.label} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
-                    )}
-                    {r.status === "capturing" && <Loader2 size={22} color={T.grey5} style={{ animation: "spin 0.8s linear infinite" }} />}
-                    {r.status === "queued" && <span style={{ ...TYPE.small, color: T.grey5 }}>Queued…</span>}
-                    {r.status === "error" && <span style={{ ...TYPE.small, color: T.flag, padding: SP.md, textAlign: "center" }}>{r.error}</span>}
-                  </div>
-                  <div style={{ padding: SP.md }}>
-                    <div style={{ fontWeight: 700, fontSize: 13, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.url}>{r.label}</div>
-                    <div style={{ ...TYPE.small, color: T.grey6, marginTop: 2 }}>{r.widthLabel} · {r.width}px{r.height ? ` × ${r.height}px` : ""}</div>
-                    {r.status === "done" && r.image && (
-                      <a
-                        href={r.image}
-                        download={filenameFor(r.url, r.widthLabel)}
-                        style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: SP.sm, fontSize: 12.5, fontWeight: 700, color: T.shots, textDecoration: "none" }}
-                      >
-                        <Download size={13} /> Download
-                      </a>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* ── Results — wider than the rest of the page so full-length pages are
+           legible side by side at their real aspect ratio ─────────────── */}
+      {results.length > 0 && (
+        <div style={{ maxWidth: 1680, margin: "0 auto", padding: `0 ${SP.xl}px ${SP.huge}px` }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: SP.lg }}>
+            <div style={{ ...TYPE.h3 }}>Results</div>
+            {!capturing && <button onClick={runCapture} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: T.shots, fontWeight: 700, fontSize: 13, cursor: "pointer" }}><RefreshCw size={13} /> Re-run</button>}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(480px, 1fr))", gap: SP.xl }}>
+            {results.map((r) => (
+              <div key={r.id} style={{ background: T.white, border: `1px solid ${T.grey3}`, borderRadius: R.lg, overflow: "hidden", boxShadow: SHADOW.none, display: "flex", flexDirection: "column" }}>
+                <div
+                  onClick={() => r.status === "done" && r.image && setLightbox(r)}
+                  style={{ background: T.grey2, display: "flex", alignItems: "flex-start", justifyContent: "center", overflow: "hidden", minHeight: 120, cursor: r.status === "done" ? "zoom-in" : "default" }}
+                >
+                  {r.status === "done" && r.image && (
+                    <img src={r.image} alt={r.label} style={{ width: "100%", height: "auto", display: "block" }} />
+                  )}
+                  {r.status === "capturing" && <Loader2 size={22} color={T.grey5} style={{ animation: "spin 0.8s linear infinite", margin: "40px 0" }} />}
+                  {r.status === "queued" && <span style={{ ...TYPE.small, color: T.grey5, margin: "40px 0" }}>Queued…</span>}
+                  {r.status === "error" && <span style={{ ...TYPE.small, color: T.flag, padding: SP.md, textAlign: "center" }}>{r.error}</span>}
+                </div>
+                <div style={{ padding: SP.md }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.url}>{r.label}</div>
+                  <div style={{ ...TYPE.small, color: T.grey6, marginTop: 2 }}>{r.widthLabel} · {r.width}px{r.height ? ` × ${r.height}px` : ""}</div>
+                  {r.status === "done" && r.image && (
+                    <a
+                      href={r.image}
+                      download={filenameFor(r.url, r.widthLabel)}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: SP.sm, fontSize: 12.5, fontWeight: 700, color: T.shots, textDecoration: "none" }}
+                    >
+                      <Download size={13} /> Download
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Lightbox — full-resolution, scrollable, correct aspect ratio ── */}
+      {lightbox && lightbox.image && (
+        <div
+          onClick={() => setLightbox(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(14,17,22,0.85)", overflow: "auto", padding: SP.xxl, display: "flex", justifyContent: "center" }}
+        >
+          <div style={{ maxWidth: 1100, width: "100%", height: "fit-content" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: SP.md }}>
+              <div style={{ color: T.white, fontWeight: 700 }}>{lightbox.label} · {lightbox.widthLabel} · {lightbox.width}px{lightbox.height ? ` × ${lightbox.height}px` : ""}</div>
+              <div style={{ display: "flex", gap: SP.lg, alignItems: "center" }}>
+                <a href={lightbox.image} download={filenameFor(lightbox.url, lightbox.widthLabel)} style={{ color: T.white, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, textDecoration: "none" }}><Download size={14} /> Download</a>
+                <button onClick={() => setLightbox(null)} style={{ background: "none", border: "none", color: T.white, fontSize: 22, cursor: "pointer", lineHeight: 1 }}>×</button>
+              </div>
+            </div>
+            <img src={lightbox.image} alt={lightbox.label} style={{ width: "100%", height: "auto", display: "block", borderRadius: R.sm }} />
+          </div>
+        </div>
+      )}
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
