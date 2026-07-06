@@ -23,8 +23,25 @@ async function captureScreenshot(url: string, width: number) {
     await page.evaluate(() => {
       document.querySelectorAll('.cky-consent-container, .cky-overlay, .cky-consent-bar, #gwi-hero-full-width-popup-id').forEach((el) => el.remove());
     }).catch(() => {});
-    // Let lazy-loaded images/animations settle before capturing.
-    await new Promise((r) => setTimeout(r, 700));
+
+    // Resize to the full page height *before* waiting — native `loading="lazy"`
+    // images and scroll-triggered embeds (e.g. the Storylane product demo) only
+    // fire once they're considered "in view". Scrolling through and back to the
+    // top doesn't reliably work (images near the bottom lose "in view" status
+    // again once scrolled away and never finish loading); resizing the viewport
+    // once, to the full document height, keeps everything in view throughout.
+    const fullHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+    await page.setViewport({ width, height: Math.min(fullHeight, 20000), deviceScaleFactor: 1 });
+    await new Promise((r) => setTimeout(r, 1200));
+    await Promise.race([
+      page.evaluate(() => Promise.all(
+        [...document.querySelectorAll('img')].map((img) =>
+          img.complete ? Promise.resolve() : new Promise((res) => { img.onload = img.onerror = res; })
+        )
+      )),
+      new Promise((r) => setTimeout(r, 6000)),
+    ]).catch(() => {});
+
     const height = await page.evaluate(() => document.documentElement.scrollHeight);
     const buffer = await page.screenshot({ type: 'jpeg', quality: 78, fullPage: true });
     return { buffer, height };
@@ -49,7 +66,7 @@ export default async function handler(req: any, res: any) {
   try {
     const { buffer, height } = await Promise.race([
       captureScreenshot(raw, width),
-      new Promise<never>((_, rej) => setTimeout(() => rej(new Error('Screenshot timed out after 28s')), 28000)),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error('Screenshot timed out after 45s')), 45000)),
     ]);
     const image = `data:image/jpeg;base64,${Buffer.from(buffer).toString('base64')}`;
     return res.json({ image, width, height });
