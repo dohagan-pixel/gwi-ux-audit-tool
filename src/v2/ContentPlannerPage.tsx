@@ -4,7 +4,7 @@ import {
 } from "firebase/firestore";
 import * as XLSX from "xlsx";
 import {
-  Plus, Cog, Trash2, X, Upload, Download, ChevronDown, Undo2,
+  Plus, Cog, Trash2, X, Upload, Download, ChevronDown, ChevronRight, Undo2, Copy,
   Megaphone, FileText, Calendar, Video, Mic, Layers, Code2, Scale, Radio,
 } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
@@ -52,6 +52,24 @@ const PILLARS: Record<string, string> = {
   C3: "Build on something real",
 };
 
+// Exact per-variant palette from the source Design canvas — cards keep their own
+// variant colour even where several variants share a lane (e.g. hero-full vs campaign).
+const VARIANT_COLOR: Record<string, { fg: string; bg: string; bar: string }> = {
+  "hero-full": { fg: "#fff", bg: "#ff0077", bar: "#ff0077" },
+  "campaign": { fg: "#b84800", bg: "#ffe0cc", bar: "#b84800" },
+  "event": { fg: "#8a6400", bg: "#fff4c2", bar: "#8a6400" },
+  "customer-event": { fg: "#2b3aa0", bg: "#dfe4ff", bar: "#2b3aa0" },
+  "series": { fg: "#b80010", bg: "#ffe0e0", bar: "#b80010" },
+  "blog": { fg: "#004499", bg: "#ddeeff", bar: "#004499" },
+  "listicle": { fg: "#00693e", bg: "#d9f5e8", bar: "#00693e" },
+  "llm": { fg: "#5000cc", bg: "#e8e0ff", bar: "#5000cc" },
+  "video": { fg: "#006474", bg: "#d9f5f5", bar: "#006474" },
+  "podcast": { fg: "#8800b8", bg: "#f5d9ff", bar: "#8800b8" },
+};
+
+// Container variants — the only kind of card a content item (blog/listicle/llm/video/podcast) may link up to.
+const CONTAINER_VARIANTS = new Set(["hero-full", "campaign", "series", "event", "customer-event"]);
+
 export type ContentPlanItem = {
   id: string;
   order: number;
@@ -65,6 +83,7 @@ export type ContentPlanItem = {
   category?: string;
   proposed: boolean;
   status: string;
+  parentId?: string;
   addedBy?: string;
   addedByEmail?: string;
   createdAt: number;
@@ -88,17 +107,20 @@ function currentMonthLabel(): string {
 }
 
 // ── Excel (xlsx) import/export — same column layout as the source plan ──
-const SHEET_HEADERS = ["Month", "Row", "Content Type", "Variant", "Title", "Subtitle", "Tags", "Category", "Proposed", "Status"];
+const SHEET_HEADERS = ["Month", "Row", "Content Type", "Variant", "Title", "Subtitle", "Tags", "Category", "Proposed", "Status", "Parent"];
 
 function itemsToRows(items: ContentPlanItem[]) {
+  const titleById = new Map(items.map((it) => [it.id, it.title]));
   return items.slice().sort((a, b) => a.order - b.order).map((it) => ({
     Month: it.month, Row: it.lane, "Content Type": it.contentType, Variant: it.variant,
     Title: it.title, Subtitle: it.subtitle || "", Tags: it.tags.join(", "),
     Category: it.category || "", Proposed: it.proposed ? "Yes" : "No", Status: it.status,
+    Parent: (it.parentId && titleById.get(it.parentId)) || "",
   }));
 }
 
-function sheetRowsToItems(rows: Record<string, any>[]): Omit<ContentPlanItem, "id" | "createdAt">[] {
+// Parent is resolved by title after every row has an id — see handleImportFile.
+function sheetRowsToItems(rows: Record<string, any>[]): (Omit<ContentPlanItem, "id" | "createdAt" | "parentId"> & { parentTitle?: string })[] {
   return rows.filter((r) => String(r["Title"] ?? "").trim()).map((r, i) => ({
     order: i,
     month: String(r["Month"] ?? "").trim(),
@@ -111,6 +133,7 @@ function sheetRowsToItems(rows: Record<string, any>[]): Omit<ContentPlanItem, "i
     category: String(r["Category"] ?? "").trim() || undefined,
     proposed: /^y/i.test(String(r["Proposed"] ?? "")),
     status: String(r["Status"] ?? "").trim() || "Planned",
+    parentTitle: String(r["Parent"] ?? "").trim() || undefined,
   }));
 }
 
@@ -228,6 +251,8 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
     return map;
   }, [visible]);
 
+  const itemsById = useMemo(() => new Map(items.map((it) => [it.id, it])), [items]);
+
   const requireAuth = () => alert("Sign in with your @gwi.com account to edit the content plan.");
 
   const openModal = (m: { editItem?: ContentPlanItem; defaultMonth?: string; defaultLane?: string }) => {
@@ -259,6 +284,38 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
       await setDoc(doc(db(), "contentPlan", id), { month: newMonth, lane: newLane }, { merge: true });
     } catch (e: any) {
       alert(`Couldn't move this item: ${e?.message || "unknown error"}`);
+      load();
+    }
+  };
+
+  const handleDuplicate = async (id: string) => {
+    if (!canEdit) { requireAuth(); return; }
+    const source = items.find((i) => i.id === id);
+    if (!source) return;
+    const copy: ContentPlanItem = {
+      ...source,
+      id: `cp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      title: `${source.title} (copy)`,
+      addedBy: user?.displayName || "",
+      addedByEmail: user?.email || "",
+      createdAt: Date.now(),
+    };
+    try {
+      await setDoc(doc(db(), "contentPlan", copy.id), stripUndefined(copy));
+      setItems((prev) => [...prev, copy]);
+      setLastAction({ type: "add", id: copy.id });
+    } catch (e: any) {
+      alert(`Couldn't duplicate this item: ${e?.message || "unknown error"}`);
+    }
+  };
+
+  const handleUnlinkParent = async (id: string) => {
+    if (!canEdit) { requireAuth(); return; }
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, parentId: undefined } : i)));
+    try {
+      await setDoc(doc(db(), "contentPlan", id), { parentId: null }, { merge: true });
+    } catch (e: any) {
+      alert(`Couldn't unlink: ${e?.message || "unknown error"}`);
       load();
     }
   };
@@ -308,11 +365,13 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
       await delBatch.commit();
 
       const now = Date.now();
+      const withIds = parsedItems.map((it, i) => ({ ...it, id: `cp-import-${now}-${i}` }));
+      const idByTitle = new Map(withIds.map((it) => [it.title.trim().toLowerCase(), it.id]));
       const addBatch = writeBatch(db());
-      parsedItems.forEach((it, i) => {
-        const id = `cp-import-${now}-${i}`;
-        addBatch.set(doc(db(), "contentPlan", id), stripUndefined({
-          ...it, id, addedBy: user?.displayName || "", addedByEmail: user?.email || "", createdAt: now,
+      withIds.forEach(({ parentTitle, ...it }) => {
+        const parentId = parentTitle ? idByTitle.get(parentTitle.trim().toLowerCase()) : undefined;
+        addBatch.set(doc(db(), "contentPlan", it.id), stripUndefined({
+          ...it, parentId, addedBy: user?.displayName || "", addedByEmail: user?.email || "", createdAt: now,
         }));
       });
       await addBatch.commit();
@@ -392,10 +451,13 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
               lanes={LANES}
               months={MONTH_ORDER}
               board={board}
+              itemsById={itemsById}
               nowMonth={nowMonth}
               canEdit={canEdit}
               onEdit={(item) => openModal({ editItem: item })}
               onDelete={handleDelete}
+              onDuplicate={handleDuplicate}
+              onUnlinkParent={handleUnlinkParent}
               onQuickAdd={(lane, month) => openModal({ defaultLane: lane, defaultMonth: month })}
               onDragStart={(id) => { dragItemIdRef.current = id; }}
               onDrop={(lane, month) => { const id = dragItemIdRef.current; dragItemIdRef.current = null; if (id) handleMove(id, month, lane); }}
@@ -410,6 +472,7 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
           editItem={modal.editItem}
           defaultMonth={modal.defaultMonth}
           defaultLane={modal.defaultLane}
+          allItems={items}
           itemCount={items.length}
           onClose={() => setModal(null)}
           onSaved={(item, wasNew) => {
@@ -431,8 +494,8 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
               <button type="button" onClick={() => setImportOpen(false)} style={{ border: "none", background: "transparent", cursor: "pointer", color: T.grey6 }}><X size={20} /></button>
             </div>
             <p style={{ ...TYPE.small, color: T.grey7, marginTop: 0 }}>
-              Columns: Month, Row, Content Type, Variant, Title, Subtitle, Tags, Category, Proposed, Status — same layout as Export Excel.
-              This <strong>replaces</strong> every item currently in the plan.
+              Columns: Month, Row, Content Type, Variant, Title, Subtitle, Tags, Category, Proposed, Status, Parent — same layout as Export Excel.
+              Parent should match another row's exact Title. This <strong>replaces</strong> every item currently in the plan.
             </p>
             <input
               type="file" accept=".xlsx,.xls" ref={fileInputRef}
@@ -479,16 +542,25 @@ function LegendBadge({ bg, fg, label, text }: { bg: string; fg: string; label: s
 
 // ── The board itself: lanes (rows) × months (columns), draggable cards ──
 function BoardGrid({
-  lanes, months, board, nowMonth, canEdit, onEdit, onDelete, onQuickAdd, onDragStart, onDrop,
+  lanes, months, board, itemsById, nowMonth, canEdit, onEdit, onDelete, onDuplicate, onUnlinkParent, onQuickAdd, onDragStart, onDrop,
 }: {
-  lanes: string[]; months: string[]; board: Record<string, Record<string, ContentPlanItem[]>>; nowMonth: string;
+  lanes: string[]; months: string[]; board: Record<string, Record<string, ContentPlanItem[]>>;
+  itemsById: Map<string, ContentPlanItem>; nowMonth: string;
   canEdit: boolean;
   onEdit: (item: ContentPlanItem) => void;
   onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
+  onUnlinkParent: (id: string) => void;
   onQuickAdd: (lane: string, month: string) => void;
   onDragStart: (id: string) => void;
   onDrop: (lane: string, month: string) => void;
 }) {
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const toggleGroup = (key: string) => setCollapsedGroups((prev) => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
   const LABEL_COL = 200;
   const COL_W = 190;
   return (
@@ -517,6 +589,19 @@ function BoardGrid({
               </div>
               {months.map((month) => {
                 const cardsHere = board[lane]?.[month] || [];
+                // Group cards that share a parent (a container elsewhere on the board) under one collapsible header.
+                const grouped: { parentId?: string; parentTitle?: string; cards: ContentPlanItem[] }[] = [];
+                const groupIndex = new Map<string, number>();
+                for (const item of cardsHere) {
+                  const parent = item.parentId ? itemsById.get(item.parentId) : undefined;
+                  if (parent) {
+                    let idx = groupIndex.get(parent.id);
+                    if (idx === undefined) { idx = grouped.length; groupIndex.set(parent.id, idx); grouped.push({ parentId: parent.id, parentTitle: parent.title, cards: [] }); }
+                    grouped[idx].cards.push(item);
+                  } else {
+                    grouped.push({ cards: [item] });
+                  }
+                }
                 return (
                   <div
                     key={month}
@@ -527,9 +612,35 @@ function BoardGrid({
                       padding: 6, display: "flex", flexDirection: "column", gap: 6, position: "relative",
                     }}
                   >
-                    {cardsHere.map((item) => (
-                      <Card key={item.id} item={item} color={color} canEdit={canEdit} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} onDragStart={() => onDragStart(item.id)} />
-                    ))}
+                    {grouped.map((g, gi) => {
+                      if (!g.parentId) {
+                        return g.cards.map((item) => (
+                          <Card key={item.id} item={item} lane={lane} itemsById={itemsById} canEdit={canEdit} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} onDuplicate={() => onDuplicate(item.id)} onUnlinkParent={() => onUnlinkParent(item.id)} onDragStart={() => onDragStart(item.id)} />
+                        ));
+                      }
+                      const groupKey = `${lane}-${month}-${g.parentId}`;
+                      const collapsed = collapsedGroups.has(groupKey);
+                      return (
+                        <div key={`g-${gi}`}>
+                          <button
+                            type="button" onClick={() => toggleGroup(groupKey)}
+                            style={{ display: "flex", alignItems: "center", gap: 4, width: "100%", border: "none", background: "none", cursor: "pointer", padding: "2px 0 4px", textAlign: "left" }}
+                          >
+                            {collapsed ? <ChevronRight size={11} color={T.grey5} /> : <ChevronDown size={11} color={T.grey5} />}
+                            <span style={{ ...TYPE.label, color: T.grey6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.parentTitle}</span>
+                            <span style={{ flex: 1, borderBottom: `1px dashed ${T.grey4}` }} />
+                            <span style={{ ...TYPE.label, color: T.grey5 }}>{g.cards.length}</span>
+                          </button>
+                          {!collapsed && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                              {g.cards.map((item) => (
+                                <Card key={item.id} item={item} lane={lane} itemsById={itemsById} canEdit={canEdit} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} onDuplicate={() => onDuplicate(item.id)} onUnlinkParent={() => onUnlinkParent(item.id)} onDragStart={() => onDragStart(item.id)} />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                     {canEdit && (
                       <button
                         type="button" onClick={() => onQuickAdd(lane, month)} title="Add here"
@@ -558,11 +669,13 @@ function FragmentRow({ children }: { children: React.ReactNode }) {
 }
 
 function Card({
-  item, color, canEdit, onEdit, onDelete, onDragStart,
+  item, lane, itemsById, canEdit, onEdit, onDelete, onDuplicate, onUnlinkParent, onDragStart,
 }: {
-  item: ContentPlanItem; color: { fg: string; bg: string; bar: string }; canEdit: boolean;
-  onEdit: () => void; onDelete: () => void; onDragStart: () => void;
+  item: ContentPlanItem; lane: string; itemsById: Map<string, ContentPlanItem>; canEdit: boolean;
+  onEdit: () => void; onDelete: () => void; onDuplicate: () => void; onUnlinkParent: () => void; onDragStart: () => void;
 }) {
+  const color = VARIANT_COLOR[item.variant] || LANE_COLOR[lane] || { fg: T.grey7, bg: T.grey2, bar: T.grey5 };
+  const parent = item.parentId ? itemsById.get(item.parentId) : undefined;
   return (
     <div
       draggable={canEdit}
@@ -581,9 +694,18 @@ function Card({
       </div>
       <div style={{ ...TYPE.small, fontWeight: 700, color: T.ink, marginTop: 3, lineHeight: 1.3 }}>{item.title}</div>
       {item.subtitle && <div style={{ fontSize: 11, color: T.grey6, marginTop: 1 }}>{item.subtitle}</div>}
+      {parent && (
+        <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 11, color: T.grey6 }}>
+          <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>↳ {parent.title}</span>
+          {canEdit && (
+            <button type="button" onClick={onUnlinkParent} title="Unlink from parent" style={{ ...iconBtnStyle, padding: 0, flexShrink: 0 }}><X size={10} /></button>
+          )}
+        </div>
+      )}
       {canEdit && (
         <div style={{ display: "flex", gap: 2, marginTop: 4, justifyContent: "flex-end" }}>
           <button type="button" onClick={onEdit} title="Edit" style={{ ...iconBtnStyle, padding: 2 }}><Cog size={12} /></button>
+          <button type="button" onClick={onDuplicate} title="Duplicate" style={{ ...iconBtnStyle, padding: 2 }}><Copy size={12} /></button>
           <button type="button" onClick={onDelete} title="Remove" style={{ ...iconBtnStyle, padding: 2 }}><Trash2 size={12} /></button>
         </div>
       )}
@@ -655,12 +777,13 @@ function FilterPanel({
 }
 
 function EditModal({
-  user, editItem, defaultMonth, defaultLane, itemCount, onClose, onSaved,
+  user, editItem, defaultMonth, defaultLane, allItems, itemCount, onClose, onSaved,
 }: {
   user?: { displayName?: string | null; email?: string | null } | null;
   editItem?: ContentPlanItem;
   defaultMonth?: string;
   defaultLane?: string;
+  allItems: ContentPlanItem[];
   itemCount: number;
   onClose: () => void;
   onSaved: (item: ContentPlanItem, wasNew: boolean) => void;
@@ -675,8 +798,13 @@ function EditModal({
   const [category, setCategory] = useState(editItem?.category || "");
   const [proposed, setProposed] = useState(editItem?.proposed || false);
   const [status, setStatus] = useState(editItem?.status || "Planned");
+  const [parentId, setParentId] = useState(editItem?.parentId || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  // Only content cards (blog/listicle/llm/video/podcast) may link up to a container — matches getValidTargetVariants.
+  const canHaveParent = !CONTAINER_VARIANTS.has(variant.trim().toLowerCase());
+  const parentCandidates = allItems.filter((it) => CONTAINER_VARIANTS.has(it.variant) && it.id !== editItem?.id);
 
   const handleSave = async () => {
     if (!title.trim()) { setError("A title is required."); return; }
@@ -690,6 +818,7 @@ function EditModal({
       tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
       category: category.trim() || undefined,
       proposed, status,
+      parentId: canHaveParent && parentId ? parentId : undefined,
       addedBy: editItem?.addedBy || user?.displayName || "",
       addedByEmail: editItem?.addedByEmail || user?.email || "",
       createdAt: editItem?.createdAt || Date.now(),
@@ -755,6 +884,15 @@ function EditModal({
             </label>
           </Field>
         </div>
+
+        {canHaveParent && (
+          <Field label="Parent (links this card up to a container)">
+            <select value={parentId} onChange={(e) => setParentId(e.target.value)} style={inputStyle}>
+              <option value="">None</option>
+              {parentCandidates.map((p) => <option key={p.id} value={p.id}>{p.title} ({p.lane})</option>)}
+            </select>
+          </Field>
+        )}
 
         {error && <p style={{ ...TYPE.small, color: T.flag, margin: `0 0 ${SP.md}px` }}>{error}</p>}
 
