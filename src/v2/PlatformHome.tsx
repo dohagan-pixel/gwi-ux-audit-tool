@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getFirestore, collection, getCountFromServer } from "firebase/firestore";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
+import { useContentPlanStats } from "./ContentPlannerPage";
 
 // ── Live stats pulled from local state / storage ──────────────────────────
 function useContentHubStats() {
@@ -70,6 +71,7 @@ export function PlatformHome({
   const qa = useQaStats();
   const hub = useContentHubStats();
   const shots = useScreenshotStats();
+  const plan = useContentPlanStats();
   const [ready, setReady] = useState(false);
   useEffect(() => { const id = setTimeout(() => setReady(true), 20); return () => clearTimeout(id); }, []);
 
@@ -133,6 +135,25 @@ export function PlatformHome({
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" />
           <rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" />
+        </svg>
+      ),
+    },
+    {
+      key: "content-plan",
+      eyebrow: "FY27 planning",
+      title: "Content Planner",
+      desc: "The FY27 content calendar — every campaign, report, series and event, planned month by month. Add, edit and import/export as the plan evolves.",
+      accent: T.plan,
+      accentBg: T.planBg,
+      enter: () => setView("content-plan"),
+      cta: "Open Content Planner",
+      stats: [
+        { value: plan ? String(plan.total) : "—", label: "Items planned" },
+        { value: plan ? String(plan.live) : "—", label: "Live" },
+      ],
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
         </svg>
       ),
     },
