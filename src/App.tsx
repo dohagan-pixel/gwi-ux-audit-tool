@@ -61,6 +61,15 @@ const MAPPING_ITEMS = [
   {id:"flows",label:"User Flows"},
 ];
 
+const UX_AUDIT_ITEMS = [
+  {id:"audit",label:"Recommendations"},
+  {id:"wireframes",label:"Wireframes"},
+  {id:"personas",label:"Personas"},
+  {id:"mapping",label:"Journeys"},
+  {id:"analytics",label:"Analytics"},
+  {id:"screenshots",label:"Screenshots"},
+];
+
 const INIT_STAGES = [
   {id:"awareness",label:"Awareness",highlight:false,signupRole:"owned",signupNote:"The website is the only tool here. SEO, paid, social — all roads lead to a landing page.",gwi_goal:"Attract prospects to the website.",hmw:"How might we support professionals in their search for affordable alternatives to custom or industry reports?",push:"A need to understand their market",pull:"Globally significant answers on demand",habit:"Grabbing free data from existing reports",anxiety:"Cost is prohibitive"},
   {id:"evaluation",label:"Evaluation",highlight:false,signupRole:"owned",signupNote:"The website must answer is this legit and relevant to me fast.",gwi_goal:"Agree to a Demo with a member of GWI staff.",hmw:"How might we show professionals that quarterly syndicated data has the coverage and depth they need?",push:"Need to understand what strategy to choose",pull:"Industry and coverage is right, more up to date than others",habit:"Overcoming grabbing something from existing sources during time pressure",anxiety:"Cost will be prohibitive and the sales person might waste my time"},
@@ -4471,15 +4480,9 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,padding:"0 24px",height:56,display:"flex",alignItems:"center",gap:4,position:"fixed",top:0,left:0,right:0,zIndex:100,boxSizing:"border-box"}}>
           <img src="/gwi-logo-on-black.svg" alt="GWI" height={22} style={{cursor:"pointer",display:"block",flexShrink:0,marginRight:24}} onClick={function(){setView("dashboard");}}/>
           <button onClick={function(){setView("dashboard");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="dashboard"?C.pink:"transparent",color:view==="dashboard"?C.white:C.grey7,flexShrink:0}}>Home</button>
-          <button onClick={function(){setView("summary");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:(view==="summary"||view==="generated-audits")?C.pink:"transparent",color:(view==="summary"||view==="generated-audits")?C.white:C.grey7,flexShrink:0}}>UX Audit</button>
-          <button onClick={function(){setView("audit");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="audit"?C.pink:"transparent",color:view==="audit"?C.white:C.grey7,flexShrink:0}}>Recommendations</button>
-          <button onClick={function(){setView("wireframes");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="wireframes"?C.pink:"transparent",color:view==="wireframes"?C.white:C.grey7,flexShrink:0}}>Wireframes</button>
-          <button onClick={function(){setView("personas");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:(view==="personas"||view==="persona-detail")?C.pink:"transparent",color:(view==="personas"||view==="persona-detail")?C.white:C.grey7,flexShrink:0}}>Personas</button>
-          <Dropdown label="Journeys" items={MAPPING_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("mapping");}} forceActive={view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"}/>
-          <button onClick={function(){setView("analytics");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="analytics"?C.pink:"transparent",color:view==="analytics"?C.white:C.grey7,flexShrink:0}}>Analytics</button>
+          <Dropdown label="UX Audit" items={UX_AUDIT_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("summary");}} forceActive={view==="summary"||view==="generated-audits"||view==="audit"||view==="wireframes"||view==="personas"||view==="persona-detail"||view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"||view==="analytics"||view==="screenshots"}/>
           <button onClick={function(){setView("qa-walkthrough");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="qa-walkthrough"?C.pink:"transparent",color:view==="qa-walkthrough"?C.white:C.grey7,flexShrink:0}}>QA Walkthrough</button>
           <button onClick={function(){setView("content-hub");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="content-hub"?C.pink:"transparent",color:view==="content-hub"?C.white:C.grey7,flexShrink:0}}>Content Hub</button>
-          <button onClick={function(){setView("screenshots");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="screenshots"?C.pink:"transparent",color:view==="screenshots"?C.white:C.grey7,flexShrink:0}}>Screenshots</button>
           <button onClick={function(){setView("content-plan");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="content-plan"?C.pink:"transparent",color:view==="content-plan"?C.white:C.grey7,flexShrink:0}}>Content Planner</button>
           <div style={{flex:1}}/>
           {(view==="personas"||view==="persona-detail"||view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows")&&(
