@@ -7,6 +7,7 @@ import * as XLSX from "xlsx";
 import {
   Plus, Cog, Trash2, X, Upload, Download, ChevronDown, ChevronRight, Undo2, Copy, Link2,
   Megaphone, FileText, Calendar, Video, Mic, Layers, Code2, Scale, Radio, EyeOff, CheckCircle2,
+  Star, List, Bot, Users,
 } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 import { CONTENT_PLAN_SEED } from "./contentPlanSeed";
@@ -75,6 +76,51 @@ const SERIES_EVENT_VARIANTS = ["series", "event"];
 const HERO_CAMPAIGN_VARIANTS = ["hero-full", "campaign"];
 
 const HIDDEN_LANES_KEY = "gwi-content-plan/hidden-lanes/v1";
+
+// ── Ported from CardComposer/AssetTypeDropdown in ContentPlan.tsx ──
+const VARIANT_OPTIONS: { value: string; label: string; defaultType: string; icon: React.ComponentType<{ size?: number }> }[] = [
+  { value: "hero-full", label: "Hero", defaultType: "HERO", icon: Star },
+  { value: "campaign", label: "Campaign", defaultType: "CAMPAIGN", icon: Megaphone },
+  { value: "event", label: "Event", defaultType: "EVENT", icon: Calendar },
+  { value: "customer-event", label: "Customer event", defaultType: "CUSTOMER EVENT", icon: Users },
+  { value: "series", label: "Series", defaultType: "SERIES", icon: Layers },
+  { value: "blog", label: "Blog", defaultType: "BLOG", icon: FileText },
+  { value: "listicle", label: "Listicle", defaultType: "LISTICLE", icon: List },
+  { value: "llm", label: "LLM", defaultType: "LLM", icon: Bot },
+  { value: "video", label: "Video", defaultType: "VIDEO", icon: Video },
+  { value: "podcast", label: "Podcast", defaultType: "PODCAST", icon: Mic },
+];
+const ASSET_TYPE_GROUPS = [
+  { label: "Containers", items: ["hero-full", "campaign", "series", "event", "customer-event"] },
+  { label: "Content", items: ["blog", "listicle", "llm", "video", "podcast"] },
+];
+// The variant a given asset type usually lands in — used only to suggest a lane when it's unambiguous.
+const VARIANT_DEFAULT_LANE: Record<string, string> = {
+  "hero-full": "Campaigns", "campaign": "Campaigns", "series": "Series",
+  "event": "Events", "customer-event": "Events", "video": "Video / TDM", "podcast": "Podcast",
+};
+const ESSENCE = [
+  { id: "C1", label: "What the data actually says" },
+  { id: "C2", label: "Less artificial. More intelligence." },
+  { id: "C3", label: "Build on something real" },
+];
+const TAG_CFG: Record<string, { bg: string; color: string }> = {
+  C1: { bg: "#eeedfe", color: "#333688" },
+  C2: { bg: "#ffe8ee", color: "#dc1f69" },
+  C3: { bg: "#e1f5ee", color: "#008291" },
+};
+const CATEGORY_GROUPS: { group: string; description: string; color: string; items: string[] }[] = [
+  { group: "Brand", description: "", color: "#004499", items: ["Reports", "Always On"] },
+  { group: "Products", description: "Is this specific to a product?", color: "#00693e", items: ["Simulated Data", "Agentic AI", "Custom", "AI-enabled use cases"] },
+  { group: "Enterprise", description: "Does this enable any of the below?", color: "#8800b8", items: ["Comparison & proof", "Developer & technical", "Community & Peer validation", "Dev experience"] },
+];
+// Parent-picker groups for "Made for" / "Part of" — keyed by the container variant(s) each holds.
+const PARENT_GROUP_DEFS = [
+  { key: "hero", label: "Hero campaigns", variants: ["hero-full"] },
+  { key: "campaign", label: "Campaigns", variants: ["campaign"] },
+  { key: "series", label: "Series", variants: ["series"] },
+  { key: "event", label: "Events", variants: ["event", "customer-event"] },
+];
 
 // Ported verbatim from ContentPlan.tsx's AUTO_PARENTS — regex-matched against a card's
 // title+subtitle+category+tags to guess which container it belongs to.
@@ -645,6 +691,7 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
             if (wasNew) setLastAction({ type: "add", id: item.id });
             setModal(null);
           }}
+          onDuplicate={modal.editItem ? () => { handleDuplicate(modal.editItem!.id); setModal(null); } : undefined}
         />
       )}
 
@@ -1130,7 +1177,7 @@ function FilterPanel({
 }
 
 function EditModal({
-  user, editItem, defaultMonth, defaultLane, allItems, itemCount, onClose, onSaved,
+  user, editItem, defaultMonth, defaultLane, allItems, itemCount, onClose, onSaved, onDuplicate,
 }: {
   user?: { displayName?: string | null; email?: string | null } | null;
   editItem?: ContentPlanItem;
@@ -1140,6 +1187,7 @@ function EditModal({
   itemCount: number;
   onClose: () => void;
   onSaved: (item: ContentPlanItem, wasNew: boolean) => void;
+  onDuplicate?: () => void;
 }) {
   const [month, setMonth] = useState(editItem?.month || defaultMonth || MONTH_ORDER[0]);
   const [lane, setLane] = useState(editItem?.lane || defaultLane || LANES[0]);
@@ -1147,17 +1195,40 @@ function EditModal({
   const [variant, setVariant] = useState(editItem?.variant || "blog");
   const [title, setTitle] = useState(editItem?.title || "");
   const [subtitle, setSubtitle] = useState(editItem?.subtitle || "");
-  const [tags, setTags] = useState(editItem?.tags?.join(", ") || "");
+  const [tags, setTags] = useState<string[]>(editItem?.tags || []);
   const [category, setCategory] = useState(editItem?.category || "");
   const [proposed, setProposed] = useState(editItem?.proposed || false);
   const [status, setStatus] = useState(editItem?.status || "Planned");
   const [parentId, setParentId] = useState(editItem?.parentId || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [typeMenuOpen, setTypeMenuOpen] = useState(false);
+  const [openParentGroup, setOpenParentGroup] = useState<string | null>(() => {
+    for (const g of PARENT_GROUP_DEFS) {
+      if (allItems.some((it) => g.variants.includes(it.variant) && it.id === editItem?.parentId)) return g.key;
+    }
+    return null;
+  });
 
   // Only content cards (blog/listicle/llm/video/podcast) may link up to a container — matches getValidTargetVariants.
-  const canHaveParent = !CONTAINER_VARIANTS.has(variant.trim().toLowerCase());
-  const parentCandidates = allItems.filter((it) => CONTAINER_VARIANTS.has(it.variant) && it.id !== editItem?.id);
+  const canHaveParent = !CONTAINER_VARIANTS.has(variant);
+  const typeColor = VARIANT_COLOR[variant] || { fg: T.grey7, bg: T.grey2, bar: T.grey5 };
+  const parentGroups = PARENT_GROUP_DEFS.map((g) => ({
+    ...g,
+    cards: allItems.filter((it) => g.variants.includes(it.variant) && it.id !== editItem?.id),
+  })).filter((g) => g.cards.length > 0);
+  const parentCard = parentId ? allItems.find((it) => it.id === parentId) : undefined;
+  const categoryGroup = category ? CATEGORY_GROUPS.find((g) => g.items.includes(category)) : undefined;
+
+  const handleVariantChange = (v: string) => {
+    setVariant(v);
+    const opt = VARIANT_OPTIONS.find((o) => o.value === v);
+    if (opt) setContentType(opt.defaultType);
+    if (CONTAINER_VARIANTS.has(v)) setParentId("");
+    else if (VARIANT_DEFAULT_LANE[v]) setLane(VARIANT_DEFAULT_LANE[v]);
+    setTypeMenuOpen(false);
+  };
+  const toggleTag = (tag: string) => setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
 
   const handleSave = async () => {
     if (!title.trim()) { setError("A title is required."); return; }
@@ -1166,10 +1237,9 @@ function EditModal({
     const item: ContentPlanItem = {
       id: editItem?.id || `cp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       order: editItem?.order ?? itemCount,
-      month, lane, contentType: contentType.trim(), variant: variant.trim(),
+      month, lane, contentType: contentType.trim(), variant,
       title: title.trim(), subtitle: subtitle.trim() || undefined,
-      tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
-      category: category.trim() || undefined,
+      tags, category: category || undefined,
       proposed, status,
       parentId: canHaveParent && parentId ? parentId : undefined,
       addedBy: editItem?.addedBy || user?.displayName || "",
@@ -1193,69 +1263,262 @@ function EditModal({
       onClick={(e) => { if (backdropPressedRef.current && e.target === e.currentTarget) onClose(); }}
       style={{ position: "fixed", inset: 0, background: "rgba(14,17,22,0.4)", display: "grid", placeItems: "center", zIndex: 100, padding: SP.xl }}
     >
-      <div style={{ background: T.white, borderRadius: R.xl, padding: SP.xxl, width: "100%", maxWidth: 520, maxHeight: "90vh", overflow: "auto", boxShadow: SHADOW.pop, fontFamily: T.font }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: SP.lg }}>
-          <h2 style={{ ...TYPE.h2, margin: 0 }}>{editItem ? "Edit content" : "Add content"}</h2>
-          <button type="button" onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer", color: T.grey6 }}><X size={20} /></button>
+      <div style={{ background: T.white, borderRadius: R.xl, width: "100%", maxWidth: 880, maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: SHADOW.pop, fontFamily: T.font }}>
+        <div style={{ display: "flex", alignItems: "center", gap: SP.sm, padding: `${SP.md}px ${SP.xl}px`, borderBottom: `1px solid ${T.grey3}` }}>
+          <h2 style={{ ...TYPE.h3, margin: 0 }}>{editItem ? "Edit card" : "Add card"}</h2>
+          <span style={{ ...TYPE.small, color: T.grey5 }}>shape it, watch it change</span>
+          <button type="button" onClick={onClose} style={{ marginLeft: "auto", border: "none", background: "transparent", cursor: "pointer", color: T.grey5 }}><X size={18} /></button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SP.md }}>
-          <Field label="Month">
-            <select value={month} onChange={(e) => setMonth(e.target.value)} style={inputStyle}>
-              {MONTH_ORDER.map((m) => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </Field>
-          <Field label="Lane">
-            <input value={lane} onChange={(e) => setLane(e.target.value)} list="lane-options" style={inputStyle} />
-            <datalist id="lane-options">{LANES.map((l) => <option key={l} value={l} />)}</datalist>
-          </Field>
+        <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+          {/* Left: the making of the card */}
+          <div style={{ flex: 1, overflowY: "auto", padding: SP.xl, display: "flex", flexDirection: "column", gap: SP.lg }}>
+
+            {/* Placement — implicit from grid position in the source; explicit here as the only non-drag way to set it */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: SP.sm }}>
+              <Field label="Month">
+                <select value={month} onChange={(e) => setMonth(e.target.value)} style={inputStyle}>
+                  {MONTH_ORDER.map((m) => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </Field>
+              <Field label="Lane">
+                <select value={lane} onChange={(e) => setLane(e.target.value)} style={inputStyle}>
+                  {LANES.map((l) => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </Field>
+              <Field label="Status">
+                <select value={status} onChange={(e) => setStatus(e.target.value)} style={inputStyle}>
+                  {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </Field>
+            </div>
+
+            {/* Asset type + Proposed toggle */}
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.sm }}>
+                <span style={{ ...TYPE.label, color: T.grey6 }}>Asset type</span>
+                <button
+                  type="button" onClick={() => setProposed((p) => !p)}
+                  style={{
+                    marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6, borderRadius: R.pill,
+                    padding: "4px 10px 4px 4px", border: `1px solid ${proposed ? T.pink : T.grey4}`, background: proposed ? T.pinkBg : T.white, cursor: "pointer",
+                  }}
+                >
+                  <span style={{ ...TYPE.label, padding: "2px 6px", borderRadius: R.pill, background: proposed ? T.pink : T.grey3, color: proposed ? T.white : T.grey5 }}>NEW</span>
+                  <span style={{ ...TYPE.small, fontWeight: 600, color: proposed ? T.pink : T.grey5 }}>Proposed addition</span>
+                </button>
+              </div>
+              <AssetTypeSelect value={variant} onChange={handleVariantChange} open={typeMenuOpen} setOpen={setTypeMenuOpen} />
+            </div>
+
+            {/* Headline */}
+            <div>
+              <div style={{ ...TYPE.label, color: T.grey6, marginBottom: SP.sm }}>Headline</div>
+              <div style={{ border: `1px solid ${title ? typeColor.bar + "88" : T.grey3}`, borderRadius: R.lg, background: T.grey1, padding: SP.lg, display: "flex", flexDirection: "column", gap: SP.sm }}>
+                <textarea
+                  value={title} onChange={(e) => setTitle(e.target.value)} rows={2} placeholder="What is this piece called?" autoFocus
+                  style={{ width: "100%", resize: "none", background: "transparent", border: "none", outline: "none", fontFamily: T.font, fontSize: 17, fontWeight: 700, color: T.ink, lineHeight: 1.4 }}
+                />
+                <div style={{ height: 1, background: T.grey3 }} />
+                <input
+                  value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="Subtitle or wave — optional"
+                  style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontFamily: T.font, fontSize: 13, color: T.grey6 }}
+                />
+              </div>
+            </div>
+
+            {/* Editorial essence */}
+            <div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: SP.sm }}>
+                <span style={{ ...TYPE.label, color: T.grey6 }}>Editorial essence</span>
+                <span style={{ ...TYPE.small, color: T.grey5 }}>what is this really about?</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {ESSENCE.map((e) => {
+                  const cfg = TAG_CFG[e.id];
+                  const active = tags.includes(e.id);
+                  return (
+                    <button
+                      key={e.id} type="button" onClick={() => toggleTag(e.id)}
+                      style={{ display: "flex", alignItems: "center", gap: SP.sm, padding: "8px 10px", borderRadius: R.md, border: `1px solid ${active ? cfg.color : T.grey3}`, background: active ? cfg.bg : T.grey1, cursor: "pointer", textAlign: "left" }}
+                    >
+                      <span style={{ width: 22, height: 22, borderRadius: R.sm, background: active ? cfg.color : T.grey4, color: T.white, fontSize: 9, fontWeight: 800, display: "grid", placeItems: "center", flexShrink: 0 }}>{e.id}</span>
+                      <span style={{ ...TYPE.small, fontWeight: 700, color: active ? cfg.color : T.grey5, flex: 1 }}>{e.label}</span>
+                      {active && <span style={{ color: cfg.color, fontWeight: 800 }}>✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Category groups */}
+            <div style={{ display: "flex", flexDirection: "column", gap: SP.md }}>
+              {CATEGORY_GROUPS.map((group) => (
+                <div key={group.group}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 6 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: group.color, display: "inline-block" }} />
+                    <span style={{ ...TYPE.label, color: group.color }}>{group.group}</span>
+                    {group.description && <span style={{ ...TYPE.small, color: T.grey5 }}>{group.description}</span>}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {group.items.map((label) => {
+                      const active = category === label;
+                      return (
+                        <button
+                          key={label} type="button" onClick={() => setCategory(active ? "" : label)}
+                          style={{ padding: "6px 12px", borderRadius: R.pill, border: `1px solid ${active ? group.color : T.grey3}`, background: active ? group.color : T.grey1, color: active ? T.white : T.grey6, fontFamily: T.font, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: live preview + parent picker */}
+          <div style={{ width: 300, flexShrink: 0, borderLeft: `1px solid ${T.grey3}`, background: T.grey1, overflowY: "auto", padding: SP.lg, display: "flex", flexDirection: "column", gap: SP.lg }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: SP.sm }}>
+                <span style={{ ...TYPE.label, color: T.grey6 }}>On the plan</span>
+                <span style={{ ...TYPE.small, color: T.grey5 }}>{lane} · {month}</span>
+              </div>
+              <div style={{ background: typeColor.bg, color: typeColor.fg, borderRadius: R.sm, padding: "8px 10px", boxShadow: proposed ? `inset 0 0 0 1.5px ${T.pink}, ${SHADOW.hover}` : SHADOW.hover }}>
+                <div style={{ ...TYPE.label, color: proposed ? T.pink : typeColor.fg, opacity: 0.9 }}>{proposed ? `NEW · ${contentType}` : contentType}</div>
+                <div style={{ ...TYPE.small, fontWeight: 700, marginTop: 3 }}>{title || "Untitled piece"}</div>
+                {subtitle && <div style={{ fontSize: 11, opacity: 0.75, marginTop: 1 }}>{subtitle}</div>}
+                {tags.length > 0 && (
+                  <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
+                    {tags.map((t) => <span key={t} style={{ ...TYPE.label, background: "rgba(255,255,255,0.6)", color: typeColor.fg, padding: "1px 5px", borderRadius: R.sm }}>{t}</span>)}
+                  </div>
+                )}
+                {parentCard && <div style={{ fontSize: 10, opacity: 0.6, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>↳ {parentCard.title}</div>}
+              </div>
+              {category && (
+                <div style={{ ...TYPE.small, color: T.grey5, marginTop: SP.sm }}>
+                  Tagged <span style={{ fontWeight: 700, color: categoryGroup?.color || T.grey7 }}>{category}</span>
+                </div>
+              )}
+            </div>
+
+            {canHaveParent && parentGroups.length > 0 && (
+              <div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: SP.sm }}>
+                  <span style={{ ...TYPE.label, color: T.grey6 }}>Made for</span>
+                  <span style={{ ...TYPE.small, color: T.grey5 }}>what does it feed?</span>
+                </div>
+                <button
+                  type="button" onClick={() => setParentId("")}
+                  style={{ display: "flex", alignItems: "center", gap: SP.sm, width: "100%", padding: "8px 10px", borderRadius: R.md, border: `1px solid ${parentId === "" ? T.grey6 : T.grey3}`, background: parentId === "" ? T.grey2 : T.white, cursor: "pointer", textAlign: "left", marginBottom: SP.sm }}
+                >
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.grey4, flexShrink: 0 }} />
+                  <span style={{ ...TYPE.small, fontWeight: 700, color: T.grey6, flex: 1 }}>Standalone</span>
+                  {parentId === "" && <span style={{ color: T.grey6, fontWeight: 800 }}>✓</span>}
+                </button>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {parentGroups.map((g) => {
+                    const open = openParentGroup === g.key;
+                    const selected = g.cards.find((c) => c.id === parentId);
+                    const gColor = VARIANT_COLOR[g.variants[0]]?.bar || T.grey6;
+                    return (
+                      <div key={g.key} style={{ border: `1px solid ${open || selected ? gColor + "88" : T.grey3}`, borderRadius: R.md, background: T.white, overflow: "hidden" }}>
+                        <button
+                          type="button" onClick={() => setOpenParentGroup(open ? null : g.key)}
+                          style={{ display: "flex", alignItems: "center", gap: SP.sm, width: "100%", padding: "8px 10px", border: "none", background: open ? gColor + "14" : T.white, cursor: "pointer", textAlign: "left" }}
+                        >
+                          <span style={{ width: 7, height: 7, borderRadius: "50%", background: gColor, flexShrink: 0 }} />
+                          <span style={{ ...TYPE.small, fontWeight: 700, color: gColor }}>{g.label}</span>
+                          {selected && !open && <span style={{ ...TYPE.small, color: T.grey6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{selected.title}</span>}
+                          <span style={{ ...TYPE.label, color: T.grey5, marginLeft: "auto" }}>{g.cards.length}</span>
+                          <ChevronDown size={12} color={gColor} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .15s", flexShrink: 0 }} />
+                        </button>
+                        {open && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: SP.sm, maxHeight: 180, overflowY: "auto", borderTop: `1px solid ${gColor}22` }}>
+                            {g.cards.map((c) => {
+                              const active = parentId === c.id;
+                              const ccolor = VARIANT_COLOR[c.variant] || { fg: T.grey7, bg: T.grey2, bar: T.grey5 };
+                              return (
+                                <button
+                                  key={c.id} type="button" onClick={() => setParentId(active ? "" : c.id)}
+                                  style={{ display: "flex", alignItems: "center", gap: SP.sm, padding: "6px 8px", borderRadius: R.sm, border: `1px solid ${active ? ccolor.bar : T.grey3}`, background: active ? ccolor.bg : T.white, cursor: "pointer", textAlign: "left" }}
+                                >
+                                  <span style={{ ...TYPE.small, color: T.ink, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</span>
+                                  {active && <span style={{ color: ccolor.bar, fontWeight: 800 }}>✓</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SP.md }}>
-          <Field label="Content type"><input value={contentType} onChange={(e) => setContentType(e.target.value)} style={inputStyle} /></Field>
-          <Field label="Variant"><input value={variant} onChange={(e) => setVariant(e.target.value)} style={inputStyle} /></Field>
+        <div style={{ display: "flex", gap: SP.sm, padding: SP.lg, borderTop: `1px solid ${T.grey3}`, alignItems: "center" }}>
+          <button type="button" onClick={handleSave} disabled={saving} style={{ ...primaryBtnStyle, flex: 1, justifyContent: "center", background: T.ink, opacity: saving ? 0.7 : 1 }}>
+            {saving ? "Saving…" : "Save changes"}
+          </button>
+          {onDuplicate && (
+            <button type="button" onClick={onDuplicate} style={secondaryBtnStyle}><Copy size={13} /> Duplicate</button>
+          )}
+          <button type="button" onClick={onClose} style={secondaryBtnStyle}>Cancel</button>
         </div>
-
-        <Field label="Title"><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Give it a title" style={inputStyle} /></Field>
-        <Field label="Subtitle (optional)"><input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} style={inputStyle} /></Field>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SP.md }}>
-          <Field label="Category"><input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Always On" style={inputStyle} /></Field>
-          <Field label="Tags (comma separated)"><input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="C1, C2" style={inputStyle} /></Field>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SP.md }}>
-          <Field label="Status">
-            <select value={status} onChange={(e) => setStatus(e.target.value)} style={inputStyle}>
-              {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </Field>
-          <Field label="Proposed">
-            <label style={{ display: "flex", alignItems: "center", gap: SP.sm, height: 38 }}>
-              <input type="checkbox" checked={proposed} onChange={(e) => setProposed(e.target.checked)} />
-              <span style={{ ...TYPE.small }}>New / proposed idea</span>
-            </label>
-          </Field>
-        </div>
-
-        {canHaveParent && (
-          <Field label="Parent (links this card up to a container)">
-            <select value={parentId} onChange={(e) => setParentId(e.target.value)} style={inputStyle}>
-              <option value="">None</option>
-              {parentCandidates.map((p) => <option key={p.id} value={p.id}>{p.title} ({p.lane})</option>)}
-            </select>
-          </Field>
-        )}
-
-        {error && <p style={{ ...TYPE.small, color: T.flag, margin: `0 0 ${SP.md}px` }}>{error}</p>}
-
-        <button
-          type="button" onClick={handleSave} disabled={saving}
-          style={{ width: "100%", padding: "12px", borderRadius: R.pill, border: "none", marginTop: SP.sm, background: T.plan, color: T.white, fontFamily: T.font, fontWeight: 700, fontSize: 14, cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1 }}
-        >
-          {saving ? "Saving…" : editItem ? "Save changes" : "Add to plan"}
-        </button>
+        {error && <p style={{ ...TYPE.small, color: T.flag, margin: `0 ${SP.lg}px ${SP.md}px` }}>{error}</p>}
       </div>
+    </div>
+  );
+}
+
+function AssetTypeSelect({ value, onChange, open, setOpen }: { value: string; onChange: (v: string) => void; open: boolean; setOpen: (o: boolean) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [open, setOpen]);
+  const cfg = VARIANT_COLOR[value] || { fg: T.grey7, bg: T.grey2, bar: T.grey5 };
+  const selected = VARIANT_OPTIONS.find((o) => o.value === value) || VARIANT_OPTIONS[5];
+  const Icon = selected.icon;
+  return (
+    <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
+      <button
+        type="button" onClick={() => setOpen(!open)}
+        style={{ display: "inline-flex", alignItems: "center", gap: SP.sm, padding: "8px 12px", borderRadius: R.md, border: `1px solid ${cfg.bar}`, background: cfg.bg, color: cfg.fg, fontFamily: T.font, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+      >
+        <Icon size={14} />
+        {selected.label}
+        <ChevronDown size={13} style={{ opacity: 0.7, transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }} />
+      </button>
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 20, minWidth: 220, background: T.white, border: `1px solid ${T.grey3}`, borderRadius: R.lg, boxShadow: SHADOW.pop, padding: SP.sm }}>
+          {ASSET_TYPE_GROUPS.map((group) => (
+            <div key={group.label}>
+              <div style={{ ...TYPE.label, color: T.grey5, padding: "6px 8px 2px" }}>{group.label}</div>
+              {group.items.map((v) => {
+                const opt = VARIANT_OPTIONS.find((o) => o.value === v)!;
+                const vcfg = VARIANT_COLOR[v];
+                const OptIcon = opt.icon;
+                const isSelected = value === v;
+                return (
+                  <button
+                    key={v} type="button" onClick={() => onChange(v)}
+                    style={{ display: "flex", alignItems: "center", gap: SP.sm, width: "100%", padding: "7px 8px", borderRadius: R.sm, border: "none", background: isSelected ? vcfg.bg : "transparent", color: isSelected ? vcfg.fg : T.ink, cursor: "pointer", fontFamily: T.font, fontSize: 13, fontWeight: isSelected ? 700 : 500, textAlign: "left" }}
+                  >
+                    <OptIcon size={13} /> {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
