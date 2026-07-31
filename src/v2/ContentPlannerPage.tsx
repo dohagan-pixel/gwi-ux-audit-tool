@@ -4,7 +4,7 @@ import {
 } from "firebase/firestore";
 import * as XLSX from "xlsx";
 import {
-  Plus, Cog, Trash2, X, Upload, Download, ChevronDown, ChevronRight, Undo2, Copy,
+  Plus, Cog, Trash2, X, Upload, Download, ChevronDown, ChevronRight, Undo2, Copy, Link2,
   Megaphone, FileText, Calendar, Video, Mic, Layers, Code2, Scale, Radio,
 } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
@@ -70,6 +70,53 @@ const VARIANT_COLOR: Record<string, { fg: string; bg: string; bar: string }> = {
 // Container variants — the only kind of card a content item (blog/listicle/llm/video/podcast) may link up to.
 const CONTAINER_VARIANTS = new Set(["hero-full", "campaign", "series", "event", "customer-event"]);
 
+// Ported verbatim from ContentPlan.tsx's AUTO_PARENTS — regex-matched against a card's
+// title+subtitle+category+tags to guess which container it belongs to.
+const AUTO_PARENTS: { key: string; match: RegExp; title: string; variant: string; category?: string }[] = [
+  { key: "agentic", match: /agentic/i, title: "Agentic AI", variant: "campaign", category: "Agentic AI" },
+  { key: "simulated", match: /synthetic|simulat/i, title: "Simulated Data", variant: "campaign", category: "Simulated Data" },
+  { key: "brand", match: /brand track/i, title: "Brand Tracking", variant: "campaign", category: "Custom" },
+  { key: "genz", match: /gen z|gen-z|generation z|gen alpha|millennial|boomer|gen x|generational/i, title: "Does Gen Z Really Exist?", variant: "hero-full" },
+  { key: "lami", match: /less artificial/i, title: "Less Artificial. More Intelligence.", variant: "hero-full" },
+];
+// Everything else in a 2027 month hangs off this hero, same as the source.
+const AUTO_LINK_FALLBACK = { title: "Connecting the Dots", variant: "hero-full" };
+
+const AUTO_CATEGORIES: { match: RegExp; category: string }[] = [
+  { match: /dotcast|dotcom/i, category: "Always On" },
+  { match: /gemini|\bmcp\b|ad-sell|ad sell|connector|workflow/i, category: "AI-enabled use cases" },
+  { match: /sandbox|\bapi\b|\bsdk\b|rate limit|reference architecture|engineer|developer|technical guide|github/i, category: "Developer & technical" },
+  { match: /head-to-head|versus| vs |benchmark|comparison|compare|proof|accuracy/i, category: "Comparison & proof" },
+  { match: /\bg2\b|gartner|peer insight|review drive|testimonial|community|supper club|\bcab\b/i, category: "Community & Peer validation" },
+  { match: /\breports?\b|whitepaper|\bstudy\b/i, category: "Reports" },
+];
+
+// Proposes {id, parentId, category} updates for items missing a link — never overwrites an
+// existing parentId, a manually-unlinked item, or an anchor/container card itself.
+function computeAutoLinks(items: ContentPlanItem[]): { id: string; parentId?: string; category?: string }[] {
+  const findContainer = (title: string, variant: string) =>
+    items.find((it) => it.variant === variant && it.title.trim().toLowerCase() === title.trim().toLowerCase())?.id;
+  const parentIdByKey: Record<string, string | undefined> = {};
+  for (const rule of AUTO_PARENTS) parentIdByKey[rule.key] = findContainer(rule.title, rule.variant);
+  const fallbackId = findContainer(AUTO_LINK_FALLBACK.title, AUTO_LINK_FALLBACK.variant);
+  const anchorIds = new Set([...Object.values(parentIdByKey), fallbackId].filter(Boolean) as string[]);
+
+  const updates: { id: string; parentId?: string; category?: string }[] = [];
+  for (const item of items) {
+    if (anchorIds.has(item.id) || CONTAINER_VARIANTS.has(item.variant) || item.unlinkedParent) continue;
+    const text = [item.title, item.subtitle, item.category, ...item.tags].filter(Boolean).join(" ");
+    const rule = AUTO_PARENTS.find((r) => r.match.test(text));
+    const parentId = rule ? parentIdByKey[rule.key] : (item.month.endsWith("2027") ? fallbackId : undefined);
+    const category = rule?.category ?? AUTO_CATEGORIES.find((r) => r.match.test(text))?.category ?? "Always On";
+    const patch: { id: string; parentId?: string; category?: string } = { id: item.id };
+    let changed = false;
+    if (!item.parentId && parentId && parentId !== item.id) { patch.parentId = parentId; changed = true; }
+    if (!item.category) { patch.category = category; changed = true; }
+    if (changed) updates.push(patch);
+  }
+  return updates;
+}
+
 export type ContentPlanItem = {
   id: string;
   order: number;
@@ -84,6 +131,7 @@ export type ContentPlanItem = {
   proposed: boolean;
   status: string;
   parentId?: string;
+  unlinkedParent?: boolean;
   addedBy?: string;
   addedByEmail?: string;
   createdAt: number;
@@ -311,12 +359,35 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
 
   const handleUnlinkParent = async (id: string) => {
     if (!canEdit) { requireAuth(); return; }
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, parentId: undefined } : i)));
+    // Flagged so Auto-link never re-attaches a link the user deliberately removed.
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, parentId: undefined, unlinkedParent: true } : i)));
     try {
-      await setDoc(doc(db(), "contentPlan", id), { parentId: null }, { merge: true });
+      await setDoc(doc(db(), "contentPlan", id), { parentId: null, unlinkedParent: true }, { merge: true });
     } catch (e: any) {
       alert(`Couldn't unlink: ${e?.message || "unknown error"}`);
       load();
+    }
+  };
+
+  const [autoLinking, setAutoLinking] = useState(false);
+  const handleAutoLink = async () => {
+    if (!canEdit) { requireAuth(); return; }
+    const updates = computeAutoLinks(items);
+    if (!updates.length) { alert("No new links found — everything that matches a known pattern is already linked."); return; }
+    if (!window.confirm(`Auto-link will add a parent and/or category to ${updates.length} item${updates.length === 1 ? "" : "s"} based on title/tag matches. Continue?`)) return;
+    setAutoLinking(true);
+    try {
+      const batch = writeBatch(db());
+      for (const u of updates) batch.set(doc(db(), "contentPlan", u.id), stripUndefined({ parentId: u.parentId, category: u.category }), { merge: true });
+      await batch.commit();
+      setItems((prev) => prev.map((it) => {
+        const u = updates.find((x) => x.id === it.id);
+        return u ? { ...it, ...(u.parentId ? { parentId: u.parentId } : {}), ...(u.category ? { category: u.category } : {}) } : it;
+      }));
+    } catch (e: any) {
+      alert(`Auto-link failed: ${e?.message || "unknown error"}`);
+    } finally {
+      setAutoLinking(false);
     }
   };
 
@@ -405,6 +476,11 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
             {lastAction && (
               <button type="button" onClick={handleUndo} style={secondaryBtnStyle} title="Undo last change">
                 <Undo2 size={14} /> Undo
+              </button>
+            )}
+            {canEdit && (
+              <button type="button" onClick={handleAutoLink} disabled={autoLinking} style={{ ...secondaryBtnStyle, opacity: autoLinking ? 0.7 : 1 }} title="Link content cards up to their container based on title/tag matches">
+                <Link2 size={14} /> {autoLinking ? "Linking…" : "Auto-link"}
               </button>
             )}
             <button type="button" onClick={handleExport} style={secondaryBtnStyle}>
