@@ -114,6 +114,29 @@ function sheetRowsToItems(rows: Record<string, any>[]): Omit<ContentPlanItem, "i
   }));
 }
 
+export function ComingSoonPage({ title, eyebrow, description }: { title: string; eyebrow: string; description: string }) {
+  return (
+    <div style={{ background: T.grey1, minHeight: "100%", overflow: "auto", fontFamily: T.font, color: T.ink }}>
+      <div style={{ maxWidth: MAXW, margin: "0 auto", padding: `${SP.xxxl}px ${SP.xl}px ${SP.huge}px` }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: SP.sm, ...TYPE.eyebrow, color: T.plan }}>
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.plan }} />
+          {eyebrow}
+        </div>
+        <h1 style={{ ...TYPE.hero, fontSize: "clamp(32px, 4.5vw, 48px)", margin: `${SP.sm}px 0 ${SP.md}px` }}>{title}</h1>
+        <p style={{ ...TYPE.lede, color: T.grey7, margin: 0, maxWidth: 580, fontSize: 15 }}>{description}</p>
+        <div style={{
+          marginTop: SP.xxxl, border: `1.5px dashed ${T.grey4}`, borderRadius: R.xl, padding: SP.xxxl,
+          display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", color: T.grey6, minHeight: 200, justifyContent: "center",
+        }}>
+          <div style={{ width: 40, height: 40, borderRadius: R.md, background: T.grey2, display: "grid", placeItems: "center", marginBottom: SP.md, fontSize: 20, color: T.grey5 }}>+</div>
+          <div style={{ ...TYPE.h3, color: T.grey7 }}>Coming soon</div>
+          <p style={{ ...TYPE.small, color: T.grey6, margin: `${SP.xs}px 0 0`, maxWidth: 320 }}>This section is being built next — check back soon.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function useContentPlanStats() {
   const [stats, setStats] = useState<{ total: number; live: number } | null>(null);
   useEffect(() => {

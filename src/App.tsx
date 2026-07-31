@@ -5,7 +5,7 @@ import { SharedQAReport } from "./SharedQAReport";
 import { PlatformHome } from "./v2/PlatformHome";
 import { ContentHubPage } from "./v2/ContentHubPage";
 import { ScreenshotToolPage } from "./v2/ScreenshotToolPage";
-import { ContentPlannerPage } from "./v2/ContentPlannerPage";
+import { ContentPlannerPage, ComingSoonPage } from "./v2/ContentPlannerPage";
 
 import{initializeApp}from'firebase/app';
 import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut as fbSignOut,onAuthStateChanged,sendPasswordResetEmail,confirmPasswordReset,GoogleAuthProvider,signInWithPopup}from'firebase/auth';
@@ -68,6 +68,13 @@ const UX_AUDIT_ITEMS = [
   {id:"mapping",label:"Journeys"},
   {id:"analytics",label:"Analytics"},
   {id:"screenshots",label:"Screenshots"},
+];
+
+const CONTENT_ITEMS = [
+  {id:"content-plan",label:"Content Plan"},
+  {id:"content-refresh",label:"Content Refresh"},
+  {id:"content-geo-seo",label:"Content GEO/SEO"},
+  {id:"plan-vs-seo-geo",label:"Plan vs SEO/GEO"},
 ];
 
 const INIT_STAGES = [
@@ -4366,7 +4373,7 @@ function SharePage({shareId}:{shareId:string}){
 
 export default function App(){
 
-  var VALID_VIEWS=["dashboard","audit","generated-audits","summary","personas","persona-detail","mapping","journey","lifecycle","affinity","flows","analytics","settings","wireframes","feedback","guide","landing","qa-walkthrough","content-hub","screenshots","content-plan"];
+  var VALID_VIEWS=["dashboard","audit","generated-audits","summary","personas","persona-detail","mapping","journey","lifecycle","affinity","flows","analytics","settings","wireframes","feedback","guide","landing","qa-walkthrough","content-hub","screenshots","content-plan","content-refresh","content-geo-seo","plan-vs-seo-geo"];
   function hashToView(h){var v=(h||"").replace(/^#\//,"").split("/")[0];return VALID_VIEWS.indexOf(v)>=0?v:"dashboard";}
   function hashToSubId(h){var parts=(h||"").replace(/^#\//,"").split("/");return parts.length>1?decodeURIComponent(parts[1]):null;}
   var [view,setViewRaw]=useState(function(){return hashToView(window.location.hash);});
@@ -4483,7 +4490,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
           <Dropdown label="UX Audit" items={UX_AUDIT_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("summary");}} forceActive={view==="summary"||view==="generated-audits"||view==="audit"||view==="wireframes"||view==="personas"||view==="persona-detail"||view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"||view==="analytics"||view==="screenshots"}/>
           <button onClick={function(){setView("qa-walkthrough");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="qa-walkthrough"?C.pink:"transparent",color:view==="qa-walkthrough"?C.white:C.grey7,flexShrink:0}}>QA Walkthrough</button>
           <button onClick={function(){setView("content-hub");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="content-hub"?C.pink:"transparent",color:view==="content-hub"?C.white:C.grey7,flexShrink:0}}>Content Hub</button>
-          <button onClick={function(){setView("content-plan");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="content-plan"?C.pink:"transparent",color:view==="content-plan"?C.white:C.grey7,flexShrink:0}}>Content Planner</button>
+          <Dropdown label="Content" items={CONTENT_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("content-plan");}} forceActive={view==="content-plan"||view==="content-refresh"||view==="content-geo-seo"||view==="plan-vs-seo-geo"}/>
           <div style={{flex:1}}/>
           {(view==="personas"||view==="persona-detail"||view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows")&&(
             <button onClick={function(){var t=(view==="personas"||view==="persona-detail")?"personas":(view==="mapping"||view==="lifecycle")?"mapping":(view==="affinity")?"affinity":(view==="flows")?"flows":"journeys";_shareReport(t);}} disabled={_reportSharing} title="Share a public read-only report" style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:700,border:"none",cursor:_reportSharing?"wait":"pointer",background:_reportSharing?"#888":"rgba(255,0,119,0.18)",color:_reportSharing?C.grey6:C.pink,flexShrink:0,transition:"background 0.15s"}} onMouseEnter={function(e){if(!_reportSharing)(e.currentTarget as HTMLElement).style.background="rgba(255,0,119,0.28)";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.background=_reportSharing?"#888":"rgba(255,0,119,0.18)";}}><Share2 size={13}/>{_reportSharing?"Sharing…":"Share report"}</button>
@@ -4511,6 +4518,9 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="content-hub"&&<ContentHubPage user={_user}/>}
         {view==="screenshots"&&<ScreenshotToolPage/>}
         {view==="content-plan"&&<ContentPlannerPage user={_user}/>}
+        {view==="content-refresh"&&<ComingSoonPage eyebrow="FY27 · Search & AI visibility" title="Content Refresh" description="Every existing URL losing search or AI visibility, with the traffic, conversion and retrieval signals behind each refresh call."/>}
+        {view==="content-geo-seo"&&<ComingSoonPage eyebrow="FY27 · Content" title="Content GEO/SEO" description="How existing content performs for generative and traditional search."/>}
+        {view==="plan-vs-seo-geo"&&<ComingSoonPage eyebrow="FY27 · Overlap analysis" title="Plan vs SEO/GEO" description="Every FY27 editorial item checked against what's already published and what the SEO/GEO plan already commits to writing."/>}
         {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData} onAddRec={function(action,pageUrl){var pageObj=pages.find(function(p){return p.url===pageUrl;});var newAction=Object.assign({},action,{status:"todo"});var existing=auditData.find(function(p){return p.url===pageUrl;});if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}}} onRemoveRec={function(actionId,pageUrl){setAuditData(function(prev){return prev.map(function(p){return p.url!==pageUrl?p:Object.assign({},p,{actions:(p.actions||[]).filter(function(a:any){return a.id!==actionId;})});});});}} lovedComponents={lovedComponents} onLoveComponent={function(lc){setLovedComponents(function(prev){return (prev as any[]).concat([lc]);});}} onUnloveComponent={function(id){setLovedComponents(function(prev){return (prev as any[]).filter(function(lc:any){return lc.id!==id;});});}} personas={personas} wireframeRules={wireframeRules} pages={pages} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}}/>}
       </div>
       {view==="feedback"&&<FeedbackPage feedback={feedback} onDeleteFeedback={function(id){setFeedback(function(prev){return(prev as any[]).filter(function(f){return f.id!==id;});});if(_user)deleteDoc(doc(_db,"users",_user.uid,"feedback",id)).catch(function(){});}} onSubmit={function(entry){var full=Object.assign({},entry,{user:_user?_user.email:""});setFeedback(function(prev){return prev.concat([full]);});if(_user)setDoc(doc(_db,"users",_user.uid,"feedback",full.id),full).catch(function(){});}} onEditFeedback={function(id,newText){setFeedback(function(prev){return(prev as any[]).map(function(f){return f.id===id?Object.assign({},f,{feedback:newText}):f;});});if(_user){var entry=(feedback as any[]).find(function(f){return f.id===id;});if(entry)setDoc(doc(_db,"users",_user.uid,"feedback",id),Object.assign({},entry,{feedback:newText})).catch(function(){});}}}/>}
