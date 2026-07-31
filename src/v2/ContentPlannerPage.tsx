@@ -999,7 +999,7 @@ function BoardGrid({
                 <button
                   type="button" onClick={() => onToggleHideLane(lane)} title={`${lane} is hidden — click to show it again`}
                   style={{
-                    position: "sticky", left: 0, zIndex: 3, background: T.grey3, border: "none", borderTop: `1px solid ${T.grey3}`,
+                    position: "sticky", left: 0, zIndex: 3, background: T.grey2, border: "none", borderTop: `1px solid ${T.grey3}`,
                     padding: "6px 14px", display: "flex", alignItems: "center", gap: 6, cursor: "pointer", textAlign: "left",
                   }}
                 >
@@ -1016,7 +1016,7 @@ function BoardGrid({
             <FragmentRow key={lane}>
               <div
                 onMouseEnter={() => setHoveredLane(lane)} onMouseLeave={() => setHoveredLane((l) => (l === lane ? null : l))}
-                style={{ position: "sticky", left: 0, zIndex: 3, background: T.grey3, borderTop: `1px solid ${T.grey3}`, padding: "14px", display: "flex", alignItems: "center", gap: SP.sm }}
+                style={{ position: "sticky", left: 0, zIndex: 3, background: T.grey2, borderTop: `1px solid ${T.grey3}`, padding: "14px", display: "flex", alignItems: "center", gap: SP.sm }}
               >
                 <span style={{ color: color.fg }}><Icon size={15} /></span>
                 <span style={{ ...TYPE.small, fontWeight: 700, color: T.ink, flex: 1 }}>{lane}</span>
@@ -1192,8 +1192,8 @@ function Card({
           {item.status === "Live" && <span style={{ ...TYPE.label, color: T.pass, background: T.white, padding: "2px 5px", borderRadius: R.sm }}>LIVE</span>}
         </div>
       </div>
-      <div style={{ ...TYPE.small, fontWeight: 700, color: T.ink, marginTop: 3, lineHeight: 1.3 }}>{item.title}</div>
-      {item.subtitle && <div style={{ fontSize: 11, color: T.grey6, marginTop: 1 }}>{item.subtitle}</div>}
+      <div style={{ ...TYPE.small, fontWeight: 700, color: color.fg, marginTop: 3, lineHeight: 1.3 }}>{item.title}</div>
+      {item.subtitle && <div style={{ fontSize: 11, color: color.fg, opacity: 0.75, marginTop: 1 }}>{item.subtitle}</div>}
       {parent && (
         <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 11, color: T.grey6 }}>
           <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>↳ {parent.title}</span>
