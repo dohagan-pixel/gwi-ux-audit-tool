@@ -1194,6 +1194,24 @@ function Card({
       </div>
       <div style={{ ...TYPE.small, fontWeight: 700, color: color.fg, marginTop: 3, lineHeight: 1.3 }}>{item.title}</div>
       {item.subtitle && <div style={{ fontSize: 11, color: color.fg, opacity: 0.75, marginTop: 1 }}>{item.subtitle}</div>}
+      {item.tags.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginTop: 4 }}>
+          {item.tags.map((t) => {
+            const cfg = TAG_CFG[t] ?? { bg: "#ebf1fb", color: "#526482" };
+            return (
+              <span
+                key={t}
+                style={{
+                  background: "rgba(255,255,255,0.85)", color: cfg.color, border: `1px solid ${cfg.color}55`,
+                  fontSize: 9, fontWeight: 700, lineHeight: "1.45", padding: "0 4px", borderRadius: 4, whiteSpace: "nowrap",
+                }}
+              >
+                {t}
+              </span>
+            );
+          })}
+        </div>
+      )}
       {parent && (
         <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 11, color: T.grey6 }}>
           <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>↳ {parent.title}</span>
