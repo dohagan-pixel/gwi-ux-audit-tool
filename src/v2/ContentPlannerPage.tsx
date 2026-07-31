@@ -484,6 +484,7 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [proposedOnly, setProposedOnly] = useState(false);
   const [search, setSearch] = useState("");
+  const [titleCollapsed, setTitleCollapsed] = useState(false);
 
   const seedIfEmpty = async () => {
     const batch = writeBatch(db());
@@ -772,15 +773,33 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
   return (
     <div style={{ background: T.grey1, minHeight: "100%", overflow: "auto", fontFamily: T.font, color: T.ink }}>
       <div style={{ maxWidth: 1600, margin: "0 auto", padding: `${SP.xxxl}px ${SP.xl}px ${SP.huge}px` }}>
-        <header style={{ paddingBottom: SP.xl, borderBottom: `1px solid ${T.grey3}` }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: SP.sm, ...TYPE.eyebrow, color: T.plan }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.plan }} />
-            FY27 · Content
+        <header style={{ paddingBottom: titleCollapsed ? SP.md : SP.xl, borderBottom: `1px solid ${T.grey3}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: SP.sm }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: SP.sm, ...TYPE.eyebrow, color: T.plan }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.plan }} />
+              FY27 · Content
+            </div>
+            <button
+              type="button"
+              onClick={() => setTitleCollapsed((c) => !c)}
+              title={titleCollapsed ? "Show title" : "Collapse title — give the table more room"}
+              style={{
+                marginLeft: "auto", width: 22, height: 22, borderRadius: "50%", border: `1px solid ${T.grey4}`,
+                background: T.white, color: T.grey6, display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", flexShrink: 0,
+              }}
+            >
+              {titleCollapsed ? <ChevronDown size={12} /> : <X size={12} />}
+            </button>
           </div>
-          <h1 style={{ ...TYPE.hero, fontSize: "clamp(32px, 4.5vw, 48px)", margin: `${SP.sm}px 0 ${SP.md}px` }}>Content Planner</h1>
-          <p style={{ ...TYPE.lede, color: T.grey7, margin: 0, maxWidth: 580, fontSize: 15 }}>
-            The FY27 content calendar — drag a card to move it between months or lanes.
-          </p>
+          {!titleCollapsed && (
+            <>
+              <h1 style={{ ...TYPE.hero, fontSize: "clamp(32px, 4.5vw, 48px)", margin: `${SP.sm}px 0 ${SP.md}px` }}>Content Planner</h1>
+              <p style={{ ...TYPE.lede, color: T.grey7, margin: 0, maxWidth: 580, fontSize: 15 }}>
+                The FY27 content calendar — drag a card to move it between months or lanes.
+              </p>
+            </>
+          )}
         </header>
 
         <div style={{ display: "flex", gap: SP.sm, marginTop: SP.lg, flexWrap: "wrap", alignItems: "center" }}>
@@ -832,6 +851,7 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
               itemsById={itemsById}
               nowMonth={nowMonth}
               canEdit={canEdit}
+              extraHeight={titleCollapsed}
               hiddenLanes={hiddenLanes}
               onToggleHideLane={toggleLaneHidden}
               connecting={connecting}
@@ -988,11 +1008,12 @@ function LegendRow({ bg, fg, label, text }: { bg: string; fg: string; label: str
 // ── The board itself: lanes (rows) × months (columns), draggable cards ──
 function BoardGrid({
   lanes, months, board, itemsById, nowMonth, canEdit, hiddenLanes, onToggleHideLane, connecting, onConnectionStart,
-  onEdit, onDelete, onDuplicate, onUnlinkParent, onQuickAdd, onDragStart, onDrop,
+  onEdit, onDelete, onDuplicate, onUnlinkParent, onQuickAdd, onDragStart, onDrop, extraHeight,
 }: {
   lanes: string[]; months: string[]; board: Record<string, Record<string, ContentPlanItem[]>>;
   itemsById: Map<string, ContentPlanItem>; nowMonth: string;
   canEdit: boolean;
+  extraHeight?: boolean;
   hiddenLanes: Set<string>;
   onToggleHideLane: (lane: string) => void;
   connecting: { fromId: string; fromVariant: string } | null;
@@ -1016,7 +1037,7 @@ function BoardGrid({
   const LABEL_COL = 200;
   const COL_W = 190;
   return (
-    <div style={{ overflow: "auto", maxHeight: "calc(100vh - 320px)", border: `1px solid ${T.grey3}`, borderRadius: R.lg, background: T.white }}>
+    <div style={{ overflow: "auto", maxHeight: `calc(100vh - ${extraHeight ? 200 : 320}px)`, border: `1px solid ${T.grey3}`, borderRadius: R.lg, background: T.white }}>
       <div style={{ display: "grid", gridTemplateColumns: `${LABEL_COL}px repeat(${months.length}, ${COL_W}px)`, minWidth: LABEL_COL + months.length * COL_W }}>
         {/* header row — sticky on both axes so it stays put while the board scrolls under it */}
         <div style={{ position: "sticky", top: 0, left: 0, zIndex: 5, background: T.ink, color: T.white, ...TYPE.label, padding: "12px 14px", display: "flex", alignItems: "center" }}>
