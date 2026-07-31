@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   getFirestore, collection, getDocs, doc, setDoc, deleteDoc, query, orderBy, writeBatch,
 } from "firebase/firestore";
 import * as XLSX from "xlsx";
 import {
   Plus, Cog, Trash2, X, Upload, Download, ChevronDown, ChevronRight, Undo2, Copy, Link2,
-  Megaphone, FileText, Calendar, Video, Mic, Layers, Code2, Scale, Radio,
+  Megaphone, FileText, Calendar, Video, Mic, Layers, Code2, Scale, Radio, EyeOff, CheckCircle2,
 } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 import { CONTENT_PLAN_SEED } from "./contentPlanSeed";
@@ -69,6 +70,11 @@ const VARIANT_COLOR: Record<string, { fg: string; bg: string; bar: string }> = {
 
 // Container variants — the only kind of card a content item (blog/listicle/llm/video/podcast) may link up to.
 const CONTAINER_VARIANTS = new Set(["hero-full", "campaign", "series", "event", "customer-event"]);
+const CONTENT_VARIANTS = ["blog", "listicle", "llm", "video", "podcast"];
+const SERIES_EVENT_VARIANTS = ["series", "event"];
+const HERO_CAMPAIGN_VARIANTS = ["hero-full", "campaign"];
+
+const HIDDEN_LANES_KEY = "gwi-content-plan/hidden-lanes/v1";
 
 // Ported verbatim from ContentPlan.tsx's AUTO_PARENTS — regex-matched against a card's
 // title+subtitle+category+tags to guess which container it belongs to.
@@ -369,6 +375,73 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
     }
   };
 
+  const [hiddenLanes, setHiddenLanes] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(HIDDEN_LANES_KEY) || "[]")); } catch { return new Set(); }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(HIDDEN_LANES_KEY, JSON.stringify([...hiddenLanes])); } catch { /* ignore */ }
+  }, [hiddenLanes]);
+  const toggleLaneHidden = (lane: string) => setHiddenLanes((prev) => {
+    const next = new Set(prev);
+    if (next.has(lane)) next.delete(lane); else next.add(lane);
+    return next;
+  });
+
+  // ── Drag-to-connect: pull a line from one card's edge dot to another to set parentId ──
+  const [connecting, setConnecting] = useState<{ fromId: string; fromVariant: string; x1: number; y1: number; x2: number; y2: number } | null>(null);
+  const connectingRef = useRef(connecting);
+  useEffect(() => { connectingRef.current = connecting; }, [connecting]);
+
+  const handleConnect = async (fromId: string, fromVariant: string, toId: string) => {
+    if (!canEdit || fromId === toId) return;
+    const toItem = items.find((i) => i.id === toId);
+    if (!toItem) return;
+    const toVariant = toItem.variant;
+    let childId: string | undefined, parentId: string | undefined;
+    if (CONTENT_VARIANTS.includes(fromVariant) && CONTAINER_VARIANTS.has(toVariant)) { childId = fromId; parentId = toId; }
+    else if (SERIES_EVENT_VARIANTS.includes(fromVariant) && HERO_CAMPAIGN_VARIANTS.includes(toVariant)) { childId = fromId; parentId = toId; }
+    else if (HERO_CAMPAIGN_VARIANTS.includes(fromVariant) && (SERIES_EVENT_VARIANTS.includes(toVariant) || CONTENT_VARIANTS.includes(toVariant))) { childId = toId; parentId = fromId; }
+    if (!childId || !parentId) return;
+    setItems((prev) => prev.map((it) => (it.id === childId ? { ...it, parentId, unlinkedParent: false } : it)));
+    try {
+      await setDoc(doc(db(), "contentPlan", childId), { parentId, unlinkedParent: false }, { merge: true });
+    } catch (e: any) {
+      alert(`Couldn't connect: ${e?.message || "unknown error"}`);
+      load();
+    }
+  };
+  // The pointerup listener below is registered once — read the latest handleConnect via a ref so it never closes over stale items/canEdit.
+  const handleConnectRef = useRef(handleConnect);
+  useEffect(() => { handleConnectRef.current = handleConnect; }, [handleConnect]);
+
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      if (connectingRef.current) setConnecting((c) => (c ? { ...c, x2: e.clientX, y2: e.clientY } : null));
+    };
+    const onUp = (e: PointerEvent) => {
+      const c = connectingRef.current;
+      if (!c) return;
+      const els = document.elementsFromPoint(e.clientX, e.clientY);
+      let targetId: string | undefined;
+      for (const el of els) {
+        const found = (el as HTMLElement).dataset?.cardId ?? (el as HTMLElement).closest?.("[data-card-id]")?.getAttribute("data-card-id") ?? undefined;
+        if (found) { targetId = found; break; }
+      }
+      setConnecting(null);
+      if (targetId && targetId !== c.fromId) handleConnectRef.current(c.fromId, c.fromVariant, targetId);
+    };
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+    return () => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+    };
+  }, []);
+
+  const handleConnectionStart = (cardId: string, variant: string, x: number, y: number) => {
+    setConnecting({ fromId: cardId, fromVariant: variant, x1: x, y1: y, x2: x, y2: y });
+  };
+
   const [autoLinking, setAutoLinking] = useState(false);
   const handleAutoLink = async () => {
     if (!canEdit) { requireAuth(); return; }
@@ -530,6 +603,10 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
               itemsById={itemsById}
               nowMonth={nowMonth}
               canEdit={canEdit}
+              hiddenLanes={hiddenLanes}
+              onToggleHideLane={toggleLaneHidden}
+              connecting={connecting}
+              onConnectionStart={handleConnectionStart}
               onEdit={(item) => openModal({ editItem: item })}
               onDelete={handleDelete}
               onDuplicate={handleDuplicate}
@@ -541,6 +618,18 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
           )}
         </div>
       </div>
+
+      {/* Live connector line while dragging from one card's edge dot to another */}
+      {connecting && createPortal(
+        <svg style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", pointerEvents: "none", zIndex: 300 }}>
+          <path
+            d={`M ${connecting.x1} ${connecting.y1} C ${connecting.x1 + 80} ${connecting.y1}, ${connecting.x2 - 80} ${connecting.y2}, ${connecting.x2} ${connecting.y2}`}
+            fill="none" stroke={T.pink} strokeWidth={2} strokeDasharray="6 3" opacity={0.8}
+          />
+          <circle cx={connecting.x2} cy={connecting.y2} r={5} fill={T.pink} opacity={0.8} />
+        </svg>,
+        document.body,
+      )}
 
       {modal && (
         <EditModal
@@ -618,11 +707,16 @@ function LegendBadge({ bg, fg, label, text }: { bg: string; fg: string; label: s
 
 // ── The board itself: lanes (rows) × months (columns), draggable cards ──
 function BoardGrid({
-  lanes, months, board, itemsById, nowMonth, canEdit, onEdit, onDelete, onDuplicate, onUnlinkParent, onQuickAdd, onDragStart, onDrop,
+  lanes, months, board, itemsById, nowMonth, canEdit, hiddenLanes, onToggleHideLane, connecting, onConnectionStart,
+  onEdit, onDelete, onDuplicate, onUnlinkParent, onQuickAdd, onDragStart, onDrop,
 }: {
   lanes: string[]; months: string[]; board: Record<string, Record<string, ContentPlanItem[]>>;
   itemsById: Map<string, ContentPlanItem>; nowMonth: string;
   canEdit: boolean;
+  hiddenLanes: Set<string>;
+  onToggleHideLane: (lane: string) => void;
+  connecting: { fromId: string; fromVariant: string } | null;
+  onConnectionStart: (cardId: string, variant: string, x: number, y: number) => void;
   onEdit: (item: ContentPlanItem) => void;
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
@@ -637,6 +731,8 @@ function BoardGrid({
     if (next.has(key)) next.delete(key); else next.add(key);
     return next;
   });
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+  const [hoveredLane, setHoveredLane] = useState<string | null>(null);
   const LABEL_COL = 200;
   const COL_W = 190;
   return (
@@ -657,13 +753,45 @@ function BoardGrid({
         {lanes.map((lane) => {
           const Icon = LANE_ICON[lane] || FileText;
           const color = LANE_COLOR[lane] || { fg: T.grey7, bg: T.grey2, bar: T.grey5 };
+
+          if (hiddenLanes.has(lane)) {
+            return (
+              <FragmentRow key={lane}>
+                <button
+                  type="button" onClick={() => onToggleHideLane(lane)} title={`${lane} is hidden — click to show it again`}
+                  style={{
+                    position: "sticky", left: 0, zIndex: 3, background: T.grey2, border: "none", borderTop: `1px solid ${T.grey3}`,
+                    padding: "6px 14px", display: "flex", alignItems: "center", gap: 6, cursor: "pointer", textAlign: "left",
+                  }}
+                >
+                  <EyeOff size={11} color={T.grey5} />
+                  <span style={{ ...TYPE.small, fontWeight: 600, color: T.grey6, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{lane}</span>
+                  <span style={{ ...TYPE.label, color: T.grey5 }}>Show</span>
+                </button>
+                {months.map((m) => <div key={m} style={{ borderTop: `1px solid ${T.grey3}`, background: T.grey1, minHeight: 26 }} />)}
+              </FragmentRow>
+            );
+          }
+
           return (
             <FragmentRow key={lane}>
-              <div style={{ position: "sticky", left: 0, zIndex: 3, background: T.white, borderTop: `1px solid ${T.grey3}`, padding: "14px", display: "flex", alignItems: "center", gap: SP.sm }}>
+              <div
+                onMouseEnter={() => setHoveredLane(lane)} onMouseLeave={() => setHoveredLane((l) => (l === lane ? null : l))}
+                style={{ position: "sticky", left: 0, zIndex: 3, background: T.white, borderTop: `1px solid ${T.grey3}`, padding: "14px", display: "flex", alignItems: "center", gap: SP.sm }}
+              >
                 <span style={{ color: color.fg }}><Icon size={15} /></span>
-                <span style={{ ...TYPE.small, fontWeight: 700, color: T.ink }}>{lane}</span>
+                <span style={{ ...TYPE.small, fontWeight: 700, color: T.ink, flex: 1 }}>{lane}</span>
+                {hoveredLane === lane && (
+                  <button
+                    type="button" onClick={() => onToggleHideLane(lane)} title={`Hide ${lane}`}
+                    style={{ ...iconBtnStyle, padding: 2 }}
+                  >
+                    <EyeOff size={13} />
+                  </button>
+                )}
               </div>
               {months.map((month) => {
+                const cellKey = `${lane}-${month}`;
                 const cardsHere = board[lane]?.[month] || [];
                 // Group cards that share a parent (a container elsewhere on the board) under one collapsible header.
                 const grouped: { parentId?: string; parentTitle?: string; cards: ContentPlanItem[] }[] = [];
@@ -678,20 +806,25 @@ function BoardGrid({
                     grouped.push({ cards: [item] });
                   }
                 }
+                const isOver = dragOverKey === cellKey;
                 return (
                   <div
                     key={month}
-                    onDragOver={(e) => { if (canEdit) e.preventDefault(); }}
-                    onDrop={(e) => { e.preventDefault(); if (canEdit) onDrop(lane, month); }}
+                    onDragOver={(e) => { if (canEdit) { e.preventDefault(); setDragOverKey(cellKey); } }}
+                    onDragLeave={() => setDragOverKey((k) => (k === cellKey ? null : k))}
+                    onDrop={(e) => { e.preventDefault(); setDragOverKey(null); if (canEdit) onDrop(lane, month); }}
                     style={{
                       borderTop: `1px solid ${T.grey3}`, borderLeft: `1px solid ${T.grey3}`, minHeight: 90,
                       padding: 6, display: "flex", flexDirection: "column", gap: 6, position: "relative",
+                      background: isOver ? "#fdf2f8" : "transparent",
+                      boxShadow: isOver ? `inset 0 0 0 1.5px ${T.pink}` : "none",
+                      transition: "background-color .1s, box-shadow .1s",
                     }}
                   >
                     {grouped.map((g, gi) => {
                       if (!g.parentId) {
                         return g.cards.map((item) => (
-                          <Card key={item.id} item={item} lane={lane} itemsById={itemsById} canEdit={canEdit} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} onDuplicate={() => onDuplicate(item.id)} onUnlinkParent={() => onUnlinkParent(item.id)} onDragStart={() => onDragStart(item.id)} />
+                          <Card key={item.id} item={item} lane={lane} itemsById={itemsById} canEdit={canEdit} connecting={connecting} onConnectionStart={onConnectionStart} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} onDuplicate={() => onDuplicate(item.id)} onUnlinkParent={() => onUnlinkParent(item.id)} onDragStart={() => onDragStart(item.id)} />
                         ));
                       }
                       const groupKey = `${lane}-${month}-${g.parentId}`;
@@ -710,7 +843,7 @@ function BoardGrid({
                           {!collapsed && (
                             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                               {g.cards.map((item) => (
-                                <Card key={item.id} item={item} lane={lane} itemsById={itemsById} canEdit={canEdit} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} onDuplicate={() => onDuplicate(item.id)} onUnlinkParent={() => onUnlinkParent(item.id)} onDragStart={() => onDragStart(item.id)} />
+                                <Card key={item.id} item={item} lane={lane} itemsById={itemsById} canEdit={canEdit} connecting={connecting} onConnectionStart={onConnectionStart} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} onDuplicate={() => onDuplicate(item.id)} onUnlinkParent={() => onUnlinkParent(item.id)} onDragStart={() => onDragStart(item.id)} />
                               ))}
                             </div>
                           )}
@@ -744,21 +877,71 @@ function FragmentRow({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// The 4 edge positions a connection line can be dragged from (top/bottom/left/right), as % of the card box.
+const CONNECTOR_EDGES = [
+  { x: 50, y: 0, edgeX: 0.5, edgeY: 0 },
+  { x: 50, y: 100, edgeX: 0.5, edgeY: 1 },
+  { x: 0, y: 50, edgeX: 0, edgeY: 0.5 },
+  { x: 100, y: 50, edgeX: 1, edgeY: 0.5 },
+];
+
 function Card({
-  item, lane, itemsById, canEdit, onEdit, onDelete, onDuplicate, onUnlinkParent, onDragStart,
+  item, lane, itemsById, canEdit, connecting, onConnectionStart, onEdit, onDelete, onDuplicate, onUnlinkParent, onDragStart,
 }: {
   item: ContentPlanItem; lane: string; itemsById: Map<string, ContentPlanItem>; canEdit: boolean;
+  connecting: { fromId: string; fromVariant: string } | null;
+  onConnectionStart: (cardId: string, variant: string, x: number, y: number) => void;
   onEdit: () => void; onDelete: () => void; onDuplicate: () => void; onUnlinkParent: () => void; onDragStart: () => void;
 }) {
   const color = VARIANT_COLOR[item.variant] || LANE_COLOR[lane] || { fg: T.grey7, bg: T.grey2, bar: T.grey5 };
   const parent = item.parentId ? itemsById.get(item.parentId) : undefined;
+  const isContainer = CONTAINER_VARIANTS.has(item.variant);
+  const childItems = useMemo(
+    () => (isContainer ? Array.from(itemsById.values()).filter((c) => c.parentId === item.id) : []),
+    [isContainer, itemsById, item.id],
+  );
+
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [hovered, setHovered] = useState(false);
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const showTimerRef = useRef<number | undefined>(undefined);
+  const hideTimerRef = useRef<number | undefined>(undefined);
+
+  const scheduleShow = () => {
+    if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+    if (showTimerRef.current) window.clearTimeout(showTimerRef.current);
+    showTimerRef.current = window.setTimeout(() => {
+      if (cardRef.current) {
+        const r = cardRef.current.getBoundingClientRect();
+        setTooltipPos({ x: r.right + 8, y: r.top });
+        setTooltipVisible(true);
+      }
+    }, 350);
+  };
+  const scheduleHide = () => {
+    if (showTimerRef.current) window.clearTimeout(showTimerRef.current);
+    hideTimerRef.current = window.setTimeout(() => { setTooltipVisible(false); setTooltipPos(null); }, 200);
+  };
+  useEffect(() => () => {
+    if (showTimerRef.current) window.clearTimeout(showTimerRef.current);
+    if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+  }, []);
+
+  const showDots = canEdit && hovered && !connecting;
+
   return (
     <div
+      ref={cardRef}
+      data-card-id={item.id}
       draggable={canEdit}
       onDragStart={onDragStart}
+      onClick={() => onEdit()}
+      onMouseEnter={() => { setHovered(true); scheduleShow(); }}
+      onMouseLeave={() => { setHovered(false); scheduleHide(); }}
       style={{
         background: color.bg, borderLeft: `4px solid ${color.bar}`, borderRadius: R.sm, padding: "8px 10px",
-        cursor: canEdit ? "grab" : "default", position: "relative",
+        cursor: canEdit ? "grab" : "pointer", position: "relative",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 6 }}>
@@ -774,15 +957,109 @@ function Card({
         <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 11, color: T.grey6 }}>
           <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>↳ {parent.title}</span>
           {canEdit && (
-            <button type="button" onClick={onUnlinkParent} title="Unlink from parent" style={{ ...iconBtnStyle, padding: 0, flexShrink: 0 }}><X size={10} /></button>
+            <button type="button" onClick={(e) => { e.stopPropagation(); onUnlinkParent(); }} title="Unlink from parent" style={{ ...iconBtnStyle, padding: 0, flexShrink: 0 }}><X size={10} /></button>
           )}
         </div>
       )}
+
+      {/* Connection dots — drag from one card's edge to another to link them; hidden while dragging or mid-connection */}
+      {showDots && CONNECTOR_EDGES.map(({ x, y, edgeX, edgeY }, i) => (
+        <div
+          key={i}
+          draggable={false}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => {
+            e.stopPropagation(); e.preventDefault();
+            (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+            if (!cardRef.current) return;
+            const rect = cardRef.current.getBoundingClientRect();
+            onConnectionStart(item.id, item.variant, rect.left + rect.width * edgeX, rect.top + rect.height * edgeY);
+          }}
+          style={{
+            position: "absolute", zIndex: 30, width: 9, height: 9, borderRadius: "50%",
+            background: T.white, border: `2px solid ${color.bar}`, cursor: "crosshair",
+            left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -50%)",
+          }}
+        />
+      ))}
+
+      {tooltipVisible && tooltipPos && createPortal(
+        <CardTooltip
+          item={item} color={color} parent={parent} childItems={childItems} isContainer={isContainer} canEdit={canEdit}
+          pos={tooltipPos}
+          onMouseEnter={() => { if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current); }}
+          onMouseLeave={scheduleHide}
+          onEdit={() => { setTooltipVisible(false); onEdit(); }}
+          onDuplicate={() => { setTooltipVisible(false); onDuplicate(); }}
+          onDelete={() => { setTooltipVisible(false); onDelete(); }}
+        />,
+        document.body,
+      )}
+    </div>
+  );
+}
+
+function CardTooltip({
+  item, color, parent, childItems, isContainer, canEdit, pos, onMouseEnter, onMouseLeave, onEdit, onDuplicate, onDelete,
+}: {
+  item: ContentPlanItem; color: { fg: string; bg: string; bar: string }; parent?: ContentPlanItem;
+  childItems: ContentPlanItem[]; isContainer: boolean; canEdit: boolean; pos: { x: number; y: number };
+  onMouseEnter: () => void; onMouseLeave: () => void; onEdit: () => void; onDuplicate: () => void; onDelete: () => void;
+}) {
+  return (
+    <div
+      onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} onClick={(e) => e.stopPropagation()}
+      style={{
+        position: "fixed", zIndex: 200, width: 260, background: T.white, borderRadius: R.lg,
+        boxShadow: SHADOW.pop, border: `1px solid ${T.grey3}`, padding: SP.lg, fontFamily: T.font,
+        left: Math.min(pos.x, window.innerWidth - 280),
+        top: Math.max(8, Math.min(pos.y, window.innerHeight - 380)),
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: SP.sm, flexWrap: "wrap" }}>
+        <span style={{ ...TYPE.label, color: color.fg, background: color.bg, padding: "3px 7px", borderRadius: R.sm }}>{item.contentType}</span>
+        {item.proposed && <span style={{ ...TYPE.label, color: T.white, background: T.pink, padding: "3px 7px", borderRadius: R.sm }}>NEW</span>}
+        {item.status === "Live" && (
+          <span style={{ ...TYPE.small, color: T.pass, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3 }}>
+            <CheckCircle2 size={12} /> Live
+          </span>
+        )}
+      </div>
+      <div style={{ ...TYPE.small, fontWeight: 700, color: T.ink, lineHeight: 1.35, fontSize: 13 }}>{item.title}</div>
+      {item.subtitle && <div style={{ ...TYPE.small, color: T.grey6, marginTop: 2 }}>{item.subtitle}</div>}
+      {parent && <div style={{ ...TYPE.small, color: T.grey6, marginTop: 4 }}>↳ {parent.title}</div>}
+
+      {(item.tags.length > 0 || item.category) && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: SP.sm, paddingTop: SP.sm, borderTop: `1px solid ${T.grey3}` }}>
+          {item.tags.map((t) => (
+            <span key={t} style={{ ...TYPE.label, color: T.plan, background: T.planBg, padding: "2px 6px", borderRadius: R.sm }}>{t}</span>
+          ))}
+          {item.category && (
+            <span style={{ ...TYPE.label, color: T.grey7, background: T.grey2, padding: "2px 6px", borderRadius: R.sm }}>{item.category}</span>
+          )}
+        </div>
+      )}
+
+      {isContainer && childItems.length > 0 && (
+        <div style={{ marginTop: SP.sm, paddingTop: SP.sm, borderTop: `1px solid ${T.grey3}` }}>
+          <div style={{ ...TYPE.label, color: T.grey6, marginBottom: 6 }}>Contents ({childItems.length})</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {childItems.slice(0, 6).map((c) => (
+              <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: (VARIANT_COLOR[c.variant] || color).bar, flexShrink: 0 }} />
+                <span style={{ ...TYPE.small, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</span>
+              </div>
+            ))}
+            {childItems.length > 6 && <div style={{ ...TYPE.small, color: T.grey5 }}>+{childItems.length - 6} more</div>}
+          </div>
+        </div>
+      )}
+
       {canEdit && (
-        <div style={{ display: "flex", gap: 2, marginTop: 4, justifyContent: "flex-end" }}>
-          <button type="button" onClick={onEdit} title="Edit" style={{ ...iconBtnStyle, padding: 2 }}><Cog size={12} /></button>
-          <button type="button" onClick={onDuplicate} title="Duplicate" style={{ ...iconBtnStyle, padding: 2 }}><Copy size={12} /></button>
-          <button type="button" onClick={onDelete} title="Remove" style={{ ...iconBtnStyle, padding: 2 }}><Trash2 size={12} /></button>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: SP.md }}>
+          <button type="button" onClick={onEdit} style={{ ...secondaryBtnStyle, justifyContent: "center", width: "100%" }}>Edit</button>
+          <button type="button" onClick={onDuplicate} style={{ ...secondaryBtnStyle, justifyContent: "center", width: "100%" }}><Copy size={12} /> Duplicate</button>
+          <button type="button" onClick={onDelete} style={{ ...secondaryBtnStyle, justifyContent: "center", width: "100%", color: T.flag, borderColor: T.flagBg }}><Trash2 size={12} /> Delete</button>
         </div>
       )}
     </div>
