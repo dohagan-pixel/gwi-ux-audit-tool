@@ -978,7 +978,7 @@ function BoardGrid({
     <div style={{ overflowX: "auto", border: `1px solid ${T.grey3}`, borderRadius: R.lg, background: T.white }}>
       <div style={{ display: "grid", gridTemplateColumns: `${LABEL_COL}px repeat(${months.length}, ${COL_W}px)`, minWidth: LABEL_COL + months.length * COL_W }}>
         {/* header row */}
-        <div style={{ position: "sticky", left: 0, zIndex: 3, background: T.ink, color: T.white, ...TYPE.label, padding: "12px 14px", display: "flex", alignItems: "center" }}>
+        <div style={{ position: "sticky", left: 0, zIndex: 3, background: T.grey4, color: T.ink, ...TYPE.label, padding: "12px 14px", display: "flex", alignItems: "center" }}>
           ASSET TYPE
         </div>
         {months.map((m) => (
@@ -999,7 +999,7 @@ function BoardGrid({
                 <button
                   type="button" onClick={() => onToggleHideLane(lane)} title={`${lane} is hidden — click to show it again`}
                   style={{
-                    position: "sticky", left: 0, zIndex: 3, background: T.grey2, border: "none", borderTop: `1px solid ${T.grey3}`,
+                    position: "sticky", left: 0, zIndex: 3, background: T.grey4, border: "none", borderTop: `1px solid ${T.grey3}`,
                     padding: "6px 14px", display: "flex", alignItems: "center", gap: 6, cursor: "pointer", textAlign: "left",
                   }}
                 >
@@ -1016,7 +1016,7 @@ function BoardGrid({
             <FragmentRow key={lane}>
               <div
                 onMouseEnter={() => setHoveredLane(lane)} onMouseLeave={() => setHoveredLane((l) => (l === lane ? null : l))}
-                style={{ position: "sticky", left: 0, zIndex: 3, background: T.white, borderTop: `1px solid ${T.grey3}`, padding: "14px", display: "flex", alignItems: "center", gap: SP.sm }}
+                style={{ position: "sticky", left: 0, zIndex: 3, background: T.grey4, borderTop: `1px solid ${T.grey3}`, padding: "14px", display: "flex", alignItems: "center", gap: SP.sm }}
               >
                 <span style={{ color: color.fg }}><Icon size={15} /></span>
                 <span style={{ ...TYPE.small, fontWeight: 700, color: T.ink, flex: 1 }}>{lane}</span>
