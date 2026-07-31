@@ -7,7 +7,7 @@ import * as XLSX from "xlsx";
 import {
   Plus, Cog, Trash2, X, Upload, Download, ChevronDown, ChevronRight, Undo2, Copy, Link2,
   Megaphone, FileText, Calendar, Video, Mic, Layers, Code2, Scale, Radio, EyeOff, CheckCircle2,
-  Star, List, Bot, Users,
+  Star, List, Bot, Users, Tag,
 } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 import { CONTENT_PLAN_SEED } from "./contentPlanSeed";
@@ -772,38 +772,15 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
   return (
     <div style={{ background: T.grey1, minHeight: "100%", overflow: "auto", fontFamily: T.font, color: T.ink }}>
       <div style={{ maxWidth: 1600, margin: "0 auto", padding: `${SP.xxxl}px ${SP.xl}px ${SP.huge}px` }}>
-        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: SP.lg, flexWrap: "wrap", paddingBottom: SP.xl, borderBottom: `1px solid ${T.grey3}` }}>
-          <div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: SP.sm, ...TYPE.eyebrow, color: T.plan }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.plan }} />
-              FY27 · Content
-            </div>
-            <h1 style={{ ...TYPE.hero, fontSize: "clamp(32px, 4.5vw, 48px)", margin: `${SP.sm}px 0 ${SP.md}px` }}>Content Planner</h1>
-            <p style={{ ...TYPE.lede, color: T.grey7, margin: 0, maxWidth: 580, fontSize: 15 }}>
-              The FY27 content calendar — drag a card to move it between months or lanes.
-            </p>
+        <header style={{ paddingBottom: SP.xl, borderBottom: `1px solid ${T.grey3}` }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: SP.sm, ...TYPE.eyebrow, color: T.plan }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.plan }} />
+            FY27 · Content
           </div>
-          <div style={{ display: "flex", gap: SP.sm, flexShrink: 0 }}>
-            {lastAction && (
-              <button type="button" onClick={handleUndo} style={secondaryBtnStyle} title="Undo last change">
-                <Undo2 size={14} /> Undo
-              </button>
-            )}
-            {canEdit && (
-              <button type="button" onClick={handleAutoLink} disabled={autoLinking} style={{ ...secondaryBtnStyle, opacity: autoLinking ? 0.7 : 1 }} title="Link content cards up to their container based on title/tag matches">
-                <Link2 size={14} /> {autoLinking ? "Linking…" : "Auto-link"}
-              </button>
-            )}
-            <button type="button" onClick={handleExport} style={secondaryBtnStyle}>
-              <Download size={14} /> Export Excel
-            </button>
-            <button type="button" onClick={() => (canEdit ? setImportOpen(true) : requireAuth())} style={secondaryBtnStyle}>
-              <Upload size={14} /> Import Excel
-            </button>
-            <button type="button" onClick={() => openModal({})} style={primaryBtnStyle}>
-              <Plus size={16} /> Add content
-            </button>
-          </div>
+          <h1 style={{ ...TYPE.hero, fontSize: "clamp(32px, 4.5vw, 48px)", margin: `${SP.sm}px 0 ${SP.md}px` }}>Content Planner</h1>
+          <p style={{ ...TYPE.lede, color: T.grey7, margin: 0, maxWidth: 580, fontSize: 15 }}>
+            The FY27 content calendar — drag a card to move it between months or lanes.
+          </p>
         </header>
 
         <div style={{ display: "flex", gap: SP.sm, marginTop: SP.lg, flexWrap: "wrap", alignItems: "center" }}>
@@ -820,9 +797,23 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
             count={filterCount}
           />
           <span style={{ ...TYPE.small, color: T.grey6 }}>{visible.length} of {items.length} items</span>
-        </div>
 
-        <KeyLegend />
+          <div style={{ display: "flex", gap: SP.sm, alignItems: "center", marginLeft: "auto" }}>
+            {lastAction && <IconCircleButton icon={<Undo2 size={15} />} label="Undo last change" onClick={handleUndo} />}
+            <LegendButton />
+            {canEdit && (
+              <IconCircleButton
+                icon={<Link2 size={15} />}
+                label={autoLinking ? "Linking…" : "Auto-link — link content up to its container by title/tag match"}
+                onClick={handleAutoLink}
+                disabled={autoLinking}
+              />
+            )}
+            <IconCircleButton icon={<Download size={15} />} label="Export Excel" onClick={handleExport} />
+            <IconCircleButton icon={<Upload size={15} />} label="Import Excel" onClick={() => (canEdit ? setImportOpen(true) : requireAuth())} />
+            <IconCircleButton icon={<Plus size={17} />} label="Add content" onClick={() => openModal({})} primary />
+          </div>
+        </div>
 
         <div style={{ marginTop: SP.lg }}>
           {loading ? (
@@ -920,26 +911,76 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
 }
 
 // ── Legend explaining NEW/LIVE badges and the C1/C2/C3 messaging pillars ──
-function KeyLegend() {
+// A neutral (or primary-filled) circular icon button with a simple hover tooltip below it.
+function IconCircleButton({
+  icon, label, onClick, disabled, primary,
+}: { icon: React.ReactNode; label: string; onClick: () => void; disabled?: boolean; primary?: boolean }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: SP.lg, alignItems: "center", marginTop: SP.lg, padding: `${SP.sm}px 0` }}>
-      <LegendBadge bg={T.pinkBg} fg={T.pink} label="NEW" text="Proposed addition" />
-      <LegendBadge bg={T.passBg} fg={T.pass} label="LIVE" text="Already out in the world" />
-      {Object.entries(PILLARS).map(([code, text]) => (
-        <div key={code} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ ...TYPE.label, color: T.plan, background: T.planBg, padding: "3px 7px", borderRadius: R.sm }}>{code}</span>
-          <span style={{ ...TYPE.small, color: T.grey6 }}>{text}</span>
+    <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        style={{
+          width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
+          border: primary ? "none" : `1px solid ${T.grey4}`,
+          background: primary ? T.ink : T.white, color: primary ? T.white : T.ink,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.6 : 1,
+        }}
+      >
+        {icon}
+      </button>
+      {hovered && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 60,
+          background: T.ink, color: T.white, fontSize: 11, fontWeight: 600, lineHeight: 1.4,
+          padding: "6px 10px", borderRadius: R.sm, whiteSpace: "nowrap", boxShadow: SHADOW.pop,
+        }}>
+          {label}
         </div>
-      ))}
+      )}
     </div>
   );
 }
 
-function LegendBadge({ bg, fg, label, text }: { bg: string; fg: string; label: string; text: string }) {
+// The key/legend — tucked behind a single tag icon; hover to see what NEW/LIVE/C1-C3 mean.
+function LegendButton() {
+  const [hovered, setHovered] = useState(false);
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <span style={{ ...TYPE.label, color: fg, background: bg, padding: "3px 7px", borderRadius: R.sm }}>{label}</span>
-      <span style={{ ...TYPE.small, color: T.grey6 }}>{text}</span>
+    <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      <button
+        type="button"
+        style={{
+          width: 34, height: 34, borderRadius: "50%", border: `1px solid ${T.grey4}`, background: T.white, color: T.grey6,
+          display: "flex", alignItems: "center", justifyContent: "center", cursor: "default", flexShrink: 0,
+        }}
+      >
+        <Tag size={15} />
+      </button>
+      {hovered && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 60, width: 240,
+          background: T.white, border: `1px solid ${T.grey3}`, borderRadius: R.md, boxShadow: SHADOW.pop, padding: SP.md,
+          display: "flex", flexDirection: "column", gap: 8,
+        }}>
+          <LegendRow bg={T.pinkBg} fg={T.pink} label="NEW" text="Proposed addition" />
+          <LegendRow bg={T.passBg} fg={T.pass} label="LIVE" text="Already out in the world" />
+          {Object.entries(PILLARS).map(([code, text]) => (
+            <LegendRow key={code} bg={T.planBg} fg={T.plan} label={code} text={text} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LegendRow({ bg, fg, label, text }: { bg: string; fg: string; label: string; text: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+      <span style={{ ...TYPE.label, color: fg, background: bg, padding: "3px 7px", borderRadius: R.sm, flexShrink: 0 }}>{label}</span>
+      <span style={{ ...TYPE.small, color: T.grey6, lineHeight: 1.3 }}>{text}</span>
     </div>
   );
 }
