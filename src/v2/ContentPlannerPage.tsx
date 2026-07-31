@@ -1185,12 +1185,10 @@ function Card({
         cursor: canEdit ? "grab" : "pointer", position: "relative",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+        {item.status === "Live" && <span style={{ ...TYPE.label, color: T.white, background: T.pass, padding: "2px 5px", borderRadius: R.sm }}>LIVE</span>}
+        {item.proposed && <span style={{ ...TYPE.label, color: T.white, background: T.pink, padding: "2px 5px", borderRadius: R.sm }}>NEW</span>}
         <span style={{ ...TYPE.label, color: color.fg }}>{item.contentType}{isContainer && childItems.length > 0 ? ` · ${childItems.length} ASSETS` : ""}</span>
-        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-          {item.proposed && <span style={{ ...TYPE.label, color: T.pink, background: T.white, padding: "2px 5px", borderRadius: R.sm }}>NEW</span>}
-          {item.status === "Live" && <span style={{ ...TYPE.label, color: T.pass, background: T.white, padding: "2px 5px", borderRadius: R.sm }}>LIVE</span>}
-        </div>
       </div>
       <div style={{ ...TYPE.small, fontWeight: 700, color: color.fg, marginTop: 3, lineHeight: 1.3 }}>{item.title}</div>
       {item.subtitle && <div style={{ fontSize: 11, color: color.fg, opacity: 0.75, marginTop: 1 }}>{item.subtitle}</div>}
