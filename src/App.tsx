@@ -5,7 +5,9 @@ import { SharedQAReport } from "./SharedQAReport";
 import { PlatformHome } from "./v2/PlatformHome";
 import { ContentHubPage } from "./v2/ContentHubPage";
 import { ScreenshotToolPage } from "./v2/ScreenshotToolPage";
-import { ContentPlannerPage, ComingSoonPage } from "./v2/ContentPlannerPage";
+import { ContentPlannerPage } from "./v2/ContentPlannerPage";
+import { ContentRefreshPage } from "./v2/ContentRefreshPage";
+import { PlanVsSeoGeoPage } from "./v2/PlanVsSeoGeoPage";
 
 import{initializeApp}from'firebase/app';
 import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut as fbSignOut,onAuthStateChanged,sendPasswordResetEmail,confirmPasswordReset,GoogleAuthProvider,signInWithPopup}from'firebase/auth';
@@ -4518,9 +4520,9 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         {view==="content-hub"&&<ContentHubPage user={_user}/>}
         {view==="screenshots"&&<ScreenshotToolPage/>}
         {view==="content-plan"&&<ContentPlannerPage user={_user}/>}
-        {view==="content-refresh"&&<ComingSoonPage eyebrow="FY27 · Search & AI visibility" title="Content Refresh" description="Every existing URL losing search or AI visibility, with the traffic, conversion and retrieval signals behind each refresh call."/>}
-        {view==="content-geo-seo"&&<ComingSoonPage eyebrow="FY27 · Content" title="Content GEO/SEO" description="How existing content performs for generative and traditional search."/>}
-        {view==="plan-vs-seo-geo"&&<ComingSoonPage eyebrow="FY27 · Overlap analysis" title="Plan vs SEO/GEO" description="Every FY27 editorial item checked against what's already published and what the SEO/GEO plan already commits to writing."/>}
+        {view==="content-refresh"&&<ContentRefreshPage mode="refresh"/>}
+        {view==="content-geo-seo"&&<ContentRefreshPage mode="geo-seo"/>}
+        {view==="plan-vs-seo-geo"&&<PlanVsSeoGeoPage/>}
         {view==="wireframes"&&<WireframesPage wireframes={savedWireframes} setWireframes={setSavedWireframes} onDeleteWireframe={function(id){if(_user)deleteDoc(doc(_db,"users",_user.uid,"wireframes",id)).catch(function(){});}} onUpdateWireframe={function(wf){if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}} auditData={auditData} onAddRec={function(action,pageUrl){var pageObj=pages.find(function(p){return p.url===pageUrl;});var newAction=Object.assign({},action,{status:"todo"});var existing=auditData.find(function(p){return p.url===pageUrl;});if(existing){setAuditData(function(prev){return prev.map(function(p){return p.url===pageUrl?Object.assign({},p,{actions:[newAction].concat(p.actions)}):p;});});}else{setAuditData(function(prev){return prev.concat([{id:"aa-"+Date.now(),url:pageUrl,label:pageObj?pageObj.label:pageUrl,priority:"High",personas:[],stage:"",issue:"",actions:[newAction]}]);});}}} onRemoveRec={function(actionId,pageUrl){setAuditData(function(prev){return prev.map(function(p){return p.url!==pageUrl?p:Object.assign({},p,{actions:(p.actions||[]).filter(function(a:any){return a.id!==actionId;})});});});}} lovedComponents={lovedComponents} onLoveComponent={function(lc){setLovedComponents(function(prev){return (prev as any[]).concat([lc]);});}} onUnloveComponent={function(id){setLovedComponents(function(prev){return (prev as any[]).filter(function(lc:any){return lc.id!==id;});});}} personas={personas} wireframeRules={wireframeRules} pages={pages} onSaveWireframe={function(wf){setSavedWireframes(function(prev){return prev.concat([wf]);});if(_user)setDoc(doc(_db,"users",_user.uid,"wireframes",wf.id),wf).catch(function(){});}}/>}
       </div>
       {view==="feedback"&&<FeedbackPage feedback={feedback} onDeleteFeedback={function(id){setFeedback(function(prev){return(prev as any[]).filter(function(f){return f.id!==id;});});if(_user)deleteDoc(doc(_db,"users",_user.uid,"feedback",id)).catch(function(){});}} onSubmit={function(entry){var full=Object.assign({},entry,{user:_user?_user.email:""});setFeedback(function(prev){return prev.concat([full]);});if(_user)setDoc(doc(_db,"users",_user.uid,"feedback",full.id),full).catch(function(){});}} onEditFeedback={function(id,newText){setFeedback(function(prev){return(prev as any[]).map(function(f){return f.id===id?Object.assign({},f,{feedback:newText}):f;});});if(_user){var entry=(feedback as any[]).find(function(f){return f.id===id;});if(entry)setDoc(doc(_db,"users",_user.uid,"feedback",id),Object.assign({},entry,{feedback:newText})).catch(function(){});}}}/>}
