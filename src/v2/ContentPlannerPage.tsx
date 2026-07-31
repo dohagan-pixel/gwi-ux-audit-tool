@@ -122,6 +122,198 @@ const PARENT_GROUP_DEFS = [
   { key: "event", label: "Events", variants: ["event", "customer-event"] },
 ];
 
+// The "gather" flourish — hovering a container's Explore spine flies every linked
+// descendant (not just direct children) into a floating, columns-by-type panel.
+const GATHER_ORDER = ["hero-full", "campaign", "event", "customer-event", "series", "blog", "listicle", "llm", "video", "podcast"];
+
+type GatherItem = { item: ContentPlanItem; dx: number; dy: number };
+type Gathered = { x: number; y: number; items: GatherItem[] };
+
+function computeGather(anchor: HTMLElement | null, item: ContentPlanItem, allItems: ContentPlanItem[]): Gathered | null {
+  if (!anchor) return null;
+  // Everything under this parent, not just direct children — a campaign owns series
+  // and events, and those own assets of their own; exploring a parent shows it all.
+  const byParent = new Map<string, ContentPlanItem[]>();
+  for (const c of allItems) if (c.parentId) {
+    const list = byParent.get(c.parentId) ?? [];
+    list.push(c);
+    byParent.set(c.parentId, list);
+  }
+  const kids: ContentPlanItem[] = [];
+  const seen = new Set([item.id]);
+  const walk = (id: string) => {
+    for (const c of byParent.get(id) ?? []) {
+      if (seen.has(c.id)) continue;
+      seen.add(c.id);
+      kids.push(c);
+      walk(c.id);
+    }
+  };
+  walk(item.id);
+  if (kids.length === 0) return null;
+  const r = anchor.getBoundingClientRect();
+  const cols = Math.min(kids.length, 3);
+  const w = cols * 148 + (cols - 1) * 8;
+  const x = Math.max(12, Math.min(r.left, window.innerWidth - w - 12));
+  const y = Math.min(r.bottom + 8, Math.max(72, window.innerHeight - 220));
+  const items = kids.map((c) => {
+    const el = document.querySelector(`[data-card-id="${c.id}"]`) as HTMLElement | null;
+    const cr = el ? el.getBoundingClientRect() : null;
+    return { item: c, dx: cr ? Math.round(cr.left - x) : 0, dy: cr ? Math.round(cr.top - y) : -60 };
+  });
+  return { x, y, items };
+}
+
+function useGather(item: ContentPlanItem, allItems: ContentPlanItem[], anchorRef: React.RefObject<HTMLElement>) {
+  const [gathered, setGathered] = useState<Gathered | null>(null);
+  const [settled, setSettled] = useState(false);
+  const dwellRef = useRef<number | undefined>(undefined);
+  const revealRef = useRef<number | undefined>(undefined);
+  const unmountRef = useRef<number | undefined>(undefined);
+  const clearTimers = () => {
+    if (revealRef.current) window.clearTimeout(revealRef.current);
+    if (unmountRef.current) window.clearTimeout(unmountRef.current);
+    revealRef.current = undefined; unmountRef.current = undefined;
+  };
+  const clearDwell = () => { if (dwellRef.current) window.clearTimeout(dwellRef.current); dwellRef.current = undefined; };
+
+  const gather = () => {
+    const g = computeGather(anchorRef.current, item, allItems);
+    if (!g) return;
+    clearTimers();
+    setSettled(false);
+    setGathered(g);
+    revealRef.current = window.setTimeout(() => setSettled(true), 40);
+  };
+  const scatter = () => {
+    clearTimers();
+    setSettled(false);
+    unmountRef.current = window.setTimeout(() => setGathered(null), 820);
+  };
+
+  const graceRef = useRef<number | undefined>(undefined);
+  const cancelAutoClose = () => { if (graceRef.current) window.clearTimeout(graceRef.current); graceRef.current = undefined; };
+  const armAutoClose = (ms = 260) => { cancelAutoClose(); graceRef.current = window.setTimeout(scatter, ms); };
+
+  useEffect(() => {
+    if (!gathered) return;
+    const bail = () => { clearTimers(); setSettled(false); setGathered(null); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") bail(); };
+    window.addEventListener("scroll", bail, true);
+    window.addEventListener("resize", bail);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("scroll", bail, true);
+      window.removeEventListener("resize", bail);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [gathered]);
+
+  const dwellProps = {
+    onMouseEnter: () => { clearDwell(); dwellRef.current = window.setTimeout(gather, 500); },
+    onMouseLeave: clearDwell,
+  };
+  useEffect(() => () => { clearDwell(); cancelAutoClose(); clearTimers(); }, []);
+  const panelHoverProps = { onMouseEnter: cancelAutoClose, onMouseLeave: () => armAutoClose(160) };
+
+  return { gathered, settled, gather, scatter, dwellProps, panelHoverProps };
+}
+
+function GatherPanel({ item, accent, gathered, settled, onClose, panelHoverProps }: {
+  item: ContentPlanItem; accent: string; gathered: Gathered; settled: boolean; onClose: () => void;
+  panelHoverProps: { onMouseEnter: () => void; onMouseLeave: () => void };
+}) {
+  const [lifted, setLifted] = useState<string | null>(null);
+  const TILE_W = 152, GAP = 12, CARD_H = 74, REVEAL = 52, HEADER_H = 35;
+
+  const columns = GATHER_ORDER
+    .map((v) => ({ variant: v, items: gathered.items.filter((it) => it.item.variant === v) }))
+    .filter((c) => c.items.length > 0);
+  const rawWidth = columns.length * TILE_W + (columns.length - 1) * GAP + 24;
+  const width = Math.min(rawWidth, window.innerWidth - 24);
+  const left = Math.max(12, Math.min(gathered.x - 12, window.innerWidth - width - 12));
+  const top = Math.max(12, Math.min(gathered.y, window.innerHeight - 160));
+  const bodyMaxH = Math.max(120, window.innerHeight - top - 24 - HEADER_H - 2);
+  let seq = 0;
+
+  return createPortal(
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 205, cursor: "zoom-out",
+        backgroundColor: settled ? "rgba(16,23,32,0.12)" : "rgba(16,23,32,0)",
+        transition: "background-color 420ms ease",
+        pointerEvents: settled ? "auto" : "none",
+      }}
+      onClick={(e) => { e.stopPropagation(); onClose(); }}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        onMouseEnter={panelHoverProps.onMouseEnter}
+        onMouseLeave={() => { setLifted(null); panelHoverProps.onMouseLeave(); }}
+        style={{
+          position: "absolute", left, top, width, maxHeight: bodyMaxH + HEADER_H + 2,
+          background: T.white, border: `1px solid ${T.grey3}`, borderRadius: R.lg,
+          display: "flex", flexDirection: "column", textAlign: "left",
+          opacity: settled ? 1 : 0, transition: "opacity 260ms ease",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: SP.sm, padding: "8px 12px", borderBottom: `1px solid ${T.grey3}`, height: HEADER_H, boxSizing: "border-box", flexShrink: 0 }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: accent, flexShrink: 0 }} />
+          <span style={{ ...TYPE.small, fontWeight: 700, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</span>
+          <span style={{ ...TYPE.label, color: T.grey5, marginLeft: "auto", flexShrink: 0 }}>{gathered.items.length} linked</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: GAP, padding: "8px 12px 12px", overflow: "auto", maxHeight: bodyMaxH }}>
+          {columns.map((col) => (
+            <div key={col.variant} style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0, width: TILE_W }}>
+              <span style={{ ...TYPE.label, fontSize: 8, color: T.grey5, padding: "0 2px" }}>
+                {VARIANT_OPTIONS.find((v) => v.value === col.variant)?.label ?? col.variant}
+              </span>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                {col.items.map((it, j) => {
+                  const cfg = VARIANT_COLOR[it.item.variant] || { fg: T.grey7, bg: T.grey2, bar: T.grey5 };
+                  const i = seq++;
+                  const isLifted = lifted === it.item.id;
+                  const isLast = j === col.items.length - 1;
+                  return (
+                    <div
+                      key={it.item.id}
+                      onMouseEnter={() => setLifted(it.item.id)}
+                      style={{
+                        background: cfg.bg, color: cfg.fg, height: CARD_H,
+                        marginTop: j === 0 ? 0 : -(CARD_H - REVEAL),
+                        zIndex: isLifted ? 50 : j + 1, position: "relative",
+                        borderRadius: R.sm, padding: "8px 10px", overflow: "hidden",
+                        willChange: "transform, opacity",
+                        transform: settled
+                          ? `translate3d(0,${isLifted && !isLast ? -6 : 0}px,0) scale(${isLifted ? 1.02 : 1})`
+                          : `translate3d(${it.dx}px,${it.dy}px,0) scale(0.42)`,
+                        opacity: settled ? 1 : 0,
+                        transition: `transform 720ms cubic-bezier(.16,.86,.36,1) ${i * 40}ms, opacity 300ms cubic-bezier(.4,0,.2,1) ${i * 40}ms`,
+                        boxShadow: it.item.proposed
+                          ? `inset 0 0 0 1.5px ${T.pink}, 0 -1px 0 rgba(255,255,255,0.9), 0 6px 16px -8px rgba(16,23,32,0.4)`
+                          : "0 -1px 0 rgba(255,255,255,0.9), 0 6px 16px -8px rgba(16,23,32,0.4)",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        {it.item.proposed && <span style={{ background: T.pink, color: T.white, padding: "0 3px", borderRadius: 2, fontSize: 7, fontWeight: 800 }}>NEW</span>}
+                        <span style={{ fontSize: 7.5, fontWeight: 700, textTransform: "uppercase", opacity: 0.75, overflow: "hidden", whiteSpace: "nowrap" }}>{it.item.contentType}</span>
+                        <span style={{ fontSize: 7.5, fontWeight: 700, textTransform: "uppercase", opacity: 0.5, marginLeft: "auto", flexShrink: 0 }}>{it.item.month.slice(0, 3)}</span>
+                      </div>
+                      <p style={{ fontSize: 10, fontWeight: 500, lineHeight: 1.3, margin: "3px 0 0", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{it.item.title}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 // Ported verbatim from ContentPlan.tsx's AUTO_PARENTS — regex-matched against a card's
 // title+subtitle+category+tags to guess which container it belongs to.
 const AUTO_PARENTS: { key: string; match: RegExp; title: string; variant: string; category?: string }[] = [
@@ -943,12 +1135,14 @@ function Card({
   const color = VARIANT_COLOR[item.variant] || LANE_COLOR[lane] || { fg: T.grey7, bg: T.grey2, bar: T.grey5 };
   const parent = item.parentId ? itemsById.get(item.parentId) : undefined;
   const isContainer = CONTAINER_VARIANTS.has(item.variant);
+  const allItemsArr = useMemo(() => Array.from(itemsById.values()), [itemsById]);
   const childItems = useMemo(
-    () => (isContainer ? Array.from(itemsById.values()).filter((c) => c.parentId === item.id) : []),
-    [isContainer, itemsById, item.id],
+    () => (isContainer ? allItemsArr.filter((c) => c.parentId === item.id) : []),
+    [isContainer, allItemsArr, item.id],
   );
 
   const cardRef = useRef<HTMLDivElement>(null);
+  const { gathered, settled, gather, scatter, dwellProps, panelHoverProps } = useGather(item, allItemsArr, cardRef);
   const [hovered, setHovered] = useState(false);
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
@@ -992,7 +1186,7 @@ function Card({
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 6 }}>
-        <span style={{ ...TYPE.label, color: color.fg }}>{item.contentType}</span>
+        <span style={{ ...TYPE.label, color: color.fg }}>{item.contentType}{isContainer && childItems.length > 0 ? ` · ${childItems.length} ASSETS` : ""}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
           {item.proposed && <span style={{ ...TYPE.label, color: T.pink, background: T.white, padding: "2px 5px", borderRadius: R.sm }}>NEW</span>}
           {item.status === "Live" && <span style={{ ...TYPE.label, color: T.pass, background: T.white, padding: "2px 5px", borderRadius: R.sm }}>LIVE</span>}
@@ -1007,6 +1201,33 @@ function Card({
             <button type="button" onClick={(e) => { e.stopPropagation(); onUnlinkParent(); }} title="Unlink from parent" style={{ ...iconBtnStyle, padding: 0, flexShrink: 0 }}><X size={10} /></button>
           )}
         </div>
+      )}
+
+      {/* Explore spine — hover to gather every linked descendant into a floating panel; click toggles it instantly */}
+      {isContainer && childItems.length > 0 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); if (gathered) scatter(); else gather(); }}
+          {...dwellProps}
+          title={gathered ? "Send the cards back" : "Explore this campaign — hover to gather what's linked"}
+          style={{
+            position: "absolute", top: 0, right: 0, bottom: 0, width: hovered || gathered ? 17 : 12,
+            border: "none", background: gathered ? T.pink : color.bar, color: T.white,
+            display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+            borderRadius: `0 ${R.sm}px ${R.sm}px 0`, transition: "width .15s, background-color .15s", padding: 0,
+          }}
+        >
+          {hovered || gathered ? (
+            <span style={{ fontSize: 7, fontWeight: 800, letterSpacing: "0.06em", writingMode: "vertical-rl", whiteSpace: "nowrap" }}>
+              {gathered ? "BACK" : "EXPLORE"}
+            </span>
+          ) : (
+            <ChevronRight size={9} />
+          )}
+        </button>
+      )}
+      {gathered && (
+        <GatherPanel item={item} accent={color.bar} gathered={gathered} settled={settled} onClose={scatter} panelHoverProps={panelHoverProps} />
       )}
 
       {/* Connection dots — drag from one card's edge to another to link them; hidden while dragging or mid-connection */}
