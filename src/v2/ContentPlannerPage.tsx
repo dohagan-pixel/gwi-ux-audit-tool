@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  getFirestore, collection, getDocs, doc, setDoc, deleteDoc, query, orderBy, writeBatch,
+  getFirestore, collection, getDocs, doc, setDoc, deleteDoc, query, orderBy, writeBatch, onSnapshot,
 } from "firebase/firestore";
 import * as XLSX from "xlsx";
 import {
@@ -500,27 +500,38 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
     await batch.commit();
   };
 
+  // One-off re-fetch — used to roll back local optimistic state if a write fails.
   const load = async () => {
-    setLoading(true);
-    setLoadError("");
     try {
       const snap = await getDocs(query(collection(db(), "contentPlan"), orderBy("order", "asc")));
-      if (snap.empty && canEdit) {
-        await seedIfEmpty();
-        const reseeded = await getDocs(query(collection(db(), "contentPlan"), orderBy("order", "asc")));
-        setItems(reseeded.docs.map((d) => d.data() as ContentPlanItem));
-      } else {
-        setItems(snap.docs.map((d) => d.data() as ContentPlanItem));
-      }
-    } catch (e: any) {
-      setItems([]);
-      setLoadError(e?.message || "Couldn't load the content plan — check Firestore rules/connection.");
-    } finally {
-      setLoading(false);
-    }
+      setItems(snap.docs.map((d) => d.data() as ContentPlanItem));
+    } catch { /* the live subscription below is the source of truth for load errors */ }
   };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(); }, [canEdit]);
+
+  const [retryNonce, setRetryNonce] = useState(0);
+  // Live subscription — every write to this collection, from any user, pushes here without a refresh.
+  useEffect(() => {
+    setLoading(true);
+    setLoadError("");
+    let cancelled = false;
+    let unsubscribe = () => {};
+
+    (async () => {
+      try {
+        const snap = await getDocs(collection(db(), "contentPlan"));
+        if (snap.empty && canEdit) await seedIfEmpty();
+      } catch { /* fall through — the listener below reports the real error */ }
+      if (cancelled) return;
+      unsubscribe = onSnapshot(
+        query(collection(db(), "contentPlan"), orderBy("order", "asc")),
+        (snap) => { setItems(snap.docs.map((d) => d.data() as ContentPlanItem)); setLoading(false); },
+        (e) => { setItems([]); setLoadError(e?.message || "Couldn't load the content plan — check Firestore rules/connection."); setLoading(false); },
+      );
+    })();
+
+    return () => { cancelled = true; unsubscribe(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canEdit, retryNonce]);
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -886,7 +897,7 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
             <div style={{ border: `1.5px solid ${T.flag}`, background: T.flagBg, borderRadius: R.xl, padding: SP.xxl, color: T.ink }}>
               <div style={{ ...TYPE.h3, color: T.flag, marginBottom: SP.xs }}>Couldn't load the content plan</div>
               <p style={{ ...TYPE.small, margin: 0, color: T.grey7 }}>{loadError}</p>
-              <button type="button" onClick={load} style={{ ...secondaryBtnStyle, marginTop: SP.md }}>Retry</button>
+              <button type="button" onClick={() => setRetryNonce((n) => n + 1)} style={{ ...secondaryBtnStyle, marginTop: SP.md }}>Retry</button>
             </div>
           ) : (
             <BoardGrid
