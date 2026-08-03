@@ -7,7 +7,7 @@ import * as XLSX from "xlsx";
 import {
   Plus, Cog, Trash2, X, Upload, Download, ChevronDown, ChevronRight, Undo2, Copy, Link2,
   Megaphone, FileText, Calendar, Video, Mic, Layers, Code2, Scale, Radio, EyeOff, CheckCircle2,
-  Star, List, Bot, Users, Tag,
+  Star, List, Bot, Users, Tag, Crosshair, Pencil,
 } from "lucide-react";
 import { T, SP, R, TYPE, SHADOW, MAXW } from "./theme";
 import { CONTENT_PLAN_SEED } from "./contentPlanSeed";
@@ -485,6 +485,10 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
   const [proposedOnly, setProposedOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [titleCollapsed, setTitleCollapsed] = useState(false);
+  const [focusedId, setFocusedId] = useState<string | null>(null);
+  const [briefOpen, setBriefOpen] = useState(false);
+  const toggleFocus = (id: string) => setFocusedId((prev) => (prev === id ? null : id));
+  useEffect(() => { if (!focusedId) setBriefOpen(false); }, [focusedId]);
 
   const seedIfEmpty = async () => {
     const batch = writeBatch(db());
@@ -545,6 +549,35 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
   }, [visible]);
 
   const itemsById = useMemo(() => new Map(items.map((it) => [it.id, it])), [items]);
+
+  // Everything under a focused container — a campaign owns series/events, which own content of their own.
+  const focusedSet = useMemo(() => {
+    if (!focusedId) return null;
+    const byParent = new Map<string, ContentPlanItem[]>();
+    for (const it of items) if (it.parentId) {
+      const list = byParent.get(it.parentId) ?? [];
+      list.push(it);
+      byParent.set(it.parentId, list);
+    }
+    const set = new Set<string>([focusedId]);
+    const walk = (id: string) => {
+      for (const c of byParent.get(id) ?? []) {
+        if (set.has(c.id)) continue;
+        set.add(c.id);
+        walk(c.id);
+      }
+    };
+    walk(focusedId);
+    return set;
+  }, [focusedId, items]);
+
+  const focusedItem = focusedId ? itemsById.get(focusedId) : undefined;
+  const linkedToFocus = useMemo(() => {
+    if (!focusedItem || !focusedSet) return [];
+    return items
+      .filter((it) => it.id !== focusedItem.id && focusedSet.has(it.id))
+      .map((it) => ({ item: it, monthIdx: MONTH_ORDER.indexOf(it.month) }));
+  }, [focusedItem, focusedSet, items]);
 
   const requireAuth = () => alert("Sign in with your @gwi.com account to edit the content plan.");
 
@@ -834,6 +867,18 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
           </div>
         </div>
 
+        {focusedItem && (
+          <FocusBanner
+            item={focusedItem}
+            linked={linkedToFocus}
+            onExport={() => setBriefOpen(true)}
+            onExit={() => setFocusedId(null)}
+          />
+        )}
+        {briefOpen && focusedItem && (
+          <CampaignBrief item={focusedItem} linked={linkedToFocus} onClose={() => setBriefOpen(false)} />
+        )}
+
         <div style={{ marginTop: SP.lg }}>
           {loading ? (
             <p style={{ ...TYPE.body, color: T.grey6 }}>Loading…</p>
@@ -856,6 +901,8 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
               onToggleHideLane={toggleLaneHidden}
               connecting={connecting}
               onConnectionStart={handleConnectionStart}
+              focusedSet={focusedSet}
+              onFocus={toggleFocus}
               onEdit={(item) => openModal({ editItem: item })}
               onDelete={handleDelete}
               onDuplicate={handleDuplicate}
@@ -1005,15 +1052,254 @@ function LegendRow({ bg, fg, label, text }: { bg: string; fg: string; label: str
   );
 }
 
+type LinkedEntry = { item: ContentPlanItem; monthIdx: number };
+
+// The reach of a focused campaign — where it lands on the calendar and what it's made of.
+function FocusBanner({
+  item, linked, onExport, onExit,
+}: { item: ContentPlanItem; linked: LinkedEntry[]; onExport: () => void; onExit: () => void }) {
+  const cfg = VARIANT_COLOR[item.variant] || { fg: T.grey7, bg: T.grey2, bar: T.grey5 };
+  const ownIdx = MONTH_ORDER.indexOf(item.month);
+  const monthsHit = new Set(linked.map((l) => l.monthIdx));
+  const spanFrom = Math.min(...(monthsHit.size ? [...monthsHit] : [ownIdx]), ownIdx);
+  const spanTo = Math.max(...(monthsHit.size ? [...monthsHit] : [ownIdx]), ownIdx);
+  const proposedCount = linked.filter((l) => l.item.proposed).length;
+  const liveCount = linked.filter((l) => l.item.status === "Live").length;
+  const counts = MONTH_ORDER.map((_, i) => linked.filter((l) => l.monthIdx === i).length);
+  const max = Math.max(1, ...counts);
+  const H = 34;
+
+  return (
+    <div style={{ marginTop: SP.lg, display: "flex", flexWrap: "wrap", alignItems: "stretch", borderRadius: R.lg, overflow: "hidden", border: `1px solid ${cfg.bar}33` }}>
+      {/* brand block */}
+      <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 8, padding: "14px 16px", background: cfg.bg, flex: "0 1 320px", minWidth: 200 }}>
+        <span style={{ ...TYPE.label, color: cfg.fg, opacity: 0.7 }}>{item.contentType}</span>
+        <span style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.2, color: cfg.fg }}>{item.title}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {item.tags.filter((t) => TAG_CFG[t]).map((t) => (
+            <span key={t} style={{ fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 4, background: T.white, color: TAG_CFG[t]?.color }}>{t}</span>
+          ))}
+          <span style={{ fontSize: 11, color: cfg.fg, opacity: 0.85 }}>
+            {linked.length} linked{monthsHit.size > 0 ? ` · ${MONTH_ORDER[spanFrom]} → ${MONTH_ORDER[spanTo]}` : " · nothing planned yet"}
+          </span>
+        </div>
+        {(proposedCount > 0 || liveCount > 0) && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {proposedCount > 0 && <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 4, background: T.white, color: T.pink }}>NEW · {proposedCount}</span>}
+            {liveCount > 0 && <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 4, background: T.white, color: T.pass }}>{liveCount} live</span>}
+          </div>
+        )}
+      </div>
+
+      {/* volume chart */}
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 6, padding: "14px 16px", background: T.white, flex: "1 1 340px", minWidth: 260, overflow: "hidden" }}>
+        {linked.length === 0 ? (
+          <span style={{ ...TYPE.small, color: T.grey5, alignSelf: "center" }}>Add content in the rows below to build out this campaign — it will chart here.</span>
+        ) : (
+          <>
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: H + 14, paddingBottom: 14, flexShrink: 0 }}>
+              <span style={{ fontSize: 8, fontWeight: 700, color: T.grey5 }}>{max}</span>
+              <span style={{ fontSize: 8, fontWeight: 700, color: T.grey5 }}>0</span>
+            </div>
+            {MONTH_ORDER.map((m, i) => {
+              const n = counts[i];
+              const isOwn = ownIdx === i;
+              return (
+                <div key={m} title={`${m} — ${n} item${n === 1 ? "" : "s"}`} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "1 1 0", minWidth: 12 }}>
+                  <span style={{ fontSize: 8.5, fontWeight: 800, lineHeight: 1, color: n ? (isOwn ? cfg.bar : T.ink) : T.grey4 }}>{n || "·"}</span>
+                  <div style={{ maxWidth: 20, minWidth: 8, width: "100%", borderRadius: "3px 3px 0 0", height: n ? Math.max(4, Math.round((n / max) * H)) : 1, background: n ? (isOwn ? cfg.bar : T.ink) : T.grey3, opacity: n && !isOwn ? 0.82 : 1 }} />
+                  <span style={{ fontSize: 8.5, fontWeight: 700, lineHeight: 1, textTransform: "uppercase", color: isOwn ? cfg.bar : n ? T.grey6 : T.grey4 }}>{m.slice(0, 3)}</span>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
+
+      {/* actions */}
+      <div style={{ flexShrink: 0, background: T.white, borderLeft: `1px solid ${T.grey3}`, display: "flex", flexDirection: "column", justifyContent: "center", gap: 8, padding: "14px 12px" }}>
+        <button type="button" onClick={onExport} title="Generate a print-ready campaign brief" style={{ ...secondaryBtnStyle, justifyContent: "center", background: T.ink, color: T.white, borderColor: T.ink }}>
+          <FileText size={12} /> Export PDF
+        </button>
+        <button type="button" onClick={onExit} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4, border: "none", background: "none", cursor: "pointer", color: T.grey6, fontFamily: T.font, fontSize: 11, fontWeight: 600 }}>
+          <X size={12} /> Exit focus
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// A print-ready one-pager for a focused campaign — Export PDF opens this and hands off to the browser's print dialog.
+function CampaignBrief({ item, linked, onClose }: { item: ContentPlanItem; linked: LinkedEntry[]; onClose: () => void }) {
+  const monthsUsed = [...new Set(linked.map((l) => l.monthIdx))].sort((a, b) => a - b);
+  const byLane = LANES.map((lane) => ({ lane, n: linked.filter((l) => l.item.lane === lane).length })).filter((x) => x.n > 0);
+  const pillars = ESSENCE.map((e) => ({
+    ...e,
+    n: linked.filter((l) => l.item.tags.includes(e.id)).length + (item.tags.includes(e.id) ? 1 : 0),
+  })).filter((p) => p.n > 0);
+  const live = linked.filter((l) => l.item.status === "Live").length;
+  const proposed = linked.filter((l) => l.item.proposed).length;
+  const generated = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const span = monthsUsed.length ? `${MONTH_ORDER[monthsUsed[0]]} – ${MONTH_ORDER[monthsUsed[monthsUsed.length - 1]]}` : "Not yet scheduled";
+
+  const facts: { k: string; v: string }[] = [
+    { k: "Asset type", v: item.contentType },
+    { k: "Status", v: item.status === "Live" ? "Live" : proposed > 0 || item.proposed ? "Proposed" : "Planned" },
+    { k: "Window", v: span },
+    { k: "Active months", v: String(monthsUsed.length) },
+    { k: "Linked assets", v: String(linked.length) },
+    { k: "Live now", v: `${live} of ${linked.length}` },
+    { k: "New / proposed", v: String(proposed) },
+    { k: "Editorial essence", v: pillars.map((p) => p.id).join(", ") || "—" },
+  ];
+
+  const liveClause = live > 0 ? `${live} ${live === 1 ? "is" : "are"} already live` : "nothing is live yet";
+  const propClause = proposed > 0 ? `${proposed} ${proposed === 1 ? "is" : "are"} newly proposed` : "";
+  const summary = linked.length
+    ? `${item.title} runs from ${MONTH_ORDER[monthsUsed[0]]} to ${MONTH_ORDER[monthsUsed[monthsUsed.length - 1]]}, across ${monthsUsed.length} active month${monthsUsed.length === 1 ? "" : "s"}. It is made up of ${linked.length} asset${linked.length === 1 ? "" : "s"}: ${byLane.map((l) => `${l.n} ${l.lane.toLowerCase()}`).join(", ")}. ${liveClause}${propClause ? `, and ${propClause}` : ""}.`
+    : `${item.title} has no content linked to it yet. Tag blogs, listicles, LLM pages, video or podcast assets to it to build out the plan.`;
+
+  return (
+    <div id="campaign-brief" style={{ position: "fixed", inset: 0, zIndex: 500, overflow: "auto", background: "#eef2f7", padding: "28px 0 60px" }}>
+      <style>{`
+        @media print {
+          body * { visibility: hidden !important; }
+          #campaign-brief, #campaign-brief * { visibility: visible !important; }
+          #campaign-brief { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: auto !important; overflow: visible !important; background: #fff !important; padding: 0 !important; }
+          #campaign-brief .brief-sheet { box-shadow: none !important; border: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
+          .brief-chrome { display: none !important; }
+          .brief-block { break-inside: avoid; page-break-inside: avoid; }
+          @page { size: A4 portrait; margin: 15mm 14mm; }
+        }
+      `}</style>
+
+      <div className="brief-chrome" style={{ position: "sticky", top: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: SP.lg }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: R.lg, background: T.white, border: `1px solid ${T.grey3}`, boxShadow: SHADOW.pop }}>
+          <span style={{ ...TYPE.small, fontWeight: 700, color: T.grey6, padding: "0 4px" }}>Campaign brief — {item.title}</span>
+          <button type="button" onClick={() => window.print()} style={{ ...secondaryBtnStyle, background: T.ink, color: T.white, borderColor: T.ink }}>
+            <Download size={12} /> Save as PDF
+          </button>
+          <button type="button" onClick={onClose} style={secondaryBtnStyle}>
+            <X size={12} /> Close
+          </button>
+        </div>
+      </div>
+
+      <div className="brief-sheet" style={{ width: 794, maxWidth: "calc(100% - 32px)", margin: "0 auto", background: T.white, padding: "56px 60px 64px", boxShadow: "0 8px 40px rgba(16,23,32,0.12)" }}>
+        <div className="brief-block" style={{ borderBottom: `2px solid ${T.ink}`, paddingBottom: 18, marginBottom: 26 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.18em", color: T.pink }}>GWI FY27 content plan</span>
+            <span style={{ fontSize: 10, fontWeight: 500, color: T.grey5 }}>Generated {generated}</span>
+          </div>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em", color: T.grey6, margin: "0 0 8px" }}>{item.contentType} brief</p>
+          <h1 style={{ fontSize: 38, fontWeight: 700, lineHeight: 1.08, letterSpacing: "-0.02em", color: T.ink, margin: 0 }}>{item.title}</h1>
+          {item.subtitle && <p style={{ fontSize: 15, color: T.grey6, lineHeight: 1.45, marginTop: 10 }}>{item.subtitle}</p>}
+        </div>
+
+        <div className="brief-block" style={{ marginBottom: 30 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em", color: T.grey5, marginBottom: 10 }}>Summary</h2>
+          <p style={{ fontSize: 14.5, color: T.ink, lineHeight: 1.6, margin: 0 }}>{summary}</p>
+        </div>
+
+        <div className="brief-block" style={{ marginBottom: 30 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em", color: T.grey5, marginBottom: 12 }}>At a glance</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderTop: `1px solid ${T.grey3}` }}>
+            {facts.map((f) => (
+              <div key={f.k} style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 14, borderBottom: `1px solid ${T.grey3}`, padding: "9px 14px 9px 0" }}>
+                <span style={{ fontSize: 11.5, fontWeight: 600, color: T.grey6 }}>{f.k}</span>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: T.ink, textAlign: "right" }}>{f.v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {byLane.length > 0 && (
+          <div className="brief-block" style={{ marginBottom: 30 }}>
+            <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em", color: T.grey5, marginBottom: 12 }}>What it is made of</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+              {byLane.map((l) => {
+                const maxN = Math.max(...byLane.map((x) => x.n));
+                return (
+                  <div key={l.lane} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: T.ink, width: 130, flexShrink: 0 }}>{l.lane}</span>
+                    <span style={{ height: 9, width: `${(l.n / maxN) * 100}%`, maxWidth: 420, background: T.pink, opacity: 0.85, borderRadius: 2 }} />
+                    <span style={{ fontSize: 12, fontWeight: 700, color: T.grey6 }}>{l.n}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {pillars.length > 0 && (
+          <div className="brief-block" style={{ marginBottom: 30 }}>
+            <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em", color: T.grey5, marginBottom: 12 }}>Editorial essence</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {pillars.map((p) => (
+                <div key={p.id} style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: T.ink, width: 26, flexShrink: 0 }}>{p.id}</span>
+                  <span style={{ fontSize: 13, color: T.ink, flex: 1 }}>{p.label}</span>
+                  <span style={{ fontSize: 11.5, fontWeight: 700, color: T.grey5 }}>{p.n} asset{p.n === 1 ? "" : "s"}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div style={{ marginBottom: 8 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em", color: T.grey5, marginBottom: 14 }}>Month by month</h2>
+          {monthsUsed.length === 0 && <p style={{ fontSize: 13, color: T.grey6 }}>Nothing scheduled yet.</p>}
+          <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+            {monthsUsed.map((mi) => {
+              const monthItems = linked.filter((l) => l.monthIdx === mi);
+              return (
+                <div key={mi} className="brief-block">
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 12, borderBottom: `1px solid ${T.ink}`, paddingBottom: 6, marginBottom: 10 }}>
+                    <h3 style={{ fontSize: 15, fontWeight: 700, color: T.ink, margin: 0 }}>{MONTH_ORDER[mi]}</h3>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: T.grey5 }}>{monthItems.length} asset{monthItems.length === 1 ? "" : "s"}</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    {monthItems.map(({ item: c }) => (
+                      <div key={c.id} style={{ display: "grid", gridTemplateColumns: "96px 1fr 74px", gap: 14, padding: "8px 0", borderBottom: `1px solid ${T.grey2}`, alignItems: "baseline" }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: T.grey6 }}>{c.lane}</span>
+                        <div>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: T.ink, lineHeight: 1.4, margin: 0 }}>{c.title}</p>
+                          {c.subtitle && <p style={{ fontSize: 11.5, color: T.grey6, lineHeight: 1.45, margin: "2px 0 0" }}>{c.subtitle}</p>}
+                          {(c.category || c.tags.length > 0) && (
+                            <p style={{ fontSize: 10.5, color: T.grey5, margin: "3px 0 0" }}>{[c.category, ...c.tags].filter(Boolean).join(" · ")}</p>
+                          )}
+                        </div>
+                        <span style={{ fontSize: 10.5, fontWeight: 700, textAlign: "right", color: c.status === "Live" ? T.pass : c.proposed ? T.pink : T.grey5 }}>
+                          {c.status === "Live" ? "Live" : c.proposed ? "New" : "Planned"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <p style={{ fontSize: 10, color: T.grey4, marginTop: 34, paddingTop: 12, borderTop: `1px solid ${T.grey3}` }}>
+          GWI FY27 content plan · {item.title} · {linked.length} linked assets · generated {generated}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── The board itself: lanes (rows) × months (columns), draggable cards ──
 function BoardGrid({
   lanes, months, board, itemsById, nowMonth, canEdit, hiddenLanes, onToggleHideLane, connecting, onConnectionStart,
-  onEdit, onDelete, onDuplicate, onUnlinkParent, onQuickAdd, onDragStart, onDrop, extraHeight,
+  onEdit, onDelete, onDuplicate, onUnlinkParent, onQuickAdd, onDragStart, onDrop, extraHeight, focusedSet, onFocus,
 }: {
   lanes: string[]; months: string[]; board: Record<string, Record<string, ContentPlanItem[]>>;
   itemsById: Map<string, ContentPlanItem>; nowMonth: string;
   canEdit: boolean;
   extraHeight?: boolean;
+  focusedSet?: Set<string> | null;
+  onFocus?: (id: string) => void;
   hiddenLanes: Set<string>;
   onToggleHideLane: (lane: string) => void;
   connecting: { fromId: string; fromVariant: string } | null;
@@ -1150,7 +1436,7 @@ function BoardGrid({
                     {grouped.map((g, gi) => {
                       if (!g.parentId) {
                         return g.cards.map((item) => (
-                          <Card key={item.id} item={item} lane={lane} itemsById={itemsById} canEdit={canEdit} connecting={connecting} onConnectionStart={onConnectionStart} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} onDuplicate={() => onDuplicate(item.id)} onUnlinkParent={() => onUnlinkParent(item.id)} onDragStart={() => onDragStart(item.id)} />
+                          <Card key={item.id} item={item} lane={lane} itemsById={itemsById} canEdit={canEdit} connecting={connecting} onConnectionStart={onConnectionStart} focusedSet={focusedSet} onFocus={onFocus} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} onDuplicate={() => onDuplicate(item.id)} onUnlinkParent={() => onUnlinkParent(item.id)} onDragStart={() => onDragStart(item.id)} />
                         ));
                       }
                       const groupKey = `${lane}-${month}-${g.parentId}`;
@@ -1169,7 +1455,7 @@ function BoardGrid({
                           {!collapsed && (
                             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                               {g.cards.map((item) => (
-                                <Card key={item.id} item={item} lane={lane} itemsById={itemsById} canEdit={canEdit} connecting={connecting} onConnectionStart={onConnectionStart} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} onDuplicate={() => onDuplicate(item.id)} onUnlinkParent={() => onUnlinkParent(item.id)} onDragStart={() => onDragStart(item.id)} />
+                                <Card key={item.id} item={item} lane={lane} itemsById={itemsById} canEdit={canEdit} connecting={connecting} onConnectionStart={onConnectionStart} focusedSet={focusedSet} onFocus={onFocus} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} onDuplicate={() => onDuplicate(item.id)} onUnlinkParent={() => onUnlinkParent(item.id)} onDragStart={() => onDragStart(item.id)} />
                               ))}
                             </div>
                           )}
@@ -1212,14 +1498,17 @@ const CONNECTOR_EDGES = [
 ];
 
 function Card({
-  item, lane, itemsById, canEdit, connecting, onConnectionStart, onEdit, onDelete, onDuplicate, onUnlinkParent, onDragStart,
+  item, lane, itemsById, canEdit, connecting, onConnectionStart, focusedSet, onFocus, onEdit, onDelete, onDuplicate, onUnlinkParent, onDragStart,
 }: {
   item: ContentPlanItem; lane: string; itemsById: Map<string, ContentPlanItem>; canEdit: boolean;
   connecting: { fromId: string; fromVariant: string } | null;
   onConnectionStart: (cardId: string, variant: string, x: number, y: number) => void;
+  focusedSet?: Set<string> | null;
+  onFocus?: (id: string) => void;
   onEdit: () => void; onDelete: () => void; onDuplicate: () => void; onUnlinkParent: () => void; onDragStart: () => void;
 }) {
   const color = VARIANT_COLOR[item.variant] || LANE_COLOR[lane] || { fg: T.grey7, bg: T.grey2, bar: T.grey5 };
+  const fadedByFocus = !!focusedSet && !focusedSet.has(item.id);
   const parent = item.parentId ? itemsById.get(item.parentId) : undefined;
   const isContainer = CONTAINER_VARIANTS.has(item.variant);
   const allItemsArr = useMemo(() => Array.from(itemsById.values()), [itemsById]);
@@ -1268,8 +1557,9 @@ function Card({
       onMouseEnter={() => { setHovered(true); scheduleShow(); }}
       onMouseLeave={() => { setHovered(false); scheduleHide(); }}
       style={{
-        background: color.bg, borderLeft: `4px solid ${color.bar}`, borderRadius: R.sm, padding: "8px 10px",
+        background: color.bg, borderRadius: R.sm, padding: "6px 9px",
         cursor: canEdit ? "grab" : "pointer", position: "relative",
+        opacity: fadedByFocus ? 0.3 : 1, transition: "opacity .15s",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
@@ -1277,10 +1567,10 @@ function Card({
         {item.proposed && <span style={{ ...TYPE.label, color: T.white, background: T.pink, padding: "2px 5px", borderRadius: R.sm }}>NEW</span>}
         <span style={{ ...TYPE.label, color: color.fg }}>{item.contentType}{isContainer && childItems.length > 0 ? ` · ${childItems.length} ASSETS` : ""}</span>
       </div>
-      <div style={{ ...TYPE.small, fontWeight: 700, color: color.fg, marginTop: 3, lineHeight: 1.3 }}>{item.title}</div>
-      {item.subtitle && <div style={{ fontSize: 11, color: color.fg, opacity: 0.75, marginTop: 1 }}>{item.subtitle}</div>}
+      <div style={{ fontSize: 15, fontWeight: 700, color: color.fg, marginTop: 2, lineHeight: 1.2 }}>{item.title}</div>
+      {item.subtitle && <div style={{ fontSize: 12, color: color.fg, opacity: 0.75, marginTop: 0, lineHeight: 1.3 }}>{item.subtitle}</div>}
       {item.tags.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginTop: 4 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginTop: 3 }}>
           {item.tags.map((t) => {
             const cfg = TAG_CFG[t] ?? { bg: "#ebf1fb", color: "#526482" };
             return (
@@ -1298,7 +1588,7 @@ function Card({
         </div>
       )}
       {parent && (
-        <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 11, color: T.grey6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3, fontSize: 11, color: T.grey6 }}>
           <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>↳ {parent.title}</span>
           {canEdit && (
             <button type="button" onClick={(e) => { e.stopPropagation(); onUnlinkParent(); }} title="Unlink from parent" style={{ ...iconBtnStyle, padding: 0, flexShrink: 0 }}><X size={10} /></button>
@@ -1363,6 +1653,7 @@ function Card({
           onEdit={() => { setTooltipVisible(false); onEdit(); }}
           onDuplicate={() => { setTooltipVisible(false); onDuplicate(); }}
           onDelete={() => { setTooltipVisible(false); onDelete(); }}
+          onFocus={onFocus ? () => { setTooltipVisible(false); onFocus(item.id); } : undefined}
         />,
         document.body,
       )}
@@ -1371,11 +1662,12 @@ function Card({
 }
 
 function CardTooltip({
-  item, color, parent, childItems, isContainer, canEdit, pos, onMouseEnter, onMouseLeave, onEdit, onDuplicate, onDelete,
+  item, color, parent, childItems, isContainer, canEdit, pos, onMouseEnter, onMouseLeave, onEdit, onDuplicate, onDelete, onFocus,
 }: {
   item: ContentPlanItem; color: { fg: string; bg: string; bar: string }; parent?: ContentPlanItem;
   childItems: ContentPlanItem[]; isContainer: boolean; canEdit: boolean; pos: { x: number; y: number };
   onMouseEnter: () => void; onMouseLeave: () => void; onEdit: () => void; onDuplicate: () => void; onDelete: () => void;
+  onFocus?: () => void;
 }) {
   return (
     <div
@@ -1426,11 +1718,19 @@ function CardTooltip({
         </div>
       )}
 
+      {isContainer && onFocus && (
+        <button
+          type="button" onClick={onFocus}
+          style={{ ...secondaryBtnStyle, justifyContent: "center", width: "100%", marginTop: SP.md, background: T.ink, color: T.white, borderColor: T.ink }}
+        >
+          <Crosshair size={12} /> Focus
+        </button>
+      )}
       {canEdit && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: SP.md }}>
-          <button type="button" onClick={onEdit} style={{ ...secondaryBtnStyle, justifyContent: "center", width: "100%" }}>Edit</button>
-          <button type="button" onClick={onDuplicate} style={{ ...secondaryBtnStyle, justifyContent: "center", width: "100%" }}><Copy size={12} /> Duplicate</button>
-          <button type="button" onClick={onDelete} style={{ ...secondaryBtnStyle, justifyContent: "center", width: "100%", color: T.flag, borderColor: T.flagBg }}><Trash2 size={12} /> Delete</button>
+        <div style={{ display: "flex", gap: 6, marginTop: SP.sm }}>
+          <button type="button" onClick={onEdit} title="Edit" style={{ ...secondaryBtnStyle, flex: 1, justifyContent: "center", padding: "8px 0" }}><Pencil size={13} /></button>
+          <button type="button" onClick={onDuplicate} title="Duplicate" style={{ ...secondaryBtnStyle, flex: 1, justifyContent: "center", padding: "8px 0" }}><Copy size={13} /></button>
+          <button type="button" onClick={onDelete} title="Delete" style={{ ...secondaryBtnStyle, flex: 1, justifyContent: "center", padding: "8px 0", color: T.flag, borderColor: T.flagBg }}><Trash2 size={13} /></button>
         </div>
       )}
     </div>
