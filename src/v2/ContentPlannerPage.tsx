@@ -466,7 +466,7 @@ export function useContentPlanStats() {
   return stats;
 }
 
-export function ContentPlannerPage({ user }: { user?: { displayName?: string | null; email?: string | null } | null }) {
+export function ContentPlannerPage({ user }: { user?: { uid?: string; displayName?: string | null; email?: string | null } | null }) {
   const canEdit = !!user?.email;
   const nowMonth = useMemo(currentMonthLabel, []);
 
@@ -901,6 +901,7 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
             </div>
           ) : (
             <BoardGrid
+              user={user}
               lanes={LANES}
               months={MONTH_ORDER}
               board={board}
@@ -1300,11 +1301,40 @@ function CampaignBrief({ item, linked, onClose }: { item: ContentPlanItem; linke
   );
 }
 
+// ── Live cursors — a Figma-style presence layer over the board ──
+type RemoteCursorData = { id: string; name: string; color: string; x: number; y: number; updatedAt: number };
+
+const CURSOR_COLORS = ["#ff0077", "#00693e", "#333688", "#b84800", "#008291", "#8800b8", "#2b3aa0", "#b80010"];
+function cursorColorFor(key: string) {
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  return CURSOR_COLORS[hash % CURSOR_COLORS.length];
+}
+
+function RemoteCursor({ cursor }: { cursor: RemoteCursorData }) {
+  return (
+    <div
+      style={{
+        position: "absolute", left: cursor.x, top: cursor.y, zIndex: 90, pointerEvents: "none",
+        display: "flex", alignItems: "flex-start", gap: 4, transition: "left .08s linear, top .08s linear",
+      }}
+    >
+      <svg width="16" height="20" viewBox="0 0 16 20" style={{ flexShrink: 0, filter: "drop-shadow(0 1px 2px rgba(0,0,0,.35))" }}>
+        <path d="M1 1 L1 15 L5 12 L8 18 L11 16.3 L8 10.3 L14 10.3 Z" fill={cursor.color} stroke="#fff" strokeWidth="1.2" />
+      </svg>
+      <span style={{ marginTop: 2, background: cursor.color, color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, whiteSpace: "nowrap" }}>
+        {cursor.name}
+      </span>
+    </div>
+  );
+}
+
 // ── The board itself: lanes (rows) × months (columns), draggable cards ──
 function BoardGrid({
-  lanes, months, board, itemsById, nowMonth, canEdit, hiddenLanes, onToggleHideLane, connecting, onConnectionStart,
+  user, lanes, months, board, itemsById, nowMonth, canEdit, hiddenLanes, onToggleHideLane, connecting, onConnectionStart,
   onEdit, onDelete, onDuplicate, onUnlinkParent, onQuickAdd, onDragStart, onDrop, extraHeight, focusedSet, onFocus,
 }: {
+  user?: { uid?: string; displayName?: string | null; email?: string | null } | null;
   lanes: string[]; months: string[]; board: Record<string, Record<string, ContentPlanItem[]>>;
   itemsById: Map<string, ContentPlanItem>; nowMonth: string;
   canEdit: boolean;
@@ -1343,8 +1373,56 @@ function BoardGrid({
     if (container && nowCell) container.scrollLeft = Math.max(0, nowCell.offsetLeft - LABEL_COL);
   }, []);
 
+  // ── Live cursors — broadcast this viewer's pointer position over the board, and render everyone else's ──
+  const contentWrapRef = useRef<HTMLDivElement>(null);
+  const sessionIdRef = useRef(`${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
+  const lastSentRef = useRef(0);
+  const [remoteCursors, setRemoteCursors] = useState<RemoteCursorData[]>([]);
+
+  useEffect(() => {
+    if (!canEdit) return;
+    const unsub = onSnapshot(collection(db(), "contentPlanPresence"), (snap) => {
+      const now = Date.now();
+      setRemoteCursors(
+        snap.docs
+          .map((d) => ({ id: d.id, ...(d.data() as Omit<RemoteCursorData, "id">) }))
+          .filter((c) => c.id !== sessionIdRef.current && now - c.updatedAt < 10000),
+      );
+    });
+    const goOffline = () => { deleteDoc(doc(db(), "contentPlanPresence", sessionIdRef.current)).catch(() => {}); };
+    window.addEventListener("beforeunload", goOffline);
+    return () => { unsub(); goOffline(); window.removeEventListener("beforeunload", goOffline); };
+  }, [canEdit]);
+
+  const handleBoardPointerMove = (e: React.PointerEvent) => {
+    if (!canEdit || !user) return;
+    const now = Date.now();
+    if (now - lastSentRef.current < 100) return;
+    lastSentRef.current = now;
+    const rect = contentWrapRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const uid = user.uid || user.email || "anon";
+    setDoc(doc(db(), "contentPlanPresence", sessionIdRef.current), {
+      name: user.displayName || user.email || "Someone",
+      color: cursorColorFor(uid),
+      x: Math.round(e.clientX - rect.left),
+      y: Math.round(e.clientY - rect.top),
+      updatedAt: now,
+    }, { merge: true }).catch(() => {});
+  };
+  const handleBoardPointerLeave = () => {
+    if (!canEdit) return;
+    deleteDoc(doc(db(), "contentPlanPresence", sessionIdRef.current)).catch(() => {});
+  };
+
   return (
-    <div ref={scrollRef} style={{ overflow: "auto", maxHeight: `calc(100vh - ${extraHeight ? 200 : 320}px)`, border: `1px solid ${T.grey3}`, borderRadius: R.lg, background: T.white }}>
+    <div
+      ref={scrollRef}
+      onPointerMove={handleBoardPointerMove}
+      onPointerLeave={handleBoardPointerLeave}
+      style={{ overflow: "auto", maxHeight: `calc(100vh - ${extraHeight ? 200 : 320}px)`, border: `1px solid ${T.grey3}`, borderRadius: R.lg, background: T.white }}
+    >
+      <div ref={contentWrapRef} style={{ position: "relative" }}>
       <div style={{ display: "grid", gridTemplateColumns: `${LABEL_COL}px repeat(${months.length}, minmax(${COL_W}px, 1fr))`, minWidth: LABEL_COL + months.length * COL_W, width: "100%" }}>
         {/* header row — sticky on both axes so it stays put while the board scrolls under it */}
         <div style={{ position: "sticky", top: 0, left: 0, zIndex: 5, background: T.ink, color: T.white, ...TYPE.label, padding: "12px 14px", display: "flex", alignItems: "center" }}>
@@ -1490,6 +1568,8 @@ function BoardGrid({
             </FragmentRow>
           );
         })}
+      </div>
+      {remoteCursors.map((c) => <RemoteCursor key={c.id} cursor={c} />)}
       </div>
     </div>
   );
