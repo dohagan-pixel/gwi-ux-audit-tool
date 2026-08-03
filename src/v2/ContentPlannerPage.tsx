@@ -1656,9 +1656,9 @@ function Card({
       <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
         {item.status === "Live" && <span style={{ ...TYPE.label, color: T.white, background: T.pass, padding: "2px 5px", borderRadius: R.sm }}>LIVE</span>}
         {item.proposed && <span style={{ ...TYPE.label, color: T.white, background: T.pink, padding: "2px 5px", borderRadius: R.sm }}>NEW</span>}
-        <span style={{ ...TYPE.label, color: color.fg }}>{item.contentType}{isContainer && childItems.length > 0 ? ` · ${childItems.length} ASSETS` : ""}</span>
+        <span style={{ ...TYPE.label, fontSize: 8, color: color.fg }}>{item.contentType}{isContainer && childItems.length > 0 ? ` · ${childItems.length} ASSETS` : ""}</span>
       </div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: color.fg, marginTop: 2, lineHeight: 1.2 }}>{item.title}</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: color.fg, marginTop: 2, lineHeight: 1.2 }}>{item.title}</div>
       {item.subtitle && <div style={{ fontSize: 12, color: color.fg, opacity: 0.75, marginTop: 0, lineHeight: 1.3 }}>{item.subtitle}</div>}
       {item.tags.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginTop: 3 }}>
