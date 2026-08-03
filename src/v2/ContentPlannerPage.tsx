@@ -1036,15 +1036,33 @@ function BoardGrid({
   const [hoveredLane, setHoveredLane] = useState<string | null>(null);
   const LABEL_COL = 200;
   const COL_W = 190;
+  const nowIdx = MONTH_ORDER.indexOf(nowMonth);
+
+  // Land on the current month as the leftmost visible column — older months are one scroll away.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const container = scrollRef.current;
+    const nowCell = container?.querySelector(`[data-month-col="${nowMonth}"]`) as HTMLElement | null;
+    if (container && nowCell) container.scrollLeft = Math.max(0, nowCell.offsetLeft - LABEL_COL);
+  }, []);
+
   return (
-    <div style={{ overflow: "auto", maxHeight: `calc(100vh - ${extraHeight ? 200 : 320}px)`, border: `1px solid ${T.grey3}`, borderRadius: R.lg, background: T.white }}>
+    <div ref={scrollRef} style={{ overflow: "auto", maxHeight: `calc(100vh - ${extraHeight ? 200 : 320}px)`, border: `1px solid ${T.grey3}`, borderRadius: R.lg, background: T.white }}>
       <div style={{ display: "grid", gridTemplateColumns: `${LABEL_COL}px repeat(${months.length}, minmax(${COL_W}px, 1fr))`, minWidth: LABEL_COL + months.length * COL_W, width: "100%" }}>
         {/* header row — sticky on both axes so it stays put while the board scrolls under it */}
         <div style={{ position: "sticky", top: 0, left: 0, zIndex: 5, background: T.ink, color: T.white, ...TYPE.label, padding: "12px 14px", display: "flex", alignItems: "center" }}>
           ASSET TYPE
         </div>
         {months.map((m) => (
-          <div key={m} style={{ position: "sticky", top: 0, zIndex: 4, background: m === nowMonth ? T.pink : T.ink, color: T.white, padding: "12px 14px", ...TYPE.label, display: "flex", alignItems: "center", gap: 6, borderLeft: `1px solid rgba(255,255,255,0.15)` }}>
+          <div
+            key={m}
+            data-month-col={m}
+            style={{
+              position: "sticky", top: 0, zIndex: 4, background: m === nowMonth ? T.pink : T.ink, color: T.white,
+              padding: "12px 14px", ...TYPE.label, display: "flex", alignItems: "center", gap: 6,
+              borderLeft: m === nowMonth ? `2px solid ${T.pink}` : "1px solid rgba(255,255,255,0.15)",
+            }}
+          >
             {m}
             {m === nowMonth && <span style={{ background: "rgba(255,255,255,0.25)", padding: "2px 6px", borderRadius: R.sm, fontSize: 9 }}>NOW</span>}
           </div>
@@ -1069,7 +1087,9 @@ function BoardGrid({
                   <span style={{ ...TYPE.small, fontWeight: 600, color: T.grey6, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{lane}</span>
                   <span style={{ ...TYPE.label, color: T.grey5 }}>Show</span>
                 </button>
-                {months.map((m) => <div key={m} style={{ borderTop: `1px solid ${T.grey3}`, background: T.grey1, minHeight: 26 }} />)}
+                {months.map((m) => (
+                  <div key={m} style={{ borderTop: `1px solid ${T.grey3}`, borderLeft: m === nowMonth ? `2px solid ${T.pink}` : "none", background: T.grey1, minHeight: 26 }} />
+                ))}
               </FragmentRow>
             );
           }
@@ -1108,6 +1128,8 @@ function BoardGrid({
                   }
                 }
                 const isOver = dragOverKey === cellKey;
+                const isPastMonth = MONTH_ORDER.indexOf(month) < nowIdx;
+                const isNowMonth = month === nowMonth;
                 return (
                   <div
                     key={month}
@@ -1115,10 +1137,13 @@ function BoardGrid({
                     onDragLeave={() => setDragOverKey((k) => (k === cellKey ? null : k))}
                     onDrop={(e) => { e.preventDefault(); setDragOverKey(null); if (canEdit) onDrop(lane, month); }}
                     style={{
-                      borderTop: `1px solid ${T.grey3}`, borderLeft: `1px solid ${T.grey3}`, minHeight: 90,
+                      borderTop: `1px solid ${T.grey3}`,
+                      borderLeft: isNowMonth ? `2px solid ${T.pink}` : `1px solid ${T.grey3}`,
+                      minHeight: 90,
                       padding: 6, display: "flex", flexDirection: "column", gap: 6, position: "relative",
                       background: isOver ? "#fdf2f8" : "transparent",
                       boxShadow: isOver ? `inset 0 0 0 1.5px ${T.pink}` : "none",
+                      opacity: isPastMonth ? 0.55 : 1,
                       transition: "background-color .1s, box-shadow .1s",
                     }}
                   >
