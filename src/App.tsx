@@ -11,7 +11,7 @@ import { PlanVsSeoGeoPage } from "./v2/PlanVsSeoGeoPage";
 
 import{initializeApp}from'firebase/app';
 import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut as fbSignOut,onAuthStateChanged,sendPasswordResetEmail,confirmPasswordReset,GoogleAuthProvider,signInWithPopup}from'firebase/auth';
-import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc}from'firebase/firestore';
+import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc,onSnapshot}from'firebase/firestore';
 const _fc={apiKey:"AIzaSyCtHXxDGqbg4sLnCRRijMR5ozvMG_oKqFM",authDomain:"gwi-ux-audit.firebaseapp.com",projectId:"gwi-ux-audit",storageBucket:"gwi-ux-audit.firebasestorage.app",messagingSenderId:"207583541404",appId:"1:207583541404:web:51f0f1b4bad7dfe258d559"};
 const _fba=initializeApp(_fc);const _auth=getAuth(_fba);const _db=getFirestore(_fba);
 import { Users, Map, BarChart2, Sparkles, ClipboardList, Cog, RefreshCw, Layers, ArrowRight, Zap, ClipboardCopy, Brain, LayoutDashboard, Home, Puzzle, DollarSign, FileText, Bot, MousePointerClick, GitMerge, ChevronRight, ChevronDown, Check, Trash2, Plus, GripVertical, Pencil, Star, Monitor, Smartphone, Lightbulb, MessageSquare, TrendingUp, AlertTriangle, List, LayoutGrid, Folder, FolderOpen, Heart, Building2, BookOpen, ExternalLink, Share2, Eye, EyeOff } from "lucide-react";
@@ -4411,6 +4411,26 @@ export default function App(){
   var [_authLoading,_setAuthLoading]=useState(true);
   var [_loginError,_setLoginError]=useState(null);
   var [_showLoginModal,_setShowLoginModal]=useState(false);
+  var [_onlineUsers,_setOnlineUsers]=useState([]);
+  useEffect(function(){
+    if(!_user)return;
+    var ref=doc(_db,"presence",_user.uid);
+    var ping=function(){setDoc(ref,{uid:_user.uid,name:_user.displayName||_user.email||"",email:_user.email||"",photoURL:_user.photoURL||"",updatedAt:Date.now()},{merge:true}).catch(function(){});};
+    ping();
+    var interval=setInterval(ping,20000);
+    var goOffline=function(){deleteDoc(ref).catch(function(){});};
+    window.addEventListener("beforeunload",goOffline);
+    return function(){clearInterval(interval);goOffline();window.removeEventListener("beforeunload",goOffline);};
+  },[_user]);
+  useEffect(function(){
+    if(!_user)return;
+    var unsub=onSnapshot(collection(_db,"presence"),function(snap){
+      var now=Date.now();
+      var list=snap.docs.map(function(d){return d.data();}).filter(function(p:any){return p.uid!==_user.uid&&now-p.updatedAt<60000;});
+      _setOnlineUsers(list);
+    });
+    return unsub;
+  },[_user]);
   useEffect(function(){return onAuthStateChanged(_auth,function(u){if(u){if(!u.email||!u.email.endsWith("@gwi.com")){fbSignOut(_auth);_setUser(null);_setLoginError("Access restricted to @gwi.com accounts.");_setAuthLoading(false);return;}_setUser(u);getDoc(doc(_db,"users",u.uid)).then(function(snap){if(snap.exists()){var d=snap.data();if(d.auditData)setAuditData(d.auditData);if(d.stages)setStages(d.stages);if(d.verticals)setVerticals(d.verticals);if(d.personas)setPersonas(d.personas);if(d.pages)setPages(d.pages);if(d.journeys)setJourneys(d.journeys);if(d.gaCards)setGaCards(d.gaCards);if(d.vwoPages)setVwoPages(d.vwoPages);if(d.wireframeRules)setWireframeRules(d.wireframeRules);if(d.clientList)setClientList(d.clientList);if(d.caseStudies)setCaseStudies(d.caseStudies);if(d.asanaPat)setAsanaPat(d.asanaPat);if(d.asanaProjectId)setAsanaProjectId(d.asanaProjectId);}});getDocs(collection(_db,"users",u.uid,"generatedAudits")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setGeneratedAudits(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});merged.sort(function(a,b){return a.id<b.id?-1:1;});return merged;});}).catch(function(){});getDocs(collection(_db,"users",u.uid,"wireframes")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setSavedWireframes(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});return merged;});}).catch(function(){});
 getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=snap.docs.map(function(d){return d.data();});setFeedback(function(prev){var merged=prev.slice();arr.forEach(function(a){if(!merged.find(function(x){return x.id===a.id;}))merged.push(a);});return merged;});}).catch(function(){});}else{_setUser(null);}_setAuthLoading(false);});},[]);
   useEffect(function(){if(!_user)return;var t=setTimeout(function(){setDoc(doc(_db,"users",_user.uid),{auditData:auditData,stages:stages,verticals:verticals,personas:personas,pages:pages,journeys:journeys,gaCards:gaCards,vwoPages:vwoPages,wireframeRules:wireframeRules,clientList:clientList,caseStudies:caseStudies,asanaPat:asanaPat,asanaProjectId:asanaProjectId,email:_user.email,ts:Date.now()},{merge:true});},2000);return function(){clearTimeout(t);};},[ auditData,stages,verticals,personas,pages,journeys,gaCards,vwoPages,wireframeRules,clientList,caseStudies,asanaPat,asanaProjectId,_user]);
@@ -4496,6 +4516,19 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
           <div style={{flex:1}}/>
           {(view==="personas"||view==="persona-detail"||view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows")&&(
             <button onClick={function(){var t=(view==="personas"||view==="persona-detail")?"personas":(view==="mapping"||view==="lifecycle")?"mapping":(view==="affinity")?"affinity":(view==="flows")?"flows":"journeys";_shareReport(t);}} disabled={_reportSharing} title="Share a public read-only report" style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:700,border:"none",cursor:_reportSharing?"wait":"pointer",background:_reportSharing?"#888":"rgba(255,0,119,0.18)",color:_reportSharing?C.grey6:C.pink,flexShrink:0,transition:"background 0.15s"}} onMouseEnter={function(e){if(!_reportSharing)(e.currentTarget as HTMLElement).style.background="rgba(255,0,119,0.28)";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.background=_reportSharing?"#888":"rgba(255,0,119,0.18)";}}><Share2 size={13}/>{_reportSharing?"Sharing…":"Share report"}</button>
+          )}
+          {_onlineUsers.length>0&&(
+            <div style={{display:"flex",alignItems:"center",gap:6,marginRight:12}}>
+              {_onlineUsers.map(function(p:any){
+                var initials=(p.name||p.email||"?").slice(0,2).toUpperCase();
+                return(
+                  <div key={p.uid} title={p.name||p.email} style={{width:26,height:26,borderRadius:"50%",overflow:"hidden",border:"2px solid "+C.offBlack,background:C.offBlack,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    {p.photoURL?<img src={p.photoURL} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:10,fontWeight:700,color:C.white,lineHeight:1}}>{initials}</span>}
+                  </div>
+                );
+              })}
+              <div style={{width:1,height:20,background:C.grey6,marginLeft:6}}/>
+            </div>
           )}
           <UserMenu user={_user} onSignOut={function(){fbSignOut(_auth);}} onSettings={function(){setView("settings");}} onFeedbackPage={function(){setView("feedback");}} onGuide={function(){setView("guide");}} activeView={view}/>
         </div>
