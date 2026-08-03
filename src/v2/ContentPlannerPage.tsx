@@ -772,7 +772,7 @@ export function ContentPlannerPage({ user }: { user?: { displayName?: string | n
 
   return (
     <div style={{ background: T.grey1, minHeight: "100%", overflow: "auto", fontFamily: T.font, color: T.ink }}>
-      <div style={{ maxWidth: 1600, margin: "0 auto", padding: `${SP.xxxl}px ${SP.xl}px ${SP.huge}px` }}>
+      <div style={{ width: "100%", padding: `${SP.xxxl}px ${SP.xl}px ${SP.huge}px`, boxSizing: "border-box" }}>
         <header style={{ paddingBottom: titleCollapsed ? SP.md : SP.xl, borderBottom: `1px solid ${T.grey3}` }}>
           <div style={{ display: "flex", alignItems: "center", gap: SP.sm }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: SP.sm, ...TYPE.eyebrow, color: T.plan }}>
@@ -1038,7 +1038,7 @@ function BoardGrid({
   const COL_W = 190;
   return (
     <div style={{ overflow: "auto", maxHeight: `calc(100vh - ${extraHeight ? 200 : 320}px)`, border: `1px solid ${T.grey3}`, borderRadius: R.lg, background: T.white }}>
-      <div style={{ display: "grid", gridTemplateColumns: `${LABEL_COL}px repeat(${months.length}, ${COL_W}px)`, minWidth: LABEL_COL + months.length * COL_W }}>
+      <div style={{ display: "grid", gridTemplateColumns: `${LABEL_COL}px repeat(${months.length}, minmax(${COL_W}px, 1fr))`, minWidth: LABEL_COL + months.length * COL_W, width: "100%" }}>
         {/* header row — sticky on both axes so it stays put while the board scrolls under it */}
         <div style={{ position: "sticky", top: 0, left: 0, zIndex: 5, background: T.ink, color: T.white, ...TYPE.label, padding: "12px 14px", display: "flex", alignItems: "center" }}>
           ASSET TYPE
