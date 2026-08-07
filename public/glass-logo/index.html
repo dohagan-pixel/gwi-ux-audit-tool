@@ -358,6 +358,7 @@ function updateBackdrop(hex, wordHex) {
 
   if (markMaterial && markMaterial.userData.zoomShader) {
     const shader = markMaterial.userData.zoomShader;
+    shader.uniforms.uWordColor.value.set(wordHex);
     const oldZoom = shader.uniforms.uZoomMap.value;
     shader.uniforms.uZoomMap.value = buildMagnifyTexture();
     shader.uniforms.uBackdropSize.value.copy(backdropVisibleSize);
@@ -414,7 +415,8 @@ function buildMark() {
     shader.uniforms.uZoomMap = { value: null };
     shader.uniforms.uZoomFactor = { value: 1.15 }; // slightly smaller than the real backdrop scale (size ~ 1/factor)
     shader.uniforms.uBackdropSize = { value: backdropVisibleSize };
-    shader.uniforms.uZoomStrength = { value: 0.22 }; // how much the letters darken the glass locally — "a tiny shade darker"
+    shader.uniforms.uZoomStrength = { value: 0.55 }; // how strongly the letters pull toward the swatch's word color
+    shader.uniforms.uWordColor = { value: new THREE.Color(currentWordHex) }; // same hex as the background word — kept in sync in updateBackdrop
     shader.uniforms.uEdgeDispersion = { value: 0.4 };       // rainbow rim strength at the mark's own grazing-angle silhouette
 
     shader.vertexShader = shader.vertexShader
@@ -430,6 +432,7 @@ function buildMark() {
         uniform float uZoomFactor;
         uniform vec2 uBackdropSize;
         uniform float uZoomStrength;
+        uniform vec3 uWordColor;
         uniform float uEdgeDispersion;
         vec3 dispersionRainbow(float t) {
           return 0.5 + 0.5 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67)));
@@ -439,12 +442,12 @@ function buildMark() {
         '#include <dithering_fragment>',
         `
         {
-          // Darkens the glass's own already-lit color where a letter stroke falls — never
-          // injects an independent color, so the "zoomed" letters can never mismatch the
-          // real, unshifted word on the plain background behind everything.
+          // Pulls the glass's own already-lit color toward the swatch's word color where a
+          // letter stroke falls — the exact same uWordColor driving the plain background
+          // word, so the "zoomed" letters read as that brand color, not a generic shadow.
           vec2 zUv = (vZoomWorldPos.xy / uBackdropSize) * uZoomFactor + 0.5;
           vec4 zoomSample = texture2D(uZoomMap, zUv);
-          gl_FragColor.rgb *= (1.0 - zoomSample.a * uZoomStrength);
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, uWordColor, zoomSample.a * uZoomStrength);
 
           // A thin rainbow rim at the mark's own silhouette, brightest at grazing angles —
           // light splitting into a spectrum right at the glass's own edge, not on the type.
