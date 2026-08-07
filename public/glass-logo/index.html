@@ -302,13 +302,30 @@ function buildBackdropTexture(hex, isDark) {
   return tex;
 }
 
-// A second, much-more-zoomed-in rendering of the word, applied directly to the mark as an
-// emissive map. Real transmission only ever shifts the sample point sideways — it can't
-// magnify — so getting an actual "seen through a lens" zoom needs an explicit texture like
-// this. Because the clover's three lobes share one continuous UV space (each lobe covering
-// a different sub-region of it, from three.js's own bounding-box UV unwrap), one texture
-// here naturally shows a different crop of the letters on each lobe with zero extra code.
+// A bolder-contrast rendering of the same word, sampled by the mark's custom zoom shader
+// (see applyZoomShader below) — needs more ink than the subtle backdrop watermark so the
+// magnified crop actually reads clearly.
+function buildMagnifyTexture(hex, isDark) {
+  const width = 1600;
+  const height = Math.round(width / camera.aspect);
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  // Left transparent everywhere except the letters — otherwise a flat, fully-opaque fill
+  // would blend over the glass's own reflections uniformly and flatten the whole look.
+  ctx.fillStyle = isDark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.85)';
+  ctx.font = `${Math.round(width * 0.16)}px Ovo, serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('HUMAN', width / 2, height / 2);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 // Scales the plane so it exactly fills the camera's frustum at its depth — no oversized margin.
+const backdropVisibleSize = new THREE.Vector2(1, 1);
 function fitBackdropToView() {
   if (!backdropMesh) return;
   const distance = camera.position.z - backdropMesh.position.z;
@@ -316,6 +333,7 @@ function fitBackdropToView() {
   const visibleHeight = 2 * Math.tan(vFov / 2) * distance;
   const visibleWidth = visibleHeight * camera.aspect;
   backdropMesh.scale.set(visibleWidth, visibleHeight, 1);
+  backdropVisibleSize.set(visibleWidth, visibleHeight);
 }
 
 function buildBackdrop() {
@@ -336,6 +354,14 @@ function updateBackdrop(hex, isDark) {
   backdropMesh.material.map = buildBackdropTexture(hex, isDark);
   backdropMesh.material.needsUpdate = true;
   if (old) old.dispose();
+
+  if (markMaterial && markMaterial.userData.zoomShader) {
+    const shader = markMaterial.userData.zoomShader;
+    const oldZoom = shader.uniforms.uZoomMap.value;
+    shader.uniforms.uZoomMap.value = buildMagnifyTexture(hex, isDark);
+    shader.uniforms.uBackdropSize.value.copy(backdropVisibleSize);
+    if (oldZoom) oldZoom.dispose();
+  }
 }
 
 function renderSwatchRow() {
@@ -382,6 +408,38 @@ function buildMark() {
     attenuationDistance: 40,
     side: THREE.DoubleSide,    // see both the near and far interior surfaces through the shape
   });
+
+  // Real transmission only ever shifts the sampled point sideways — it can never magnify.
+  // To get an actual "seen through a lens" zoom, sample the fixed backdrop word ourselves,
+  // in world space (so it's tied to where the glass really is, not baked onto its own UVs),
+  // scaled in toward the mark's own center.
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uZoomMap = { value: null };
+    shader.uniforms.uZoomFactor = { value: 0.8 };
+    shader.uniforms.uBackdropSize = { value: backdropVisibleSize };
+
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vZoomWorldPos;')
+      .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvZoomWorldPos = worldPosition.xyz;');
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        '#include <common>\nvarying vec3 vZoomWorldPos;\nuniform sampler2D uZoomMap;\nuniform float uZoomFactor;\nuniform vec2 uBackdropSize;',
+      )
+      .replace(
+        '#include <dithering_fragment>',
+        `
+        {
+          vec2 zUv = (vZoomWorldPos.xy / uBackdropSize) * uZoomFactor + 0.5;
+          vec4 zoomSample = texture2D(uZoomMap, zUv);
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, zoomSample.rgb, zoomSample.a * 0.8);
+        }
+        #include <dithering_fragment>`,
+      );
+
+    material.userData.zoomShader = shader;
+  };
 
   const content = new THREE.Group();
 
