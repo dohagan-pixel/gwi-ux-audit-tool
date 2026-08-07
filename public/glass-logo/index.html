@@ -59,30 +59,39 @@ const camera = new THREE.PerspectiveCamera(36, window.innerWidth / window.innerH
 camera.position.set(0, 0, 12);
 
 // ---------- lights ----------
-scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+// Deliberately high-contrast rather than just dim: a single strong, clearly-directional key
+// light from above is what makes a "top" highlight distinct from the "side" shading on a
+// rounded form — that contrast (bright top ridge vs. dim/gray side) IS the depth cue the
+// reference images rely on. Evenly-balanced fill/rim lights (or too much ambient) flatten that
+// out and wash the whole body into the same uniform milky brightness, hiding the transmission
+// underneath, regardless of how transparent the material itself is set to be.
+scene.add(new THREE.AmbientLight(0xffffff, 0.08));
 
-const keyLight = new THREE.PointLight(0xffffff, 90, 60, 2);
-keyLight.position.set(6, 7, 8);
+const keyLight = new THREE.PointLight(0xffffff, 130, 60, 2);
+keyLight.position.set(3, 11, 6); // mostly overhead — this is what carves out a top ridge highlight
 scene.add(keyLight);
 
-const fillLight = new THREE.PointLight(0xffffff, 50, 60, 2);
-fillLight.position.set(-7, -3, 6);
+const fillLight = new THREE.PointLight(0xffffff, 10, 60, 2); // just enough to keep the underside from going pure black
+fillLight.position.set(-6, -8, 5);
 scene.add(fillLight);
 
-const rimLight = new THREE.PointLight(0xffffff, 40, 60, 2);
-rimLight.position.set(0, -6, 5);
-scene.add(rimLight);
-
-// ---------- neutral studio environment (baked to PMREM), just for crisp reflections/highlights ----------
+// ---------- studio environment (baked to PMREM) ----------
+// This, not the point lights, is what actually defines "top vs. side" on a glossy/glass
+// surface — low-roughness materials mostly mirror-reflect the surrounding environment from
+// every direction, so an environment that's evenly bright in every direction (as this one used
+// to be — all panels within a narrow light-gray-to-white range) reflects back just as evenly,
+// no matter how the point lights are tuned. A real studio glass shot lights it like a softbox
+// overhead with a dark surround specifically so the reflection itself carries that contrast:
+// bright top, dark/gray sides, letting the transmitted content show through everywhere else.
 function buildEnvironment() {
   const envScene = new THREE.Scene();
   const geo = new THREE.PlaneGeometry(60, 60);
   const panels = [
-    { color: '#ffffff', pos: [0, 0, -35], rot: [0, 0, 0] },
-    { color: '#e2e2e2', pos: [35, 0, 0], rot: [0, -Math.PI / 2, 0] },
-    { color: '#f4f4f4', pos: [-35, 0, 0], rot: [0, Math.PI / 2, 0] },
-    { color: '#ffffff', pos: [0, 35, 0], rot: [Math.PI / 2, 0, 0] },
-    { color: '#c9c9c9', pos: [0, -35, 0], rot: [-Math.PI / 2, 0, 0] },
+    { color: '#0c0c0c', pos: [0, 0, -35], rot: [0, 0, 0] },        // back — dark
+    { color: '#1c1c1c', pos: [35, 0, 0], rot: [0, -Math.PI / 2, 0] },  // right — dark
+    { color: '#1c1c1c', pos: [-35, 0, 0], rot: [0, Math.PI / 2, 0] },  // left — dark
+    { color: '#ffffff', pos: [0, 35, 0], rot: [Math.PI / 2, 0, 0] },   // top — bright: the "softbox"
+    { color: '#050505', pos: [0, -35, 0], rot: [-Math.PI / 2, 0, 0] }, // bottom — near black
   ];
   panels.forEach(p => {
     const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: p.color }));
@@ -163,16 +172,17 @@ function buildMark() {
   const material = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
     metalness: 0,
-    roughness: 0.05,      // crystal-clear, sharp reflections
+    roughness: 0.03,       // crystal-clear, sharp reflections
     transmission: 1,
-    thickness: 2.2,        // how strongly the refracted word shifts/warps as the mark tilts
+    thickness: 2.4,        // how strongly the refracted word shifts/warps as the mark tilts
     ior: 1.5,
-    clearcoat: 0.7,
-    clearcoatRoughness: 0.05,
-    specularIntensity: 0.8,
-    envMapIntensity: 1.2,
+    clearcoat: 0.6,
+    clearcoatRoughness: 0.04,
+    specularIntensity: 0.65,
+    envMapIntensity: 1.15, // the environment itself now carries the bright-top/dark-side
+                            // contrast, so it's worth showing clearly rather than muting it
     attenuationColor: new THREE.Color('#ffffff'),
-    attenuationDistance: 30,
+    attenuationDistance: 60, // was 30 — even less color absorption, for maximum clarity
     side: THREE.DoubleSide, // see both the near and far interior surfaces through the shape
   });
 
@@ -182,18 +192,22 @@ function buildMark() {
     const shapes = SVGLoader.createShapes(path);
     shapes.forEach(shape => {
       const geometry = new THREE.ExtrudeGeometry(shape, {
-        depth: 70,
+        // Real physical depth, not just a thin lens — was 70 (≈0.4 world units after scaling
+        // down, basically a flat disc), which gave the renderer almost no actual roundness to
+        // shade. A genuinely thick, rounded cross-section is what makes a top ridge, shaded
+        // sides, and a see-through far edge all read clearly, the way a real glass tube does.
+        depth: 200,
         bevelEnabled: true,
-        bevelThickness: 34, // bevel covers most of the depth -> a proper dome/lens face, not a flat disc
-        bevelSize: 30,
+        bevelThickness: 95, // bevel covers most of the depth -> a proper dome/lens face, not a flat disc
+        bevelSize: 85,
         // By default the bevel's widest ring bulges OUTWARD past the flat shape's own outline
         // (up to bevelSize), which is what was narrowing the gaps between lobes — the bevel was
         // effectively growing the logo beyond its real silhouette. bevelOffset pulls the bevel's
         // starting ring inward first, so the widest ring lands exactly ON the original outline
         // instead of past it: the logo's true shape is preserved, and the rounding all happens
         // inside that boundary.
-        bevelOffset: -30,
-        bevelSegments: 18,
+        bevelOffset: -85,
+        bevelSegments: 24,
         curveSegments: 32,
       });
       geometry.computeVertexNormals();
