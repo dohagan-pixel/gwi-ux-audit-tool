@@ -128,7 +128,21 @@ scene.environment = buildEnvironment();
 // safely cover the entire view — there's nothing behind it anywhere that ever needs to show
 // through, which is what caused edge-artifact problems the last time this was built.
 let backdropMesh = null;
+let backdropSafetyMesh = null;
 const BACKDROP_Z = -3; // close behind the (thin) mark, so refraction bends the word without missing it
+
+// Picks the largest font size (up to the usual target) that still fits "HUMAN" within the
+// canvas with a safety margin — at some aspect ratios the fixed multiplier was wide enough to
+// clip the H and N against the edges. Font size is derived from measured width, not assumed
+// metrics, so this stays correct regardless of aspect ratio or font-loading quirks.
+function fitHumanFont(ctx, width) {
+  let fontSize = Math.round(width * 0.23328); // 0.2592 reduced 10% per feedback
+  const maxWidth = width * 0.9;
+  ctx.font = `${fontSize}px Ovo, serif`;
+  const measured = ctx.measureText('HUMAN').width;
+  if (measured > maxWidth) fontSize = Math.round(fontSize * (maxWidth / measured));
+  ctx.font = `${fontSize}px Ovo, serif`;
+}
 
 function buildBackdropTexture() {
   const width = 1600;
@@ -140,9 +154,9 @@ function buildBackdropTexture() {
   ctx.fillStyle = '#F7F6F7';
   ctx.fillRect(0, 0, width, height);
   ctx.fillStyle = '#191B1E';
-  ctx.font = `${Math.round(width * 0.2592)}px Ovo, serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  fitHumanFont(ctx, width);
   ctx.fillText('HUMAN', width / 2, height / 2);
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -166,9 +180,9 @@ function buildBlurredBackdropTexture() {
   ctx.fillRect(0, 0, width, height);
   ctx.filter = 'blur(18px)';
   ctx.fillStyle = '#191B1E';
-  ctx.font = `${Math.round(width * 0.2592)}px Ovo, serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  fitHumanFont(ctx, width);
   ctx.fillText('HUMAN', width / 2, height / 2);
   ctx.filter = 'none';
   const tex = new THREE.CanvasTexture(canvas);
@@ -180,7 +194,13 @@ function buildBlurredBackdropTexture() {
 // how the shader below maps a fragment's world position back to the blurred texture's UV space.
 const backdropVisibleSize = new THREE.Vector2(1, 1);
 
-// Scales the plane so it exactly fills the camera's frustum at its depth — no oversized margin.
+// Scales the plane so it exactly fills the camera's frustum at its depth — no oversized margin,
+// full width, as requested. It still drifts slightly with the mouse (the word parallax), which
+// would normally reveal scene.background at the trailing edge for an instant — that's handled
+// separately by backdropSafetyMesh below, a plain flat-color plane that's oversized ONCE and
+// never moves, sitting just behind. It's what's actually visible in that sliver, not
+// scene.background, and it's built from the exact same toneMapped:false material approach as the
+// word-bearing plane, so its color never mismatches.
 function fitBackdropToView() {
   if (!backdropMesh) return;
   const distance = camera.position.z - BACKDROP_Z;
@@ -189,9 +209,16 @@ function fitBackdropToView() {
   const visibleWidth = visibleHeight * camera.aspect;
   backdropMesh.scale.set(visibleWidth, visibleHeight, 1);
   backdropVisibleSize.set(visibleWidth, visibleHeight);
+  if (backdropSafetyMesh) backdropSafetyMesh.scale.set(visibleWidth * 1.3, visibleHeight * 1.3, 1);
 }
 
 function buildBackdrop() {
+  const safetyGeo = new THREE.PlaneGeometry(1, 1);
+  const safetyMat = new THREE.MeshBasicMaterial({ color: 0xF7F6F7, toneMapped: false });
+  backdropSafetyMesh = new THREE.Mesh(safetyGeo, safetyMat);
+  backdropSafetyMesh.position.set(0, 0, BACKDROP_Z - 0.01);
+  scene.add(backdropSafetyMesh);
+
   const geo = new THREE.PlaneGeometry(1, 1);
   const mat = new THREE.MeshBasicMaterial({ map: null, toneMapped: false });
   backdropMesh = new THREE.Mesh(geo, mat);
