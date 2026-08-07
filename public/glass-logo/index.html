@@ -302,6 +302,35 @@ function buildBackdropTexture(hex, isDark) {
   return tex;
 }
 
+// A second, much-more-zoomed-in rendering of the word, applied directly to the mark as an
+// emissive map. Real transmission only ever shifts the sample point sideways — it can't
+// magnify — so getting an actual "seen through a lens" zoom needs an explicit texture like
+// this. Because the clover's three lobes share one continuous UV space (each lobe covering
+// a different sub-region of it, from three.js's own bounding-box UV unwrap), one texture
+// here naturally shows a different crop of the letters on each lobe with zero extra code.
+function buildZoomedMapTexture(hex, isDark) {
+  const size = 1024;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = isDark ? '#ffffff' : '#000000';
+  ctx.font = `${Math.round(size * 0.24)}px Ovo, serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('HUMAN', size / 2, size / 2);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.generateMipmaps = false;
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  // SVGLoader/ExtrudeGeometry's default UVs are raw SVG coordinates (0..650, even negative),
+  // never normalized to 0..1 — without this every fragment clamps to the same edge texel.
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(1 / 650, 1 / 650);
+  return tex;
+}
+
 // Scales the plane so it exactly fills the camera's frustum at its depth — no oversized margin.
 function fitBackdropToView() {
   if (!backdropMesh) return;
@@ -330,6 +359,13 @@ function updateBackdrop(hex, isDark) {
   backdropMesh.material.map = buildBackdropTexture(hex, isDark);
   backdropMesh.material.needsUpdate = true;
   if (old) old.dispose();
+
+  if (markMaterial) {
+    const oldZoom = markMaterial.emissiveMap;
+    markMaterial.emissiveMap = buildZoomedMapTexture(hex, isDark);
+    markMaterial.needsUpdate = true;
+    if (oldZoom) oldZoom.dispose();
+  }
 }
 
 function renderSwatchRow() {
@@ -375,6 +411,8 @@ function buildMark() {
     attenuationColor: new THREE.Color('#ffffff'),
     attenuationDistance: 40,
     side: THREE.DoubleSide,    // see both the near and far interior surfaces through the shape
+    emissive: new THREE.Color(0xffffff), // additive, so the zoomed word shows regardless of transmission
+    emissiveIntensity: 0.85,
   });
 
   const content = new THREE.Group();
