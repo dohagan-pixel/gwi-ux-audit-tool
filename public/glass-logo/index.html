@@ -294,8 +294,11 @@ function buildMark() {
           float hue = atan(normal.y, normal.x) / 6.28318;
           gl_FragColor.rgb += dispersionRainbow(hue) * rim * uEdgeDispersion;
 
+          // A dark line, not a bright one — everything here is already white-on-white
+          // (white glass on a white background), so a "brighter" stroke has no contrast
+          // headroom to actually show up against. Darkening instead has somewhere to go.
           float edgeStroke = pow(1.0 - clamp(abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0), 10.0);
-          gl_FragColor.rgb += edgeStroke * uEdgeStroke;
+          gl_FragColor.rgb *= (1.0 - edgeStroke * uEdgeStroke);
         }
         #include <dithering_fragment>`,
       );
