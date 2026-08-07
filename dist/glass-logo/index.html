@@ -186,6 +186,13 @@ function buildMark() {
         bevelEnabled: true,
         bevelThickness: 34, // bevel covers most of the depth -> a proper dome/lens face, not a flat disc
         bevelSize: 30,
+        // By default the bevel's widest ring bulges OUTWARD past the flat shape's own outline
+        // (up to bevelSize), which is what was narrowing the gaps between lobes — the bevel was
+        // effectively growing the logo beyond its real silhouette. bevelOffset pulls the bevel's
+        // starting ring inward first, so the widest ring lands exactly ON the original outline
+        // instead of past it: the logo's true shape is preserved, and the rounding all happens
+        // inside that boundary.
+        bevelOffset: -30,
         bevelSegments: 18,
         curveSegments: 32,
       });
