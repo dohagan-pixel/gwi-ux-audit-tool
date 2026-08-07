@@ -412,7 +412,7 @@ function buildMark() {
   // scaled in toward the mark's own center.
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uZoomMap = { value: null };
-    shader.uniforms.uZoomFactor = { value: 0.97 }; // ~3% larger than the real backdrop scale — subtle, not a dramatic zoom
+    shader.uniforms.uZoomFactor = { value: 1.15 }; // slightly smaller than the real backdrop scale (size ~ 1/factor)
     shader.uniforms.uBackdropSize = { value: backdropVisibleSize };
     shader.uniforms.uZoomStrength = { value: 0.22 }; // how much the letters darken the glass locally — "a tiny shade darker"
 
