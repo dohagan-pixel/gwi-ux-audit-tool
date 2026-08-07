@@ -168,8 +168,8 @@ const THEMES = {
         { color: '#3A1030', pos: [0, 0, 35], rot: [0, Math.PI, 0] },
       ],
     }),
-    attenuationColor: '#ffb8d9',
-    attenuationDistance: 2.2,
+    attenuationColor: '#ffffff',
+    attenuationDistance: 40,
     lights: { key: '#ffffff', pink: '#ff0077', gold: '#ffc27a', keyI: 110, pinkI: 70, goldI: 40 },
   },
   black: {
@@ -188,8 +188,8 @@ const THEMES = {
         { color: '#000000', pos: [0, 0, 35], rot: [0, Math.PI, 0] },
       ],
     }),
-    attenuationColor: '#ff9dc4',
-    attenuationDistance: 2.0,
+    attenuationColor: '#ffffff',
+    attenuationDistance: 40,
     lights: { key: '#ffffff', pink: '#ff0077', gold: '#ff2f8f', keyI: 70, pinkI: 110, goldI: 20 },
   },
 };
@@ -200,7 +200,7 @@ const SWATCHES = ['#FFE8F3', '#CC005F', '#EDFFB8', '#FFE3D1', '#FF0077', '#191B1
 const LABEL_COLORS = ['#CC005F', '#FFE8F3', '#729508', '#D5661B'];
 const DEFAULT_LABEL_COLOR = '#fff3f7';
 const DISSOLVE_MS = 700;
-const CLEAR_ATTENUATION_DISTANCE = 9; // long attenuation = light passes straight through = looks properly see-through
+const CLEAR_ATTENUATION_DISTANCE = 80; // even longer than the (now already-clear) default — near-zero absorption
 
 let swatchIndex = 0;
 let transparentGlass = false;
@@ -211,8 +211,11 @@ function relativeLuminance(hex) {
 }
 
 // Everything about a swatch (background and the baked environment/lighting that goes with
-// it) that gets crossfaded when switching — never applied instantly. The mark itself is
-// always white; the Glass toggle controls how transparent it looks via attenuation distance.
+// it) that gets crossfaded when switching — never applied instantly. The mark's base color
+// is kept matched to the flat background: transmission in three.js reads from the baked
+// environment map, not scene.background, so on a flat backdrop the only reliable way to
+// read as "see-through, just reflections" is to let the glass optically melt into the same
+// color as what's behind it. The Glass toggle pushes attenuation distance even further.
 function targetForIndex(index) {
   const hex = SWATCHES[index];
   const envName = relativeLuminance(hex) < 0.4 ? 'black' : 'blush';
@@ -220,7 +223,7 @@ function targetForIndex(index) {
   return {
     envName,
     bg: new THREE.Color(hex),
-    mark: new THREE.Color('#ffffff'),
+    mark: new THREE.Color(hex),
     key: new THREE.Color(t.lights.key),
     pink: new THREE.Color(t.lights.pink),
     gold: new THREE.Color(t.lights.gold),
@@ -303,16 +306,17 @@ function buildMark() {
   const material = markMaterial = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
     metalness: 0,
-    roughness: 0.015,
+    roughness: 0.02,
     transmission: 1,
-    thickness: 1.8,
+    thickness: 0.3,           // thin -> minimal light absorption path, reads as properly see-through
     ior: 1.45,
-    clearcoat: 1,
-    clearcoatRoughness: 0.03,
-    specularIntensity: 1,
-    envMapIntensity: 2.6,
-    attenuationColor: new THREE.Color('#ffb8d9'),
-    attenuationDistance: 2.2,
+    clearcoat: 0.6,
+    clearcoatRoughness: 0.05,
+    specularIntensity: 0.7,
+    envMapIntensity: 1.1,
+    attenuationColor: new THREE.Color('#ffffff'),
+    attenuationDistance: 40,
+    side: THREE.DoubleSide,    // see both the near and far interior surfaces through the shape
   });
 
   const content = new THREE.Group();
