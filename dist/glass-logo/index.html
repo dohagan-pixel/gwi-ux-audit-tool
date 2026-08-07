@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ovo&display=swap" rel="stylesheet">
 <style>
-  html, body { margin:0; padding:0; height:100%; overflow:hidden; background:#ffffff; }
+  html, body { margin:0; padding:0; height:100%; overflow:hidden; background:#F7F6F7; }
   canvas { display:block; width:100%; height:100%; touch-action:none; }
   #loading {
     position:fixed; inset:0; z-index:10; display:flex; align-items:center; justify-content:center;
@@ -53,7 +53,7 @@ renderer.toneMappingExposure = 1.1;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xffffff);
+scene.background = new THREE.Color(0xF7F6F7);
 
 const camera = new THREE.PerspectiveCamera(36, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(0, 0, 12);
@@ -137,10 +137,10 @@ function buildBackdropTexture() {
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = '#F7F6F7';
   ctx.fillRect(0, 0, width, height);
-  ctx.fillStyle = '#000000';
-  ctx.font = `${Math.round(width * 0.16)}px Ovo, serif`;
+  ctx.fillStyle = '#191B1E';
+  ctx.font = `${Math.round(width * 0.2592)}px Ovo, serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('HUMAN', width / 2, height / 2);
@@ -162,11 +162,11 @@ function buildBlurredBackdropTexture() {
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = '#F7F6F7';
   ctx.fillRect(0, 0, width, height);
   ctx.filter = 'blur(18px)';
-  ctx.fillStyle = '#000000';
-  ctx.font = `${Math.round(width * 0.16)}px Ovo, serif`;
+  ctx.fillStyle = '#191B1E';
+  ctx.font = `${Math.round(width * 0.2592)}px Ovo, serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('HUMAN', width / 2, height / 2);
@@ -345,7 +345,7 @@ function buildMark() {
 
   // fit to a consistent on-screen size regardless of source units
   const size = box.getSize(new THREE.Vector3());
-  const scale = 3.6 / Math.max(size.x, size.y);
+  const scale = (3.6 * 1.1) / Math.max(size.x, size.y); // logo sized up 10%
   content.scale.set(scale, -scale, scale); // flip Y: SVG space -> GL space
 
   pivot.add(content);
@@ -394,6 +394,17 @@ function animate() {
   pivot.rotation.y += (targetRot.y - pivot.rotation.y) * 0.06;
   pivot.position.x += (targetPos.x - pivot.position.x) * 0.08;
   pivot.position.y += (targetPos.y - pivot.position.y) * 0.08;
+
+  // A tiny parallax drift for the word itself — much smaller than the mark's own movement, so
+  // it still reads as "fixed" relative to the glass, just gently alive rather than static.
+  // Safe to shift off its exact frustum-filling position because the page background is the
+  // same #F7F6F7 as the backdrop's own fill, so any sliver revealed at the edge is seamless.
+  if (backdropMesh) {
+    const targetBackdropX = mouse.x * 0.12;
+    const targetBackdropY = -mouse.y * 0.08;
+    backdropMesh.position.x += (targetBackdropX - backdropMesh.position.x) * 0.04;
+    backdropMesh.position.y += (targetBackdropY - backdropMesh.position.y) * 0.04;
+  }
 
   keyLight.position.x = 6 + mouse.x * 2;
   keyLight.position.y = 7 - mouse.y * 2;
