@@ -4,14 +4,23 @@
 <meta charset="utf-8" />
 <title>GWI — interactive glass mark</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ovo&display=swap" rel="stylesheet">
 <style>
-  html, body { margin:0; padding:0; height:100%; overflow:hidden; background:#0d0710; }
+  html, body { margin:0; padding:0; height:100%; overflow:hidden; }
   body{
-    background:
-      radial-gradient(circle at 30% 25%, #2a1a2e 0%, #150a17 45%, #0a060c 100%);
+    background-color:#0d0710;
+    transition:background-color 0.7s ease-in-out;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   }
-  canvas{ display:block; width:100%; height:100%; touch-action:none; }
+  canvas{ display:block; position:relative; z-index:1; width:100%; height:100%; touch-action:none; }
+  #bg-word{
+    position:fixed; inset:0; z-index:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Ovo', serif; font-size:min(28vw, 340px); letter-spacing:0.04em;
+    color:rgba(0,0,0,0.08); pointer-events:none; user-select:none; white-space:nowrap;
+    transition:color 0.7s ease-in-out;
+  }
   #label{
     position:fixed; left:28px; bottom:26px; color:#fff3f7; opacity:0.9;
     font-size:11px; letter-spacing:0.14em; text-transform:uppercase; font-weight:600;
@@ -53,6 +62,7 @@
 </style>
 </head>
 <body>
+<div id="bg-word">HUMAN</div>
 <div id="loading">loading glass mark…</div>
 <div id="label">GWI <b>·</b> interactive glass mark</div>
 <div id="theme-switch">
@@ -222,7 +232,6 @@ function targetForIndex(index) {
   const t = THEMES[envName];
   return {
     envName,
-    bg: new THREE.Color(hex),
     mark: new THREE.Color(hex),
     key: new THREE.Color(t.lights.key),
     pink: new THREE.Color(t.lights.pink),
@@ -235,7 +244,6 @@ function targetForIndex(index) {
 
 function snapshotCurrent() {
   return {
-    bg: (scene.background || new THREE.Color(0, 0, 0)).clone(),
     mark: (markMaterial ? markMaterial.color : new THREE.Color(1, 1, 1)).clone(),
     key: keyLight.color.clone(), pink: pinkLight.color.clone(), gold: goldLight.color.clone(),
     keyI: keyLight.intensity, pinkI: pinkLight.intensity, goldI: goldLight.intensity,
@@ -261,7 +269,6 @@ function updateDissolve() {
   const k = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; // ease-in-out
   const { from, to } = dissolve;
 
-  scene.background = from.bg.clone().lerp(to.bg, k);
   if (markMaterial) {
     markMaterial.color.copy(from.mark).lerp(to.mark, k);
     markMaterial.attenuationColor.copy(from.atten).lerp(to.atten, k);
@@ -289,9 +296,13 @@ function applyMarkColor() {
 
 function applySwatch(index) {
   swatchIndex = index;
+  const hex = SWATCHES[index];
   beginDissolve(targetForIndex(index));
   renderSwatchRow();
   document.getElementById('label').style.color = LABEL_COLORS[index] || DEFAULT_LABEL_COLOR;
+  document.body.style.backgroundColor = hex;
+  document.getElementById('bg-word').style.color =
+    relativeLuminance(hex) < 0.4 ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.08)';
 }
 
 // ---------- build the glass mark from the SVG ----------
