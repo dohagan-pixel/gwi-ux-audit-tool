@@ -238,16 +238,22 @@ function buildMark() {
         // lens), just a slimmer profile.
         depth: 100,
         bevelEnabled: true,
-        bevelThickness: 48, // bevel covers most of the depth -> a proper dome/lens face, not a flat disc
-        bevelSize: 42,
+        // A tight bevel, not a full dome — the previous bevel (48/42, covering most of the 100
+        // depth) made the normal sweep smoothly across the whole cross-section, giving one soft
+        // highlight blob instead of a defined edge. A short, sharp bevel leaves a real flat wall
+        // between two narrow transition ramps, so each ramp catches a thin, crisp specular line
+        // right at the edge — the "stroke on the top and bottom" look — with a distinctly darker/
+        // shaded flat side in between, instead of one continuous curve.
+        bevelThickness: 16,
+        bevelSize: 14,
         // By default the bevel's widest ring bulges OUTWARD past the flat shape's own outline
         // (up to bevelSize), which is what was narrowing the gaps between lobes — the bevel was
         // effectively growing the logo beyond its real silhouette. bevelOffset pulls the bevel's
         // starting ring inward first, so the widest ring lands exactly ON the original outline
         // instead of past it: the logo's true shape is preserved, and the rounding all happens
         // inside that boundary.
-        bevelOffset: -42,
-        bevelSegments: 24,
+        bevelOffset: -14,
+        bevelSegments: 12,
         curveSegments: 32,
       });
       geometry.computeVertexNormals();
