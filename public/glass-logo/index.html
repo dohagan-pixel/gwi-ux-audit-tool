@@ -143,11 +143,52 @@ function buildBackdropTexture() {
   ctx.font = `${Math.round(width * 0.16)}px Ovo, serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  // Thickened with a stroke, not just filled — thin strokes lose almost all their "ink mass"
+  // once heavily blurred by the transmission (a wide blur kernel over a thin line averages
+  // mostly toward the white around it), which is why the word was washing out to nothing
+  // through the glass at higher blur amounts. This keeps it legible as a soft shape even blurred.
+  ctx.lineWidth = width * 0.01;
+  ctx.strokeStyle = '#000000';
+  ctx.strokeText('HUMAN', width / 2, height / 2);
   ctx.fillText('HUMAN', width / 2, height / 2);
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
+
+// A second, deliberately Gaussian-blurred copy of the same texture — Three's own transmission
+// blur (tied to a roughness value feeding its mip selection) has a hard cliff: past a fairly low
+// value it jumps to averaging such a large area that the thin word washes out to nearly nothing
+// against the white background, rather than getting progressively more blurred. Building an
+// actual blurred bitmap via canvas filter and substituting it in for the transmitted color
+// (below, in onBeforeCompile) gives a real, continuously tunable blur radius instead.
+function buildBlurredBackdropTexture() {
+  const width = 1600;
+  const height = Math.round(width / camera.aspect);
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+  ctx.filter = 'blur(46px)';
+  ctx.fillStyle = '#000000';
+  ctx.font = `${Math.round(width * 0.16)}px Ovo, serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = width * 0.022; // extra-bold — needs enough "ink mass" to survive the blur and stay legible
+  ctx.strokeStyle = '#000000';
+  ctx.strokeText('HUMAN', width / 2, height / 2);
+  ctx.fillText('HUMAN', width / 2, height / 2);
+  ctx.filter = 'none';
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+// backdropVisibleSize tracks the frustum's world-space dimensions at the backdrop's depth — it's
+// how the shader below maps a fragment's world position back to the blurred texture's UV space.
+const backdropVisibleSize = new THREE.Vector2(1, 1);
 
 // Scales the plane so it exactly fills the camera's frustum at its depth — no oversized margin.
 function fitBackdropToView() {
@@ -157,6 +198,7 @@ function fitBackdropToView() {
   const visibleHeight = 2 * Math.tan(vFov / 2) * distance;
   const visibleWidth = visibleHeight * camera.aspect;
   backdropMesh.scale.set(visibleWidth, visibleHeight, 1);
+  backdropVisibleSize.set(visibleWidth, visibleHeight);
 }
 
 function buildBackdrop() {
@@ -175,17 +217,26 @@ function refreshBackdropTexture() {
   backdropMesh.material.map = buildBackdropTexture();
   backdropMesh.material.needsUpdate = true;
   if (old) old.dispose();
+
+  if (markMaterial && markMaterial.userData.blurShader) {
+    const shader = markMaterial.userData.blurShader;
+    const oldBlur = shader.uniforms.uBlurMap.value;
+    shader.uniforms.uBlurMap.value = buildBlurredBackdropTexture();
+    shader.uniforms.uBackdropSize.value.copy(backdropVisibleSize);
+    if (oldBlur) oldBlur.dispose();
+  }
 }
 
 // ---------- build the glass mark from the exact SVG shape ----------
 const pivot = new THREE.Group();
 scene.add(pivot);
+let markMaterial = null;
 
 function buildMark() {
   const loader = new SVGLoader();
   const svgData = loader.parse(SVG_SOURCE);
 
-  const material = new THREE.MeshPhysicalMaterial({
+  const material = markMaterial = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
     metalness: 0,
     roughness: 0.03,       // crystal-clear, sharp reflections
@@ -203,28 +254,47 @@ function buildMark() {
   });
 
   // A thin rainbow fringe right at the mark's own silhouette, brightest at grazing angles —
-  // light splitting into a spectrum at the glass's edge, same as real dispersion in a prism.
+  // light splitting into a spectrum at the glass's edge, same as real dispersion in a prism —
+  // plus a slight plain-white stroke right at the very edge, tighter and separate from the
+  // rainbow, and a substitution of the transmitted color for an explicitly Gaussian-blurred
+  // bitmap (see buildBlurredBackdropTexture) so the word behind the glass reads as a real, fully
+  // legible blur rather than Three's own transmission blur, which washes out to almost nothing
+  // past a fairly low roughness value.
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uEdgeDispersion = { value: 0.55 };
-    // Three ties the transmitted image's blur directly to material.roughness — but that's also
-    // what controls the surface's own reflections, and we want those crisp (for the edge
-    // highlight "strokes") while the word seen THROUGH the glass is soft, like real frosted
-    // glass. Patching the transmission call to read a separate uniform decouples the two.
-    shader.uniforms.uTransmissionRoughness = { value: 0.22 };
+    shader.uniforms.uEdgeStroke = { value: 0.5 };
+    shader.uniforms.uBlurMap = { value: null };
+    shader.uniforms.uBackdropSize = { value: backdropVisibleSize };
+    material.userData.blurShader = shader;
 
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
         `#include <common>
         uniform float uEdgeDispersion;
-        uniform float uTransmissionRoughness;
+        uniform float uEdgeStroke;
+        uniform sampler2D uBlurMap;
+        uniform vec2 uBackdropSize;
         vec3 dispersionRainbow(float t) {
           return 0.5 + 0.5 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67)));
         }`,
       )
+      // Right after Three's own transmission_fragment chunk runs, overwrite totalDiffuse (NOT
+      // "transmitted" — that local is already spent: the chunk's own last line is
+      // `totalDiffuse = mix(totalDiffuse, transmitted.rgb, material.transmission)`, so writing to
+      // `transmitted` afterward is a dead write with zero visual effect) with a sample of our own
+      // blurred bitmap at the same world-space position. "pos" is vWorldPosition, still in scope.
+      // totalDiffuse is what actually feeds outgoingLight on the very next line in this
+      // material's shader, so this is the one write that actually reaches the screen. Fully
+      // replacing rather than blending means there's no way for Three's own (differently-blurred)
+      // sample to show through underneath and double up with it.
       .replace(
-        'n, v, material.roughness, material.diffuseColor, material.specularColor, material.specularF90,',
-        'n, v, uTransmissionRoughness, material.diffuseColor, material.specularColor, material.specularF90,',
+        '#include <transmission_fragment>',
+        `#include <transmission_fragment>
+        {
+          vec2 buv = (pos.xy / uBackdropSize) + 0.5;
+          totalDiffuse = texture2D(uBlurMap, buv).rgb;
+        }`,
       )
       .replace(
         '#include <dithering_fragment>',
@@ -233,6 +303,9 @@ function buildMark() {
           float rim = pow(1.0 - clamp(abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0), 4.0);
           float hue = atan(normal.y, normal.x) / 6.28318;
           gl_FragColor.rgb += dispersionRainbow(hue) * rim * uEdgeDispersion;
+
+          float edgeStroke = pow(1.0 - clamp(abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0), 10.0);
+          gl_FragColor.rgb += edgeStroke * uEdgeStroke;
         }
         #include <dithering_fragment>`,
       );
