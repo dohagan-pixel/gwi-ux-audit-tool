@@ -418,7 +418,7 @@ function buildMark() {
     shader.uniforms.uZoomStrength = { value: 0.55 }; // how strongly the letters pull toward the swatch's word color
     shader.uniforms.uWordColor = { value: new THREE.Color(currentWordHex) }; // same hex as the background word — kept in sync in updateBackdrop
     shader.uniforms.uEdgeDispersion = { value: 0.4 };       // rainbow rim strength at the mark's own grazing-angle silhouette
-    shader.uniforms.uTransmissionRoughness = { value: 0.55 }; // blurs *only* what real transmission shows of the backdrop, decoupled from material.roughness — keeps the mark's own reflections/depth crisp while stopping the real (undistorted) copy of the backdrop text from fighting our zoomed letter overlay below
+    shader.uniforms.uTransmissionRoughness = { value: 0.95 }; // blurs *only* what real transmission shows of the backdrop, decoupled from material.roughness — keeps the mark's own reflections/depth crisp while stopping the real (undistorted) copy of the backdrop text from fighting our zoomed letter overlay below. Pushed high (not just "somewhat blurred") because at some view angles the real sample point diverges far enough from our own zoomed sample that a lighter blur still reads as a second, offset letter rather than a soft wash.
 
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vZoomWorldPos;')
