@@ -99,6 +99,22 @@ function buildEnvironment() {
     mesh.rotation.set(...p.rot);
     envScene.add(mesh);
   });
+
+  // A few small, saturated strips scattered at odd angles — not visible as any single "colored
+  // light", just enough so the glass's reflections pick up faint dashes of color across its
+  // curves, rather than reading as purely grayscale chrome.
+  const accents = [
+    { color: '#ff2ec8', pos: [8, 6, -10], rot: [0.3, 0.6, 0], size: [10, 2] },
+    { color: '#22e0ff', pos: [-9, 4, -8], rot: [-0.2, -0.5, 0], size: [8, 1.6] },
+    { color: '#c8ff3d', pos: [6, -7, -9], rot: [0.4, -0.3, 0], size: [9, 1.8] },
+    { color: '#ffdd33', pos: [-7, -5, -11], rot: [-0.3, 0.4, 0], size: [7, 1.5] },
+  ];
+  accents.forEach(a => {
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(a.size[0], a.size[1]), new THREE.MeshBasicMaterial({ color: a.color }));
+    mesh.position.set(...a.pos);
+    mesh.rotation.set(...a.rot);
+    envScene.add(mesh);
+  });
   const pmrem = new THREE.PMREMGenerator(renderer);
   pmrem.compileEquirectangularShader();
   const rt = pmrem.fromScene(envScene, 0.04);
@@ -186,27 +202,51 @@ function buildMark() {
     side: THREE.DoubleSide, // see both the near and far interior surfaces through the shape
   });
 
+  // A thin rainbow fringe right at the mark's own silhouette, brightest at grazing angles —
+  // light splitting into a spectrum at the glass's edge, same as real dispersion in a prism.
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uEdgeDispersion = { value: 0.55 };
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+        uniform float uEdgeDispersion;
+        vec3 dispersionRainbow(float t) {
+          return 0.5 + 0.5 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67)));
+        }`,
+      )
+      .replace(
+        '#include <dithering_fragment>',
+        `
+        {
+          float rim = pow(1.0 - clamp(abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0), 4.0);
+          float hue = atan(normal.y, normal.x) / 6.28318;
+          gl_FragColor.rgb += dispersionRainbow(hue) * rim * uEdgeDispersion;
+        }
+        #include <dithering_fragment>`,
+      );
+  };
+
   const content = new THREE.Group();
 
   svgData.paths.forEach(path => {
     const shapes = SVGLoader.createShapes(path);
     shapes.forEach(shape => {
       const geometry = new THREE.ExtrudeGeometry(shape, {
-        // Real physical depth, not just a thin lens — was 70 (≈0.4 world units after scaling
-        // down, basically a flat disc), which gave the renderer almost no actual roundness to
-        // shade. A genuinely thick, rounded cross-section is what makes a top ridge, shaded
-        // sides, and a see-through far edge all read clearly, the way a real glass tube does.
-        depth: 200,
+        // Half the previous depth, per feedback — still real physical thickness (not a flat
+        // lens), just a slimmer profile.
+        depth: 100,
         bevelEnabled: true,
-        bevelThickness: 95, // bevel covers most of the depth -> a proper dome/lens face, not a flat disc
-        bevelSize: 85,
+        bevelThickness: 48, // bevel covers most of the depth -> a proper dome/lens face, not a flat disc
+        bevelSize: 42,
         // By default the bevel's widest ring bulges OUTWARD past the flat shape's own outline
         // (up to bevelSize), which is what was narrowing the gaps between lobes — the bevel was
         // effectively growing the logo beyond its real silhouette. bevelOffset pulls the bevel's
         // starting ring inward first, so the widest ring lands exactly ON the original outline
         // instead of past it: the logo's true shape is preserved, and the rounding all happens
         // inside that boundary.
-        bevelOffset: -85,
+        bevelOffset: -42,
         bevelSegments: 24,
         curveSegments: 32,
       });
