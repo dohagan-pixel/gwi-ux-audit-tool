@@ -25,33 +25,52 @@
   }
 
   #theme-switch{
-    position:fixed; right:28px; bottom:24px; display:flex; align-items:center; gap:10px;
+    position:fixed; right:28px; bottom:24px; display:flex; align-items:center; gap:12px;
     font-size:10.5px; letter-spacing:0.12em; font-weight:700; text-transform:uppercase;
-    color:#fff; opacity:0.65; user-select:none;
+    color:#fff; opacity:0.85; user-select:none; flex-wrap:wrap; justify-content:flex-end;
+    max-width:calc(100vw - 56px);
   }
-  #theme-switch .opt{cursor:pointer; transition:opacity 0.25s;}
-  #theme-switch .opt.active{opacity:1;}
-  #theme-switch .opt:not(.active){opacity:0.4;}
-  #theme-switch .track{
-    position:relative; width:44px; height:24px; border-radius:12px; cursor:pointer;
-    background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.25);
-    transition:background 0.3s;
+  #theme-switch .swatch-label{pointer-events:none; opacity:0.65;}
+
+  #glass-toggle{
+    display:flex; align-items:center; gap:7px; padding:6px 12px; border-radius:14px; cursor:pointer;
+    border:1px solid rgba(255,255,255,0.35); background:rgba(255,255,255,0.08); color:#fff;
+    font:inherit; letter-spacing:inherit; text-transform:inherit; transition:background 0.25s, border-color 0.25s;
   }
-  #theme-switch .knob{
-    position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%;
-    background:#FF0077; box-shadow:0 0 8px rgba(255,0,119,0.7);
-    transition:transform 0.3s cubic-bezier(.4,0,.2,1), background 0.3s;
+  #glass-toggle .dot{ width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.4); transition:background 0.25s, box-shadow 0.25s; }
+  #glass-toggle.active{ background:rgba(255,255,255,0.9); color:#191B1E; border-color:transparent; }
+  #glass-toggle.active .dot{ background:#191B1E; box-shadow:0 0 6px rgba(25,27,30,0.5); }
+
+  #swatch-row{ display:flex; gap:8px; }
+  .swatch{
+    position:relative; width:28px; height:28px; border-radius:50%; cursor:pointer; padding:0;
+    border:2px solid rgba(255,255,255,0.35); box-shadow:0 0 6px rgba(0,0,0,0.25);
+    transition:transform 0.15s, border-color 0.2s;
   }
-  #theme-switch.is-black .knob{ transform:translateX(20px); background:#fff; box-shadow:0 0 8px rgba(255,255,255,0.5); }
+  .swatch:hover{ transform:scale(1.1); }
+  .swatch:active{ transform:scale(0.94); }
+  .swatch.active{ border-color:rgba(255,255,255,0.95); }
+  .swatch .ring{
+    position:absolute; inset:-6px; width:40px; height:40px; transform:rotate(-90deg);
+    pointer-events:none; opacity:0; transition:opacity 0.2s;
+  }
+  .swatch.active .ring{ opacity:1; }
+  .ring-track{ fill:none; stroke:rgba(255,255,255,0.2); stroke-width:2; }
+  .ring-progress{
+    fill:none; stroke:#fff; stroke-width:2; stroke-linecap:round;
+    stroke-dasharray:94.2; stroke-dashoffset:94.2;
+  }
+  .swatch.active .ring-progress.run{ animation:ring-countdown var(--dur, 6000ms) linear forwards; }
+  @keyframes ring-countdown{ from{ stroke-dashoffset:94.2; } to{ stroke-dashoffset:0; } }
 </style>
 </head>
 <body>
 <div id="loading">loading glass mark…</div>
 <div id="label">GWI <b>·</b> interactive glass mark</div>
 <div id="theme-switch">
-  <span class="opt active" data-theme="blush">Blush</span>
-  <div class="track"><div class="knob"></div></div>
-  <span class="opt" data-theme="black">Black</span>
+  <button id="glass-toggle" type="button" title="Toggle transparent glass"><span class="dot"></span>Glass</button>
+  <span class="swatch-label">Background</span>
+  <div id="swatch-row"></div>
 </div>
 
 <script type="importmap">
@@ -187,13 +206,11 @@ const THEMES = {
   },
 };
 
-let currentTheme = 'blush';
-function applyTheme(name) {
+// Applies one of the two baked environments (lighting + reflections for the glass) —
+// picked by how light/dark the current flat background swatch is, not shown directly.
+function applyEnvironment(name) {
   const t = THEMES[name];
   scene.environment = t.env;
-  scene.background = t.env;
-  scene.backgroundBlurriness = 0.35;
-  scene.backgroundIntensity = 0.9;
   keyLight.color.set(t.lights.key);
   pinkLight.color.set(t.lights.pink);
   goldLight.color.set(t.lights.gold);
@@ -204,7 +221,57 @@ function applyTheme(name) {
     markMaterial.attenuationColor.set(t.attenuationColor);
     markMaterial.attenuationDistance = t.attenuationDistance;
   }
-  currentTheme = name;
+}
+
+// ---------- flat background color switches ----------
+const SWATCHES = ['#FFE8F3', '#CC005F', '#EDFFB8', '#FFE3D1', '#FF0077', '#191B1E'];
+// The mark itself tints to match — only the first 4 swatches have a defined tint so far.
+const LOGO_COLORS = ['#CC005F', '#FFE8F3', '#729508', '#D5661B'];
+const AUTO_ADVANCE_MS = 6000;
+
+let swatchIndex = 0;
+let transparentGlass = false;
+let advanceTimer = null;
+
+function relativeLuminance(hex) {
+  const c = new THREE.Color(hex);
+  return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+}
+
+function applyMarkColor() {
+  if (!markMaterial) return;
+  markMaterial.color.set(transparentGlass ? '#ffffff' : (LOGO_COLORS[swatchIndex] || '#ffffff'));
+}
+
+function restartRing(btn) {
+  const ring = btn.querySelector('.ring-progress');
+  ring.classList.remove('run');
+  // eslint-disable-next-line no-unused-expressions
+  ring.getBoundingClientRect(); // force reflow so the animation restarts from the top
+  ring.classList.add('run');
+}
+
+function renderSwatchRow() {
+  document.querySelectorAll('.swatch').forEach((btn, i) => {
+    const isActive = i === swatchIndex;
+    btn.classList.toggle('active', isActive);
+    if (isActive) restartRing(btn);
+  });
+}
+
+function scheduleAutoAdvance() {
+  clearTimeout(advanceTimer);
+  advanceTimer = setTimeout(() => applySwatch((swatchIndex + 1) % SWATCHES.length), AUTO_ADVANCE_MS);
+}
+
+function applySwatch(index) {
+  swatchIndex = index;
+  const hex = SWATCHES[index];
+  applyEnvironment(relativeLuminance(hex) < 0.4 ? 'black' : 'blush');
+  scene.background = new THREE.Color(hex);
+  applyMarkColor();
+  renderSwatchRow();
+  scheduleAutoAdvance();
 }
 
 // ---------- build the glass mark from the SVG ----------
@@ -263,18 +330,35 @@ function buildMark() {
   pivot.add(content);
 }
 
-buildMark();
-applyTheme('blush');
-document.getElementById('loading').remove();
-
-// ---------- theme toggle ----------
-const switchEl = document.getElementById('theme-switch');
-switchEl.addEventListener('click', () => {
-  const next = currentTheme === 'blush' ? 'black' : 'blush';
-  applyTheme(next);
-  switchEl.classList.toggle('is-black', next === 'black');
-  switchEl.querySelectorAll('.opt').forEach(el => el.classList.toggle('active', el.dataset.theme === next));
+// ---------- build the swatch row ----------
+const swatchRow = document.getElementById('swatch-row');
+SWATCHES.forEach((hex, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'swatch';
+  btn.type = 'button';
+  btn.title = hex;
+  btn.style.backgroundColor = hex;
+  btn.style.setProperty('--dur', `${AUTO_ADVANCE_MS}ms`);
+  btn.innerHTML = `
+    <svg class="ring" viewBox="0 0 40 40">
+      <circle class="ring-track" cx="20" cy="20" r="15"/>
+      <circle class="ring-progress" cx="20" cy="20" r="15"/>
+    </svg>`;
+  btn.addEventListener('click', () => applySwatch(i));
+  swatchRow.appendChild(btn);
 });
+
+// ---------- transparent glass toggle ----------
+const glassToggle = document.getElementById('glass-toggle');
+glassToggle.addEventListener('click', () => {
+  transparentGlass = !transparentGlass;
+  glassToggle.classList.toggle('active', transparentGlass);
+  applyMarkColor();
+});
+
+buildMark();
+applySwatch(0);
+document.getElementById('loading').remove();
 
 // ---------- mouse-driven motion ----------
 const mouse = new THREE.Vector2(0, 0);
