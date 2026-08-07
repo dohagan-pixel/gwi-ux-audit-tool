@@ -314,7 +314,9 @@ function buildMagnifyTexture(hex, isDark) {
   const ctx = canvas.getContext('2d');
   // Left transparent everywhere except the letters — otherwise a flat, fully-opaque fill
   // would blend over the glass's own reflections uniformly and flatten the whole look.
-  ctx.fillStyle = isDark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.85)';
+  // Same subtle tone/opacity as the fixed backdrop watermark — this should read as the
+  // same word, just barely larger, not a bolder graphic.
+  ctx.fillStyle = isDark ? 'rgba(255,255,255,0.11)' : 'rgba(0,0,0,0.09)';
   ctx.font = `${Math.round(width * 0.16)}px Ovo, serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -415,7 +417,7 @@ function buildMark() {
   // scaled in toward the mark's own center.
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uZoomMap = { value: null };
-    shader.uniforms.uZoomFactor = { value: 0.8 };
+    shader.uniforms.uZoomFactor = { value: 0.97 }; // ~3% larger than the real backdrop scale — subtle, not a dramatic zoom
     shader.uniforms.uBackdropSize = { value: backdropVisibleSize };
 
     shader.vertexShader = shader.vertexShader
@@ -433,7 +435,7 @@ function buildMark() {
         {
           vec2 zUv = (vZoomWorldPos.xy / uBackdropSize) * uZoomFactor + 0.5;
           vec4 zoomSample = texture2D(uZoomMap, zUv);
-          gl_FragColor.rgb = mix(gl_FragColor.rgb, zoomSample.rgb, zoomSample.a * 0.8);
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, zoomSample.rgb, zoomSample.a);
         }
         #include <dithering_fragment>`,
       );
