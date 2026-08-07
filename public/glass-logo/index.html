@@ -280,7 +280,7 @@ function updateDissolve() {
 let backdropMesh = null;
 let currentHex = SWATCHES[0];
 let currentIsDark = false;
-const BACKDROP_Z = -16;
+const BACKDROP_Z = -3; // close behind the (very thin) mark, so refraction bends the letters without missing them entirely
 
 // Canvas aspect matches the viewport's, so the plane's texture never stretches the word.
 function buildBackdropTexture(hex, isDark) {
@@ -385,9 +385,9 @@ function buildMark() {
       const geometry = new THREE.ExtrudeGeometry(shape, {
         depth: 70,
         bevelEnabled: true,
-        bevelThickness: 22,
-        bevelSize: 20,
-        bevelSegments: 10,
+        bevelThickness: 34,   // bevel now covers most of the depth -> the face is a proper dome/lens,
+        bevelSize: 30,        // not a flat disc with a rounded edge, so refraction bends visibly everywhere
+        bevelSegments: 18,
         curveSegments: 32,
       });
       geometry.computeVertexNormals();
