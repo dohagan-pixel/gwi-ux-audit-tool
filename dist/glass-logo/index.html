@@ -294,8 +294,7 @@ function buildBackdropTexture(hex, wordHex) {
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = hex;
   ctx.fillRect(0, 0, width, height);
-  ctx.fillStyle = wordHex;
-  ctx.globalAlpha = 0.55;
+  ctx.fillStyle = wordHex; // solid, full-strength — must read as the exact brand hex, not a tint
   ctx.font = `${Math.round(width * 0.16)}px Ovo, serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -338,7 +337,9 @@ function fitBackdropToView() {
 
 function buildBackdrop() {
   const geo = new THREE.PlaneGeometry(1, 1);
-  const mat = new THREE.MeshBasicMaterial({ map: null });
+  // toneMapped:false — this plane carries exact brand hex values (background + word), so it
+  // must bypass the renderer's ACES filmic curve, which would otherwise shift/desaturate them.
+  const mat = new THREE.MeshBasicMaterial({ map: null, toneMapped: false });
   backdropMesh = new THREE.Mesh(geo, mat);
   backdropMesh.position.set(0, 0, BACKDROP_Z);
   scene.add(backdropMesh);
