@@ -15,6 +15,11 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   }
   canvas{ display:block; position:relative; z-index:1; width:100%; height:100%; touch-action:none; }
+  #bg-word{
+    position:fixed; z-index:0; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Ovo', serif; font-size:16vw; white-space:nowrap; color:#fff3f7;
+    pointer-events:none; user-select:none; transition:color 0.7s ease-in-out;
+  }
   #label{
     position:fixed; z-index:10; left:28px; bottom:26px; color:#fff3f7; opacity:0.9;
     font-size:11px; letter-spacing:0.14em; text-transform:uppercase; font-weight:600;
@@ -55,6 +60,7 @@
 </head>
 <body>
 <div id="loading">loading glass mark…</div>
+<div id="bg-word">HUMAN</div>
 <div id="label">GWI <b>·</b> interactive glass mark</div>
 <div id="theme-switch">
   <div id="swatch-row"></div>
@@ -283,9 +289,13 @@ let currentHex = SWATCHES[0].hex;
 let currentWordHex = SWATCHES[0].word;
 const BACKDROP_Z = -3; // close behind the (very thin) mark, so refraction bends the letters without missing them entirely
 
-// Canvas aspect matches the viewport's, so the plane's texture never stretches the word.
-// The word is tinted with that swatch's own brand "logo" color from the reference sheet.
-function buildBackdropTexture(hex, wordHex) {
+// Flat color ONLY — deliberately no text. This plane is what real transmission automatically
+// samples through the glass, and Three's transmission always shows exactly what's actually in
+// the scene there; no amount of blur reliably hides a real letter shape at every view angle.
+// The word itself now lives purely in the "#bg-word" DOM layer (outside the glass) and in the
+// mark's own custom zoom shader (inside the glass) — so there is nothing left for transmission
+// to leak, by construction, rather than by tuning.
+function buildBackdropTexture(hex) {
   const width = 1600;
   const height = Math.round(width / camera.aspect);
   const canvas = document.createElement('canvas');
@@ -294,11 +304,6 @@ function buildBackdropTexture(hex, wordHex) {
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = hex;
   ctx.fillRect(0, 0, width, height);
-  ctx.fillStyle = wordHex; // solid, full-strength — must read as the exact brand hex, not a tint
-  ctx.font = `${Math.round(width * 0.16)}px Ovo, serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('HUMAN', width / 2, height / 2);
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -323,16 +328,27 @@ function buildMagnifyTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
-// Scales the plane so it exactly fills the camera's frustum at its depth — no oversized margin.
+// backdropVisibleSize always tracks the FULL frustum — it defines the world-space area the
+// zoom shader maps to the zoom texture's UV range, which must line up with the "#bg-word" DOM
+// element (sized relative to the full viewport), regardless of how big the backdrop MESH itself is.
 const backdropVisibleSize = new THREE.Vector2(1, 1);
+// The mesh itself, though, is deliberately much smaller than the frustum — just big enough to
+// stay behind the mark across its whole range of drifting/mouse-driven motion. If it filled the
+// frustum (as it used to, back when it also carried the word), it would opaquely cover the new
+// "#bg-word" DOM layer everywhere, not just behind the glass.
+// Sized to comfortably cover the mark's own silhouette (~3.6 units across, plus a margin for
+// its rotation) — NOT its whole range of drifting motion. It tracks pivot.position (translate
+// only, never rotation) every frame in animate() instead, so it only ever needs to be as big as
+// the mark itself; a size big enough for "everywhere the mark could ever be" would in practice
+// span nearly the whole viewport on some aspect ratios, defeating the point of shrinking it.
+const BACKDROP_MESH_SIZE = new THREE.Vector2(5, 5);
 function fitBackdropToView() {
-  if (!backdropMesh) return;
-  const distance = camera.position.z - backdropMesh.position.z;
+  const distance = camera.position.z - BACKDROP_Z;
   const vFov = (camera.fov * Math.PI) / 180;
   const visibleHeight = 2 * Math.tan(vFov / 2) * distance;
   const visibleWidth = visibleHeight * camera.aspect;
-  backdropMesh.scale.set(visibleWidth, visibleHeight, 1);
   backdropVisibleSize.set(visibleWidth, visibleHeight);
+  if (backdropMesh) backdropMesh.scale.set(BACKDROP_MESH_SIZE.x, BACKDROP_MESH_SIZE.y, 1);
 }
 
 function buildBackdrop() {
@@ -352,7 +368,7 @@ function updateBackdrop(hex, wordHex) {
   if (!backdropMesh) return;
   fitBackdropToView();
   const old = backdropMesh.material.map;
-  backdropMesh.material.map = buildBackdropTexture(hex, wordHex);
+  backdropMesh.material.map = buildBackdropTexture(hex);
   backdropMesh.material.needsUpdate = true;
   if (old) old.dispose();
 
@@ -379,6 +395,7 @@ function applySwatch(index) {
   renderSwatchRow();
   document.getElementById('label').style.color = swatch.word;
   document.body.style.backgroundColor = swatch.hex; // fallback fill while three.js is still loading
+  document.getElementById('bg-word').style.color = swatch.word;
   updateBackdrop(swatch.hex, swatch.word);
 }
 
@@ -418,7 +435,6 @@ function buildMark() {
     shader.uniforms.uZoomStrength = { value: 0.55 }; // how strongly the letters pull toward the swatch's word color
     shader.uniforms.uWordColor = { value: new THREE.Color(currentWordHex) }; // same hex as the background word — kept in sync in updateBackdrop
     shader.uniforms.uEdgeDispersion = { value: 0.4 };       // rainbow rim strength at the mark's own grazing-angle silhouette
-    shader.uniforms.uTransmissionRoughness = { value: 0.95 }; // blurs *only* what real transmission shows of the backdrop, decoupled from material.roughness — keeps the mark's own reflections/depth crisp while stopping the real (undistorted) copy of the backdrop text from fighting our zoomed letter overlay below. Pushed high (not just "somewhat blurred") because at some view angles the real sample point diverges far enough from our own zoomed sample that a lighter blur still reads as a second, offset letter rather than a soft wash.
 
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vZoomWorldPos;')
@@ -435,14 +451,9 @@ function buildMark() {
         uniform float uZoomStrength;
         uniform vec3 uWordColor;
         uniform float uEdgeDispersion;
-        uniform float uTransmissionRoughness;
         vec3 dispersionRainbow(float t) {
           return 0.5 + 0.5 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67)));
         }`,
-      )
-      .replace(
-        'n, v, material.roughness, material.diffuseColor, material.specularColor, material.specularF90,',
-        'n, v, uTransmissionRoughness, material.diffuseColor, material.specularColor, material.specularF90,',
       )
       .replace(
         '#include <dithering_fragment>',
@@ -555,6 +566,13 @@ function animate() {
   pivot.rotation.y += (targetRot.y + Math.sin(idle) * 0.08 - pivot.rotation.y) * 0.06;
   pivot.position.x += (targetPos.x - pivot.position.x) * 0.08;
   pivot.position.y += (targetPos.y + Math.sin(idle * 1.3) * 0.15 - pivot.position.y) * 0.08;
+
+  // Track the mark's translation (not its rotation) so the flat backdrop patch that feeds
+  // transmission always sits directly behind it, without following it all the way round.
+  if (backdropMesh) {
+    backdropMesh.position.x = pivot.position.x;
+    backdropMesh.position.y = pivot.position.y;
+  }
 
   keyLight.position.x = 6 + mouse.x * 2;
   keyLight.position.y = 7 - mouse.y * 2;
