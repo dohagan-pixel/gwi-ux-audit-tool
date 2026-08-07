@@ -415,6 +415,9 @@ function buildMark() {
     shader.uniforms.uZoomFactor = { value: 1.15 }; // slightly smaller than the real backdrop scale (size ~ 1/factor)
     shader.uniforms.uBackdropSize = { value: backdropVisibleSize };
     shader.uniforms.uZoomStrength = { value: 0.22 }; // how much the letters darken the glass locally — "a tiny shade darker"
+    shader.uniforms.uDispersion = { value: 0.05 };          // how far apart the three color channels sample the letter edge
+    shader.uniforms.uDispersionStrength = { value: 2.2 };   // how vivid that edge fringing reads
+    shader.uniforms.uEdgeDispersion = { value: 0.4 };       // rainbow rim strength at the mark's own grazing-angle silhouette
 
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vZoomWorldPos;')
@@ -423,18 +426,40 @@ function buildMark() {
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        '#include <common>\nvarying vec3 vZoomWorldPos;\nuniform sampler2D uZoomMap;\nuniform float uZoomFactor;\nuniform vec2 uBackdropSize;\nuniform float uZoomStrength;',
+        `#include <common>
+        varying vec3 vZoomWorldPos;
+        uniform sampler2D uZoomMap;
+        uniform float uZoomFactor;
+        uniform vec2 uBackdropSize;
+        uniform float uZoomStrength;
+        uniform float uDispersion;
+        uniform float uDispersionStrength;
+        uniform float uEdgeDispersion;
+        vec3 dispersionRainbow(float t) {
+          return 0.5 + 0.5 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67)));
+        }`,
       )
       .replace(
         '#include <dithering_fragment>',
         `
         {
-          // Darkens the glass's own already-lit color where a letter stroke falls — never
-          // injects an independent color, so the "zoomed" letters can never mismatch the
-          // glass's actual tone (matching the real, unshifted word underneath by construction).
-          vec2 zUv = (vZoomWorldPos.xy / uBackdropSize) * uZoomFactor + 0.5;
-          vec4 zoomSample = texture2D(uZoomMap, zUv);
-          gl_FragColor.rgb *= (1.0 - zoomSample.a * uZoomStrength);
+          // Real glass splits white light into a spectrum because each wavelength bends by a
+          // slightly different amount. We fake that by sampling the letter mask at three
+          // slightly different scales (one per channel) instead of one — flat areas agree and
+          // cancel out, but right at a letter's edge the three disagree, producing a color
+          // fringe exactly where the reference photos show it.
+          vec2 base = vZoomWorldPos.xy / uBackdropSize;
+          float ar = texture2D(uZoomMap, base * (uZoomFactor - uDispersion) + 0.5).a;
+          float ag = texture2D(uZoomMap, base * uZoomFactor + 0.5).a;
+          float ab = texture2D(uZoomMap, base * (uZoomFactor + uDispersion) + 0.5).a;
+          gl_FragColor.rgb *= (1.0 - ag * uZoomStrength);
+          gl_FragColor.rgb += (vec3(ar, ag, ab) - ag) * uDispersionStrength;
+
+          // A thin rainbow rim at the mark's own silhouette, brightest at grazing angles —
+          // same prism effect, this time at the glass's own edge rather than a letter's.
+          float rim = pow(1.0 - clamp(abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0), 4.0);
+          float hue = atan(normal.y, normal.x) / 6.28318;
+          gl_FragColor.rgb += dispersionRainbow(hue) * rim * uEdgeDispersion;
         }
         #include <dithering_fragment>`,
       );
