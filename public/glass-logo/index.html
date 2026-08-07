@@ -13,11 +13,11 @@
   }
   canvas{ display:block; width:100%; height:100%; touch-action:none; }
   #label{
-    position:fixed; left:28px; bottom:26px; color:#fff3f7; opacity:0.55;
+    position:fixed; left:28px; bottom:26px; color:#fff3f7; opacity:0.9;
     font-size:11px; letter-spacing:0.14em; text-transform:uppercase; font-weight:600;
-    pointer-events:none; mix-blend-mode:screen;
+    pointer-events:none; transition:color 0.7s ease-in-out;
   }
-  #label b{color:#FF6FA8;}
+  #label b{color:inherit;}
   #loading{
     position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
     color:#fff; opacity:0.4; font-size:12px; letter-spacing:0.08em; text-transform:uppercase;
@@ -49,19 +49,7 @@
   }
   .swatch:hover{ transform:scale(1.1); }
   .swatch:active{ transform:scale(0.94); }
-  .swatch.active{ border-color:rgba(255,255,255,0.95); }
-  .swatch .ring{
-    position:absolute; inset:-6px; width:40px; height:40px; transform:rotate(-90deg);
-    pointer-events:none; opacity:0; transition:opacity 0.2s;
-  }
-  .swatch.active .ring{ opacity:1; }
-  .ring-track{ fill:none; stroke:rgba(255,255,255,0.2); stroke-width:2; }
-  .ring-progress{
-    fill:none; stroke:#fff; stroke-width:2; stroke-linecap:round;
-    stroke-dasharray:94.2; stroke-dashoffset:94.2;
-  }
-  .swatch.active .ring-progress.run{ animation:ring-countdown var(--dur, 6000ms) linear forwards; }
-  @keyframes ring-countdown{ from{ stroke-dashoffset:94.2; } to{ stroke-dashoffset:0; } }
+  .swatch.active{ border-color:rgba(255,255,255,0.95); box-shadow:0 0 0 2px rgba(255,255,255,0.25), 0 0 6px rgba(0,0,0,0.25); }
 </style>
 </head>
 <body>
@@ -206,72 +194,101 @@ const THEMES = {
   },
 };
 
-// Applies one of the two baked environments (lighting + reflections for the glass) —
-// picked by how light/dark the current flat background swatch is, not shown directly.
-function applyEnvironment(name) {
-  const t = THEMES[name];
-  scene.environment = t.env;
-  keyLight.color.set(t.lights.key);
-  pinkLight.color.set(t.lights.pink);
-  goldLight.color.set(t.lights.gold);
-  keyLight.intensity = t.lights.keyI;
-  pinkLight.intensity = t.lights.pinkI;
-  goldLight.intensity = t.lights.goldI;
-  if (markMaterial) {
-    markMaterial.attenuationColor.set(t.attenuationColor);
-    markMaterial.attenuationDistance = t.attenuationDistance;
-  }
-}
-
 // ---------- flat background color switches ----------
 const SWATCHES = ['#FFE8F3', '#CC005F', '#EDFFB8', '#FFE3D1', '#FF0077', '#191B1E'];
-// The mark itself tints to match — only the first 4 swatches have a defined tint so far.
-const LOGO_COLORS = ['#CC005F', '#FFE8F3', '#729508', '#D5661B'];
-const AUTO_ADVANCE_MS = 6000;
+// The mark stays clear glass now — these tint the caption text instead, first 4 swatches only.
+const LABEL_COLORS = ['#CC005F', '#FFE8F3', '#729508', '#D5661B'];
+const DEFAULT_LABEL_COLOR = '#fff3f7';
+const DISSOLVE_MS = 700;
+const CLEAR_ATTENUATION_DISTANCE = 9; // long attenuation = light passes straight through = looks properly see-through
 
 let swatchIndex = 0;
 let transparentGlass = false;
-let advanceTimer = null;
 
 function relativeLuminance(hex) {
   const c = new THREE.Color(hex);
   return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
 }
 
-function applyMarkColor() {
-  if (!markMaterial) return;
-  markMaterial.color.set(transparentGlass ? '#ffffff' : (LOGO_COLORS[swatchIndex] || '#ffffff'));
+// Everything about a swatch (background and the baked environment/lighting that goes with
+// it) that gets crossfaded when switching — never applied instantly. The mark itself is
+// always white; the Glass toggle controls how transparent it looks via attenuation distance.
+function targetForIndex(index) {
+  const hex = SWATCHES[index];
+  const envName = relativeLuminance(hex) < 0.4 ? 'black' : 'blush';
+  const t = THEMES[envName];
+  return {
+    envName,
+    bg: new THREE.Color(hex),
+    mark: new THREE.Color('#ffffff'),
+    key: new THREE.Color(t.lights.key),
+    pink: new THREE.Color(t.lights.pink),
+    gold: new THREE.Color(t.lights.gold),
+    keyI: t.lights.keyI, pinkI: t.lights.pinkI, goldI: t.lights.goldI,
+    atten: new THREE.Color(t.attenuationColor),
+    attenDist: transparentGlass ? CLEAR_ATTENUATION_DISTANCE : t.attenuationDistance,
+  };
 }
 
-function restartRing(btn) {
-  const ring = btn.querySelector('.ring-progress');
-  ring.classList.remove('run');
-  // eslint-disable-next-line no-unused-expressions
-  ring.getBoundingClientRect(); // force reflow so the animation restarts from the top
-  ring.classList.add('run');
+function snapshotCurrent() {
+  return {
+    bg: (scene.background || new THREE.Color(0, 0, 0)).clone(),
+    mark: (markMaterial ? markMaterial.color : new THREE.Color(1, 1, 1)).clone(),
+    key: keyLight.color.clone(), pink: pinkLight.color.clone(), gold: goldLight.color.clone(),
+    keyI: keyLight.intensity, pinkI: pinkLight.intensity, goldI: goldLight.intensity,
+    atten: (markMaterial ? markMaterial.attenuationColor : new THREE.Color('#ffb8d9')).clone(),
+    attenDist: markMaterial ? markMaterial.attenuationDistance : 2.2,
+  };
+}
+
+let currentEnvName = null;
+let dissolve = null; // { from, to, start }
+
+function beginDissolve(target) {
+  if (target.envName !== currentEnvName) {
+    currentEnvName = target.envName;
+    scene.environment = THEMES[target.envName].env; // reflections swap immediately; color dissolves
+  }
+  dissolve = { from: snapshotCurrent(), to: target, start: performance.now() };
+}
+
+function updateDissolve() {
+  if (!dissolve) return;
+  const p = Math.min(1, (performance.now() - dissolve.start) / DISSOLVE_MS);
+  const k = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; // ease-in-out
+  const { from, to } = dissolve;
+
+  scene.background = from.bg.clone().lerp(to.bg, k);
+  if (markMaterial) {
+    markMaterial.color.copy(from.mark).lerp(to.mark, k);
+    markMaterial.attenuationColor.copy(from.atten).lerp(to.atten, k);
+    markMaterial.attenuationDistance = from.attenDist + (to.attenDist - from.attenDist) * k;
+  }
+  keyLight.color.copy(from.key).lerp(to.key, k);
+  pinkLight.color.copy(from.pink).lerp(to.pink, k);
+  goldLight.color.copy(from.gold).lerp(to.gold, k);
+  keyLight.intensity = from.keyI + (to.keyI - from.keyI) * k;
+  pinkLight.intensity = from.pinkI + (to.pinkI - from.pinkI) * k;
+  goldLight.intensity = from.goldI + (to.goldI - from.goldI) * k;
+
+  if (p >= 1) dissolve = null;
 }
 
 function renderSwatchRow() {
   document.querySelectorAll('.swatch').forEach((btn, i) => {
-    const isActive = i === swatchIndex;
-    btn.classList.toggle('active', isActive);
-    if (isActive) restartRing(btn);
+    btn.classList.toggle('active', i === swatchIndex);
   });
 }
 
-function scheduleAutoAdvance() {
-  clearTimeout(advanceTimer);
-  advanceTimer = setTimeout(() => applySwatch((swatchIndex + 1) % SWATCHES.length), AUTO_ADVANCE_MS);
+function applyMarkColor() {
+  beginDissolve(targetForIndex(swatchIndex));
 }
 
 function applySwatch(index) {
   swatchIndex = index;
-  const hex = SWATCHES[index];
-  applyEnvironment(relativeLuminance(hex) < 0.4 ? 'black' : 'blush');
-  scene.background = new THREE.Color(hex);
-  applyMarkColor();
+  beginDissolve(targetForIndex(index));
   renderSwatchRow();
-  scheduleAutoAdvance();
+  document.getElementById('label').style.color = LABEL_COLORS[index] || DEFAULT_LABEL_COLOR;
 }
 
 // ---------- build the glass mark from the SVG ----------
@@ -338,12 +355,6 @@ SWATCHES.forEach((hex, i) => {
   btn.type = 'button';
   btn.title = hex;
   btn.style.backgroundColor = hex;
-  btn.style.setProperty('--dur', `${AUTO_ADVANCE_MS}ms`);
-  btn.innerHTML = `
-    <svg class="ring" viewBox="0 0 40 40">
-      <circle class="ring-track" cx="20" cy="20" r="15"/>
-      <circle class="ring-progress" cx="20" cy="20" r="15"/>
-    </svg>`;
   btn.addEventListener('click', () => applySwatch(i));
   swatchRow.appendChild(btn);
 });
@@ -385,6 +396,7 @@ window.addEventListener('resize', resize);
 function animate() {
   requestAnimationFrame(animate);
   idle += 0.0035;
+  updateDissolve();
 
   targetRot.x = -mouse.y * 0.55;
   targetRot.y = mouse.x * 0.7;
