@@ -336,23 +336,23 @@ const backdropVisibleSize = new THREE.Vector2(1, 1);
 // stay behind the mark across its whole range of drifting/mouse-driven motion. If it filled the
 // frustum (as it used to, back when it also carried the word), it would opaquely cover the new
 // "#bg-word" DOM layer everywhere, not just behind the glass.
-// Sized to comfortably cover the mark's own silhouette (~3.6 units across, plus a margin for
-// its rotation) — NOT its whole range of drifting motion. It tracks pivot.position (translate
-// only, never rotation) every frame in animate() instead, so it only ever needs to be as big as
-// the mark itself; a size big enough for "everywhere the mark could ever be" would in practice
-// span nearly the whole viewport on some aspect ratios, defeating the point of shrinking it.
-const BACKDROP_MESH_SIZE = new THREE.Vector2(5, 5);
+// Sized to sit just inside the mark's own rounded silhouette (a circle, not a square — a
+// square plane's corners stuck out past the mark's rounded outline and read as a visible box).
+// It tracks pivot.position (translate only, never rotation) every frame in animate() instead of
+// being sized for the mark's whole range of drifting motion, so it only ever needs to be as big
+// as the mark itself.
+const BACKDROP_MESH_RADIUS = 1.65;
 function fitBackdropToView() {
   const distance = camera.position.z - BACKDROP_Z;
   const vFov = (camera.fov * Math.PI) / 180;
   const visibleHeight = 2 * Math.tan(vFov / 2) * distance;
   const visibleWidth = visibleHeight * camera.aspect;
   backdropVisibleSize.set(visibleWidth, visibleHeight);
-  if (backdropMesh) backdropMesh.scale.set(BACKDROP_MESH_SIZE.x, BACKDROP_MESH_SIZE.y, 1);
+  if (backdropMesh) backdropMesh.scale.set(BACKDROP_MESH_RADIUS, BACKDROP_MESH_RADIUS, 1);
 }
 
 function buildBackdrop() {
-  const geo = new THREE.PlaneGeometry(1, 1);
+  const geo = new THREE.CircleGeometry(1, 64);
   // toneMapped:false — this plane carries exact brand hex values (background + word), so it
   // must bypass the renderer's ACES filmic curve, which would otherwise shift/desaturate them.
   const mat = new THREE.MeshBasicMaterial({ map: null, toneMapped: false });
