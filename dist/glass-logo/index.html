@@ -394,7 +394,7 @@ function buildMark() {
   const material = markMaterial = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
     metalness: 0,
-    roughness: 0.46,   // blurs what real transmission shows of the backdrop (incl. its text) into an indistinct soft glow, so it doesn't compete with our own crisp zoomed text sample below
+    roughness: 0.05,   // crystal-clear, sharp reflections — high roughness was flattening the mark's own depth/shape, not just blurring the backdrop
     transmission: 1,
     thickness: 3.5,           // this is what makes it angle-sensitive — bigger thickness = bigger sample shift per degree of tilt
     ior: 1.6,
@@ -418,6 +418,7 @@ function buildMark() {
     shader.uniforms.uZoomStrength = { value: 0.55 }; // how strongly the letters pull toward the swatch's word color
     shader.uniforms.uWordColor = { value: new THREE.Color(currentWordHex) }; // same hex as the background word — kept in sync in updateBackdrop
     shader.uniforms.uEdgeDispersion = { value: 0.4 };       // rainbow rim strength at the mark's own grazing-angle silhouette
+    shader.uniforms.uTransmissionRoughness = { value: 0.55 }; // blurs *only* what real transmission shows of the backdrop, decoupled from material.roughness — keeps the mark's own reflections/depth crisp while stopping the real (undistorted) copy of the backdrop text from fighting our zoomed letter overlay below
 
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vZoomWorldPos;')
@@ -434,9 +435,14 @@ function buildMark() {
         uniform float uZoomStrength;
         uniform vec3 uWordColor;
         uniform float uEdgeDispersion;
+        uniform float uTransmissionRoughness;
         vec3 dispersionRainbow(float t) {
           return 0.5 + 0.5 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67)));
         }`,
+      )
+      .replace(
+        'n, v, material.roughness, material.diffuseColor, material.specularColor, material.specularF90,',
+        'n, v, uTransmissionRoughness, material.diffuseColor, material.specularColor, material.specularF90,',
       )
       .replace(
         '#include <dithering_fragment>',
