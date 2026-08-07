@@ -33,16 +33,6 @@
     color:#fff; opacity:0.85; user-select:none; flex-wrap:wrap; justify-content:flex-end;
     max-width:calc(100vw - 56px);
   }
-  #theme-switch .swatch-label{pointer-events:none; opacity:0.65;}
-
-  #glass-toggle{
-    display:flex; align-items:center; gap:7px; padding:6px 12px; border-radius:14px; cursor:pointer;
-    border:1px solid rgba(255,255,255,0.35); background:rgba(255,255,255,0.08); color:#fff;
-    font:inherit; letter-spacing:inherit; text-transform:inherit; transition:background 0.25s, border-color 0.25s;
-  }
-  #glass-toggle .dot{ width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.4); transition:background 0.25s, box-shadow 0.25s; }
-  #glass-toggle.active{ background:rgba(255,255,255,0.9); color:#191B1E; border-color:transparent; }
-  #glass-toggle.active .dot{ background:#191B1E; box-shadow:0 0 6px rgba(25,27,30,0.5); }
 
   #swatch-row{ display:flex; gap:8px; }
   .swatch{
@@ -53,14 +43,20 @@
   .swatch:hover{ transform:scale(1.1); }
   .swatch:active{ transform:scale(0.94); }
   .swatch.active{ border-color:rgba(255,255,255,0.95); box-shadow:0 0 0 2px rgba(255,255,255,0.25), 0 0 6px rgba(0,0,0,0.25); }
+  .swatch::after{
+    content:attr(data-name);
+    position:absolute; bottom:calc(100% + 9px); left:50%; transform:translateX(-50%);
+    background:rgba(20,20,22,0.92); color:#fff; padding:4px 9px; border-radius:6px;
+    font-size:10px; letter-spacing:0.05em; text-transform:none; font-weight:600;
+    white-space:nowrap; opacity:0; pointer-events:none; transition:opacity 0.15s ease-in-out;
+  }
+  .swatch:hover::after{ opacity:1; }
 </style>
 </head>
 <body>
 <div id="loading">loading glass mark…</div>
 <div id="label">GWI <b>·</b> interactive glass mark</div>
 <div id="theme-switch">
-  <button id="glass-toggle" type="button" title="Toggle transparent glass"><span class="dot"></span>Glass</button>
-  <span class="swatch-label">Background</span>
   <div id="swatch-row"></div>
 </div>
 
@@ -197,16 +193,21 @@ const THEMES = {
   },
 };
 
-// ---------- flat background color switches ----------
-const SWATCHES = ['#FFE8F3', '#CC005F', '#EDFFB8', '#FFE3D1', '#FF0077', '#191B1E'];
-// The mark stays clear glass now — these tint the caption text instead, first 4 swatches only.
-const LABEL_COLORS = ['#CC005F', '#FFE8F3', '#729508', '#D5661B'];
-const DEFAULT_LABEL_COLOR = '#fff3f7';
+// ---------- brand background/type pairings ----------
+// Matches the GWI logo-treatment reference sheet exactly: each background is the page
+// background for that mode, and "word" is the color the background's own logo uses there —
+// the fixed HUMAN watermark (and the caption) take that same color.
+const SWATCHES = [
+  { name: 'Neutral 10', hex: '#FDFDFD', word: '#FF0077' },
+  { name: 'Neutral 20', hex: '#F7F6F7', word: '#191B1E' },
+  { name: 'Neutral 100', hex: '#191B1E', word: '#F7F6F7' },
+  { name: 'Lime Light', hex: '#EDFFB8', word: '#729508' },
+  { name: 'Pink Dark', hex: '#CC005F', word: '#FFE8F3' },
+  { name: 'Orange Light', hex: '#FFE3D1', word: '#D5661B' },
+];
 const DISSOLVE_MS = 700;
-const CLEAR_ATTENUATION_DISTANCE = 80; // even longer than the (now already-clear) default — near-zero absorption
 
 let swatchIndex = 0;
-let transparentGlass = false;
 
 function relativeLuminance(hex) {
   const c = new THREE.Color(hex);
@@ -217,9 +218,9 @@ function relativeLuminance(hex) {
 // crossfaded when switching — never applied instantly. The mark's base color stays white:
 // the actual "see-through" now comes from real transmission of the backdrop plane (which
 // carries the flat color + HUMAN text) sitting behind the mark in the scene, refracted
-// through the glass. The Glass toggle pushes attenuation distance even further.
+// through the glass.
 function targetForIndex(index) {
-  const hex = SWATCHES[index];
+  const hex = SWATCHES[index].hex;
   const envName = relativeLuminance(hex) < 0.4 ? 'black' : 'blush';
   const t = THEMES[envName];
   return {
@@ -230,7 +231,7 @@ function targetForIndex(index) {
     gold: new THREE.Color(t.lights.gold),
     keyI: t.lights.keyI, pinkI: t.lights.pinkI, goldI: t.lights.goldI,
     atten: new THREE.Color(t.attenuationColor),
-    attenDist: transparentGlass ? CLEAR_ATTENUATION_DISTANCE : t.attenuationDistance,
+    attenDist: t.attenuationDistance,
   };
 }
 
@@ -278,12 +279,13 @@ function updateDissolve() {
 
 // ---------- backdrop plane — real scene content, so the glass genuinely refracts/warps it ----------
 let backdropMesh = null;
-let currentHex = SWATCHES[0];
-let currentIsDark = false;
+let currentHex = SWATCHES[0].hex;
+let currentWordHex = SWATCHES[0].word;
 const BACKDROP_Z = -3; // close behind the (very thin) mark, so refraction bends the letters without missing them entirely
 
 // Canvas aspect matches the viewport's, so the plane's texture never stretches the word.
-function buildBackdropTexture(hex, isDark) {
+// The word is tinted with that swatch's own brand "logo" color from the reference sheet.
+function buildBackdropTexture(hex, wordHex) {
   const width = 1600;
   const height = Math.round(width / camera.aspect);
   const canvas = document.createElement('canvas');
@@ -292,7 +294,8 @@ function buildBackdropTexture(hex, isDark) {
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = hex;
   ctx.fillRect(0, 0, width, height);
-  ctx.fillStyle = isDark ? 'rgba(255,255,255,0.11)' : 'rgba(0,0,0,0.09)';
+  ctx.fillStyle = wordHex;
+  ctx.globalAlpha = 0.55;
   ctx.font = `${Math.round(width * 0.16)}px Ovo, serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -342,13 +345,13 @@ function buildBackdrop() {
   fitBackdropToView();
 }
 
-function updateBackdrop(hex, isDark) {
+function updateBackdrop(hex, wordHex) {
   currentHex = hex;
-  currentIsDark = isDark;
+  currentWordHex = wordHex;
   if (!backdropMesh) return;
   fitBackdropToView();
   const old = backdropMesh.material.map;
-  backdropMesh.material.map = buildBackdropTexture(hex, isDark);
+  backdropMesh.material.map = buildBackdropTexture(hex, wordHex);
   backdropMesh.material.needsUpdate = true;
   if (old) old.dispose();
 
@@ -367,18 +370,14 @@ function renderSwatchRow() {
   });
 }
 
-function applyMarkColor() {
-  beginDissolve(targetForIndex(swatchIndex));
-}
-
 function applySwatch(index) {
   swatchIndex = index;
-  const hex = SWATCHES[index];
+  const swatch = SWATCHES[index];
   beginDissolve(targetForIndex(index));
   renderSwatchRow();
-  document.getElementById('label').style.color = LABEL_COLORS[index] || DEFAULT_LABEL_COLOR;
-  document.body.style.backgroundColor = hex; // fallback fill while three.js is still loading
-  updateBackdrop(hex, relativeLuminance(hex) < 0.4);
+  document.getElementById('label').style.color = swatch.word;
+  document.body.style.backgroundColor = swatch.hex; // fallback fill while three.js is still loading
+  updateBackdrop(swatch.hex, swatch.word);
 }
 
 // ---------- build the glass mark from the SVG ----------
@@ -492,22 +491,14 @@ function buildMark() {
 
 // ---------- build the swatch row ----------
 const swatchRow = document.getElementById('swatch-row');
-SWATCHES.forEach((hex, i) => {
+SWATCHES.forEach((swatch, i) => {
   const btn = document.createElement('button');
   btn.className = 'swatch';
   btn.type = 'button';
-  btn.title = hex;
-  btn.style.backgroundColor = hex;
+  btn.dataset.name = swatch.name;
+  btn.style.backgroundColor = swatch.hex;
   btn.addEventListener('click', () => applySwatch(i));
   swatchRow.appendChild(btn);
-});
-
-// ---------- transparent glass toggle ----------
-const glassToggle = document.getElementById('glass-toggle');
-glassToggle.addEventListener('click', () => {
-  transparentGlass = !transparentGlass;
-  glassToggle.classList.toggle('active', transparentGlass);
-  applyMarkColor();
 });
 
 buildMark();
@@ -536,7 +527,7 @@ function resize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  updateBackdrop(currentHex, currentIsDark);
+  updateBackdrop(currentHex, currentWordHex);
 }
 window.addEventListener('resize', resize);
 
