@@ -8,63 +8,17 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ovo&display=swap" rel="stylesheet">
 <style>
-  html, body { margin:0; padding:0; height:100%; overflow:hidden; }
-  body{
-    background-color:#0d0710;
-    transition:background-color 0.7s ease-in-out;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  html, body { margin:0; padding:0; height:100%; overflow:hidden; background:#ffffff; }
+  canvas { display:block; width:100%; height:100%; touch-action:none; }
+  #loading {
+    position:fixed; inset:0; z-index:10; display:flex; align-items:center; justify-content:center;
+    color:rgba(0,0,0,0.35); font:12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing:0.08em; text-transform:uppercase; pointer-events:none;
   }
-  canvas{ display:block; position:relative; z-index:1; width:100%; height:100%; touch-action:none; }
-  #bg-word{
-    position:fixed; z-index:0; inset:0; display:flex; align-items:center; justify-content:center;
-    font-family:'Ovo', serif; font-size:16vw; white-space:nowrap; color:#fff3f7;
-    pointer-events:none; user-select:none; transition:color 0.7s ease-in-out;
-  }
-  #label{
-    position:fixed; z-index:10; left:28px; bottom:26px; color:#fff3f7; opacity:0.9;
-    font-size:11px; letter-spacing:0.14em; text-transform:uppercase; font-weight:600;
-    pointer-events:none; transition:color 0.7s ease-in-out;
-  }
-  #label b{color:inherit;}
-  #loading{
-    position:fixed; z-index:10; inset:0; display:flex; align-items:center; justify-content:center;
-    color:#fff; opacity:0.4; font-size:12px; letter-spacing:0.08em; text-transform:uppercase;
-    font-family: inherit; pointer-events:none;
-  }
-
-  #theme-switch{
-    position:fixed; z-index:10; right:28px; bottom:24px; display:flex; align-items:center; gap:12px;
-    font-size:10.5px; letter-spacing:0.12em; font-weight:700; text-transform:uppercase;
-    color:#fff; opacity:0.85; user-select:none; flex-wrap:wrap; justify-content:flex-end;
-    max-width:calc(100vw - 56px);
-  }
-
-  #swatch-row{ display:flex; gap:8px; }
-  .swatch{
-    position:relative; width:28px; height:28px; border-radius:50%; cursor:pointer; padding:0;
-    border:2px solid rgba(255,255,255,0.35); box-shadow:0 0 6px rgba(0,0,0,0.25);
-    transition:transform 0.15s, border-color 0.2s;
-  }
-  .swatch:hover{ transform:scale(1.1); }
-  .swatch:active{ transform:scale(0.94); }
-  .swatch.active{ border-color:rgba(255,255,255,0.95); box-shadow:0 0 0 2px rgba(255,255,255,0.25), 0 0 6px rgba(0,0,0,0.25); }
-  .swatch::after{
-    content:attr(data-name);
-    position:absolute; bottom:calc(100% + 9px); left:50%; transform:translateX(-50%);
-    background:rgba(20,20,22,0.92); color:#fff; padding:4px 9px; border-radius:6px;
-    font-size:10px; letter-spacing:0.05em; text-transform:none; font-weight:600;
-    white-space:nowrap; opacity:0; pointer-events:none; transition:opacity 0.15s ease-in-out;
-  }
-  .swatch:hover::after{ opacity:1; }
 </style>
 </head>
 <body>
 <div id="loading">loading glass mark…</div>
-<div id="bg-word">HUMAN</div>
-<div id="label">GWI <b>·</b> interactive glass mark</div>
-<div id="theme-switch">
-  <div id="swatch-row"></div>
-</div>
 
 <script type="importmap">
 {
@@ -79,70 +33,57 @@
 import * as THREE from 'three';
 import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
 
+// The exact logo shape provided — used verbatim, only the fill color is irrelevant since the
+// mesh's own material overrides it.
 const SVG_SOURCE = `
 <svg width="650" height="650" viewBox="0 0 650 650" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M415.906 300.644C395.114 223.049 421.457 177.366 499.085 156.565C576.719 135.763 622.376 162.154 643.168 239.749C663.958 317.343 637.613 363.025 559.979 383.827C482.352 404.626 436.697 378.236 415.906 300.644Z" fill="#FF0077"/>
-<path d="M6.83408 410.251C-13.957 332.657 12.388 286.975 90.0221 266.173C91.7985 265.697 93.558 265.246 95.3009 264.82C119.572 258.884 142.716 245.671 154.549 223.663C165.444 203.399 164.822 179.122 158.295 157.06C157.701 155.049 157.124 153.001 156.565 150.917C135.763 73.2823 162.155 27.6255 239.749 6.83408C317.344 -13.957 363.025 12.3879 383.827 90.0221C404.627 167.65 378.237 213.304 300.644 234.096C299.986 234.272 299.331 234.445 298.678 234.614C273.685 241.099 249.93 254.934 237.702 277.677C226.459 298.588 226.886 323.602 233.302 346.461C233.57 347.418 233.835 348.383 234.096 349.356C234.195 349.726 234.293 350.095 234.39 350.463C241.017 375.646 255.009 399.564 277.944 411.895C299.027 423.231 324.235 422.852 347.304 416.464C347.984 416.275 348.668 416.089 349.356 415.904C426.951 395.113 472.634 421.455 493.435 499.084C514.237 576.718 487.846 622.375 410.251 643.166C332.657 663.957 286.975 637.612 266.173 559.978C265.62 557.915 265.101 555.875 264.615 553.858C258.815 529.771 245.754 506.783 223.933 495.05C203.832 484.241 179.739 484.909 157.877 491.462C155.605 492.143 153.285 492.8 150.917 493.435C73.2823 514.237 27.6255 487.846 6.83408 410.251Z" fill="#FF0077"/>
+<path d="M415.906 300.644C395.114 223.049 421.457 177.366 499.085 156.565C576.719 135.763 622.376 162.154 643.168 239.749C663.958 317.343 637.613 363.025 559.979 383.827C482.352 404.626 436.697 378.236 415.906 300.644Z" fill="#FDFDFD"/>
+<path d="M6.83408 410.251C-13.957 332.657 12.388 286.975 90.0221 266.173C91.7985 265.697 93.558 265.246 95.3009 264.82C119.572 258.884 142.716 245.671 154.549 223.663C165.444 203.399 164.822 179.122 158.295 157.06C157.701 155.049 157.124 153.001 156.565 150.917C135.763 73.2823 162.155 27.6255 239.749 6.83408C317.344 -13.957 363.025 12.3879 383.827 90.0221C404.627 167.65 378.237 213.304 300.644 234.096C299.986 234.272 299.331 234.445 298.678 234.614C273.685 241.099 249.93 254.934 237.702 277.677C226.459 298.588 226.886 323.602 233.302 346.461C233.57 347.418 233.835 348.383 234.096 349.356C234.195 349.726 234.293 350.095 234.39 350.463C241.017 375.646 255.009 399.564 277.944 411.895C299.027 423.231 324.235 422.852 347.304 416.464C347.984 416.275 348.668 416.089 349.356 415.904C426.951 395.113 472.634 421.455 493.435 499.084C514.237 576.718 487.846 622.375 410.251 643.166C332.657 663.957 286.975 637.612 266.173 559.978C265.62 557.915 265.101 555.875 264.615 553.858C258.815 529.771 245.754 506.783 223.933 495.05C203.832 484.241 179.739 484.909 157.877 491.462C155.605 492.143 153.285 492.8 150.917 493.435C73.2823 514.237 27.6255 487.846 6.83408 410.251Z" fill="#FDFDFD"/>
 </svg>`;
 
 // ---------- renderer / scene / camera ----------
 const canvas = document.createElement('canvas');
 document.body.appendChild(canvas);
 
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.15;
+renderer.toneMappingExposure = 1.1;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.setClearColor(0x000000, 0);
 
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xffffff);
 
 const camera = new THREE.PerspectiveCamera(36, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(0, 0, 12);
 
 // ---------- lights ----------
-scene.add(new THREE.AmbientLight(0xffffff, 0.06));
+scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-const keyLight = new THREE.PointLight(0xffffff, 110, 60, 2);
+const keyLight = new THREE.PointLight(0xffffff, 90, 60, 2);
 keyLight.position.set(6, 7, 8);
 scene.add(keyLight);
 
-const pinkLight = new THREE.PointLight(0xffffff, 70, 60, 2);
-pinkLight.position.set(-7, -3, 6);
-scene.add(pinkLight);
+const fillLight = new THREE.PointLight(0xffffff, 50, 60, 2);
+fillLight.position.set(-7, -3, 6);
+scene.add(fillLight);
 
-const goldLight = new THREE.PointLight(0xffffff, 40, 60, 2);
-goldLight.position.set(4, -6, 5);
-scene.add(goldLight);
+const rimLight = new THREE.PointLight(0xffffff, 40, 60, 2);
+rimLight.position.set(0, -6, 5);
+scene.add(rimLight);
 
-const sparkleLight = new THREE.PointLight(0xffffff, 35, 20, 2);
-sparkleLight.position.set(1.5, 2, 6);
-scene.add(sparkleLight);
-
-// ---------- custom colourful environment (baked to PMREM) ----------
-function gradientTexture(stops, size = 512) {
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
-  const ctx = c.getContext('2d');
-  const g = ctx.createLinearGradient(0, 0, size * 0.35, size);
-  stops.forEach(([offset, color]) => g.addColorStop(offset, color));
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, size, size);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
-function buildEnvironment({ backdropStops, panels }) {
+// ---------- neutral studio environment (baked to PMREM), just for crisp reflections/highlights ----------
+function buildEnvironment() {
   const envScene = new THREE.Scene();
   const geo = new THREE.PlaneGeometry(60, 60);
-
-  const backdrop = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: gradientTexture(backdropStops) }));
-  backdrop.position.set(0, 0, -35);
-  envScene.add(backdrop);
-
+  const panels = [
+    { color: '#ffffff', pos: [0, 0, -35], rot: [0, 0, 0] },
+    { color: '#e2e2e2', pos: [35, 0, 0], rot: [0, -Math.PI / 2, 0] },
+    { color: '#f4f4f4', pos: [-35, 0, 0], rot: [0, Math.PI / 2, 0] },
+    { color: '#ffffff', pos: [0, 35, 0], rot: [Math.PI / 2, 0, 0] },
+    { color: '#c9c9c9', pos: [0, -35, 0], rot: [-Math.PI / 2, 0, 0] },
+  ];
   panels.forEach(p => {
     const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: p.color }));
     mesh.position.set(...p.pos);
@@ -151,210 +92,50 @@ function buildEnvironment({ backdropStops, panels }) {
   });
   const pmrem = new THREE.PMREMGenerator(renderer);
   pmrem.compileEquirectangularShader();
-  const rt = pmrem.fromScene(envScene, 0.1);
+  const rt = pmrem.fromScene(envScene, 0.04);
   pmrem.dispose();
   return rt.texture;
 }
+scene.environment = buildEnvironment();
 
-const THEMES = {
-  blush: {
-    env: buildEnvironment({
-      backdropStops: [
-        [0, '#ffffff'],
-        [0.35, '#dfe1e6'],
-        [0.7, '#aab0bd'],
-        [1, '#6b7280'],
-      ],
-      panels: [
-        { color: '#f2f2f2', pos: [35, 8, 0], rot: [0, -Math.PI / 2, 0] },
-        { color: '#c7cad1', pos: [-35, -8, 0], rot: [0, Math.PI / 2, 0] },
-        { color: '#ffffff', pos: [0, 35, 4], rot: [Math.PI / 2, 0, 0] },
-        { color: '#8a8f99', pos: [0, -35, 4], rot: [-Math.PI / 2, 0, 0] },
-        { color: '#2b2e35', pos: [0, 0, 35], rot: [0, Math.PI, 0] },
-      ],
-    }),
-    attenuationColor: '#ffffff',
-    attenuationDistance: 40,
-    lights: { key: '#ffffff', pink: '#ffffff', gold: '#ffffff', keyI: 110, pinkI: 70, goldI: 40 },
-  },
-  black: {
-    env: buildEnvironment({
-      backdropStops: [
-        [0, '#000000'],
-        [0.55, '#141414'],
-        [0.82, '#3a3a3a'],
-        [1, '#ffffff'],
-      ],
-      panels: [
-        { color: '#e6e6e6', pos: [35, 8, 0], rot: [0, -Math.PI / 2, 0] },
-        { color: '#000000', pos: [-35, -8, 0], rot: [0, Math.PI / 2, 0] },
-        { color: '#ffffff', pos: [0, 35, 4], rot: [Math.PI / 2, 0, 0] },
-        { color: '#1a1a1a', pos: [0, -35, 4], rot: [-Math.PI / 2, 0, 0] },
-        { color: '#000000', pos: [0, 0, 35], rot: [0, Math.PI, 0] },
-      ],
-    }),
-    attenuationColor: '#ffffff',
-    attenuationDistance: 40,
-    lights: { key: '#ffffff', pink: '#ffffff', gold: '#ffffff', keyI: 70, pinkI: 110, goldI: 20 },
-  },
-};
-
-// ---------- brand background/type pairings ----------
-// Matches the GWI logo-treatment reference sheet exactly: each background is the page
-// background for that mode, and "word" is the color the background's own logo uses there —
-// the fixed HUMAN watermark (and the caption) take that same color.
-const SWATCHES = [
-  { name: 'Neutral 10', hex: '#FDFDFD', word: '#FF0077' },
-  { name: 'Neutral 20', hex: '#F7F6F7', word: '#191B1E' },
-  { name: 'Neutral 100', hex: '#191B1E', word: '#F7F6F7' },
-  { name: 'Lime Light', hex: '#EDFFB8', word: '#729508' },
-  { name: 'Pink Dark', hex: '#CC005F', word: '#FFE8F3' },
-  { name: 'Orange Light', hex: '#FFE3D1', word: '#D5661B' },
-];
-const DISSOLVE_MS = 700;
-
-let swatchIndex = 0;
-
-function relativeLuminance(hex) {
-  const c = new THREE.Color(hex);
-  return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
-}
-
-// Everything about a swatch (the baked environment/lighting that goes with it) that gets
-// crossfaded when switching — never applied instantly. The mark's base color stays white:
-// the actual "see-through" now comes from real transmission of the backdrop plane (which
-// carries the flat color + HUMAN text) sitting behind the mark in the scene, refracted
-// through the glass.
-function targetForIndex(index) {
-  const hex = SWATCHES[index].hex;
-  const envName = relativeLuminance(hex) < 0.4 ? 'black' : 'blush';
-  const t = THEMES[envName];
-  return {
-    envName,
-    mark: new THREE.Color('#ffffff'),
-    key: new THREE.Color(t.lights.key),
-    pink: new THREE.Color(t.lights.pink),
-    gold: new THREE.Color(t.lights.gold),
-    keyI: t.lights.keyI, pinkI: t.lights.pinkI, goldI: t.lights.goldI,
-    atten: new THREE.Color(t.attenuationColor),
-    attenDist: t.attenuationDistance,
-  };
-}
-
-function snapshotCurrent() {
-  return {
-    mark: (markMaterial ? markMaterial.color : new THREE.Color(1, 1, 1)).clone(),
-    key: keyLight.color.clone(), pink: pinkLight.color.clone(), gold: goldLight.color.clone(),
-    keyI: keyLight.intensity, pinkI: pinkLight.intensity, goldI: goldLight.intensity,
-    atten: (markMaterial ? markMaterial.attenuationColor : new THREE.Color('#ffb8d9')).clone(),
-    attenDist: markMaterial ? markMaterial.attenuationDistance : 2.2,
-  };
-}
-
-let currentEnvName = null;
-let dissolve = null; // { from, to, start }
-
-function beginDissolve(target) {
-  if (target.envName !== currentEnvName) {
-    currentEnvName = target.envName;
-    scene.environment = THEMES[target.envName].env; // reflections swap immediately; color dissolves
-  }
-  dissolve = { from: snapshotCurrent(), to: target, start: performance.now() };
-}
-
-function updateDissolve() {
-  if (!dissolve) return;
-  const p = Math.min(1, (performance.now() - dissolve.start) / DISSOLVE_MS);
-  const k = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; // ease-in-out
-  const { from, to } = dissolve;
-
-  if (markMaterial) {
-    markMaterial.color.copy(from.mark).lerp(to.mark, k);
-    markMaterial.attenuationColor.copy(from.atten).lerp(to.atten, k);
-    markMaterial.attenuationDistance = from.attenDist + (to.attenDist - from.attenDist) * k;
-  }
-  keyLight.color.copy(from.key).lerp(to.key, k);
-  pinkLight.color.copy(from.pink).lerp(to.pink, k);
-  goldLight.color.copy(from.gold).lerp(to.gold, k);
-  keyLight.intensity = from.keyI + (to.keyI - from.keyI) * k;
-  pinkLight.intensity = from.pinkI + (to.pinkI - from.pinkI) * k;
-  goldLight.intensity = from.goldI + (to.goldI - from.goldI) * k;
-
-  if (p >= 1) dissolve = null;
-}
-
-// ---------- backdrop plane — real scene content, so the glass genuinely refracts/warps it ----------
+// ---------- backdrop: white plane with "HUMAN" in black, filling the whole frustum ----------
+// There's only one fixed background this time (no per-page color switching), so the plane can
+// safely cover the entire view — there's nothing behind it anywhere that ever needs to show
+// through, which is what caused edge-artifact problems the last time this was built.
 let backdropMesh = null;
-let currentHex = SWATCHES[0].hex;
-let currentWordHex = SWATCHES[0].word;
-const BACKDROP_Z = -3; // close behind the (very thin) mark, so refraction bends the letters without missing them entirely
+const BACKDROP_Z = -3; // close behind the (thin) mark, so refraction bends the word without missing it
 
-// Flat color ONLY — deliberately no text. This plane is what real transmission automatically
-// samples through the glass, and Three's transmission always shows exactly what's actually in
-// the scene there; no amount of blur reliably hides a real letter shape at every view angle.
-// The word itself now lives purely in the "#bg-word" DOM layer (outside the glass) and in the
-// mark's own custom zoom shader (inside the glass) — so there is nothing left for transmission
-// to leak, by construction, rather than by tuning.
-function buildBackdropTexture(hex) {
+function buildBackdropTexture() {
   const width = 1600;
   const height = Math.round(width / camera.aspect);
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = hex;
+  ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = '#000000';
+  ctx.font = `${Math.round(width * 0.16)}px Ovo, serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('HUMAN', width / 2, height / 2);
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
-// A pure letter-shape mask sampled by the mark's custom zoom shader (see buildMark below).
-// Only alpha is read there — it multiplies down whatever color the glass is already
-// showing, so the "zoomed" letters are always the exact same color as their surroundings,
-// just a shade darker, instead of injecting an independent color that could mismatch.
-function buildMagnifyTexture() {
-  const width = 1600;
-  const height = Math.round(width / camera.aspect);
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'rgba(0,0,0,1)';
-  ctx.font = `${Math.round(width * 0.16)}px Ovo, serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('HUMAN', width / 2, height / 2);
-  return new THREE.CanvasTexture(canvas);
-}
-
-// backdropVisibleSize always tracks the FULL frustum — it defines the world-space area the
-// zoom shader maps to the zoom texture's UV range, which must line up with the "#bg-word" DOM
-// element (sized relative to the full viewport), regardless of how big the backdrop MESH itself is.
-const backdropVisibleSize = new THREE.Vector2(1, 1);
-// The mesh itself, though, is deliberately much smaller than the frustum — just big enough to
-// stay behind the mark across its whole range of drifting/mouse-driven motion. If it filled the
-// frustum (as it used to, back when it also carried the word), it would opaquely cover the new
-// "#bg-word" DOM layer everywhere, not just behind the glass.
-// Sized to sit just inside the mark's own rounded silhouette (a circle, not a square — a
-// square plane's corners stuck out past the mark's rounded outline and read as a visible box).
-// It tracks pivot.position (translate only, never rotation) every frame in animate() instead of
-// being sized for the mark's whole range of drifting motion, so it only ever needs to be as big
-// as the mark itself.
-const BACKDROP_MESH_RADIUS = 1.65;
+// Scales the plane so it exactly fills the camera's frustum at its depth — no oversized margin.
 function fitBackdropToView() {
+  if (!backdropMesh) return;
   const distance = camera.position.z - BACKDROP_Z;
   const vFov = (camera.fov * Math.PI) / 180;
   const visibleHeight = 2 * Math.tan(vFov / 2) * distance;
   const visibleWidth = visibleHeight * camera.aspect;
-  backdropVisibleSize.set(visibleWidth, visibleHeight);
-  if (backdropMesh) backdropMesh.scale.set(BACKDROP_MESH_RADIUS, BACKDROP_MESH_RADIUS, 1);
+  backdropMesh.scale.set(visibleWidth, visibleHeight, 1);
 }
 
 function buildBackdrop() {
-  const geo = new THREE.CircleGeometry(1, 64);
-  // toneMapped:false — this plane carries exact brand hex values (background + word), so it
-  // must bypass the renderer's ACES filmic curve, which would otherwise shift/desaturate them.
+  const geo = new THREE.PlaneGeometry(1, 1);
   const mat = new THREE.MeshBasicMaterial({ map: null, toneMapped: false });
   backdropMesh = new THREE.Mesh(geo, mat);
   backdropMesh.position.set(0, 0, BACKDROP_Z);
@@ -362,121 +143,38 @@ function buildBackdrop() {
   fitBackdropToView();
 }
 
-function updateBackdrop(hex, wordHex) {
-  currentHex = hex;
-  currentWordHex = wordHex;
+function refreshBackdropTexture() {
   if (!backdropMesh) return;
   fitBackdropToView();
   const old = backdropMesh.material.map;
-  backdropMesh.material.map = buildBackdropTexture(hex);
+  backdropMesh.material.map = buildBackdropTexture();
   backdropMesh.material.needsUpdate = true;
   if (old) old.dispose();
-
-  if (markMaterial && markMaterial.userData.zoomShader) {
-    const shader = markMaterial.userData.zoomShader;
-    shader.uniforms.uWordColor.value.set(wordHex);
-    const oldZoom = shader.uniforms.uZoomMap.value;
-    shader.uniforms.uZoomMap.value = buildMagnifyTexture();
-    shader.uniforms.uBackdropSize.value.copy(backdropVisibleSize);
-    if (oldZoom) oldZoom.dispose();
-  }
 }
 
-function renderSwatchRow() {
-  document.querySelectorAll('.swatch').forEach((btn, i) => {
-    btn.classList.toggle('active', i === swatchIndex);
-  });
-}
-
-function applySwatch(index) {
-  swatchIndex = index;
-  const swatch = SWATCHES[index];
-  beginDissolve(targetForIndex(index));
-  renderSwatchRow();
-  document.getElementById('label').style.color = swatch.word;
-  document.body.style.backgroundColor = swatch.hex; // fallback fill while three.js is still loading
-  document.getElementById('bg-word').style.color = swatch.word;
-  updateBackdrop(swatch.hex, swatch.word);
-}
-
-// ---------- build the glass mark from the SVG ----------
+// ---------- build the glass mark from the exact SVG shape ----------
 const pivot = new THREE.Group();
 scene.add(pivot);
-let markMaterial = null;
 
 function buildMark() {
   const loader = new SVGLoader();
   const svgData = loader.parse(SVG_SOURCE);
 
-  const material = markMaterial = new THREE.MeshPhysicalMaterial({
+  const material = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
     metalness: 0,
-    roughness: 0.05,   // crystal-clear, sharp reflections — high roughness was flattening the mark's own depth/shape, not just blurring the backdrop
+    roughness: 0.05,      // crystal-clear, sharp reflections
     transmission: 1,
-    thickness: 3.5,           // this is what makes it angle-sensitive — bigger thickness = bigger sample shift per degree of tilt
-    ior: 1.6,
-    clearcoat: 0.6,
+    thickness: 2.2,        // how strongly the refracted word shifts/warps as the mark tilts
+    ior: 1.5,
+    clearcoat: 0.7,
     clearcoatRoughness: 0.05,
-    specularIntensity: 0.7,
-    envMapIntensity: 1.1,
+    specularIntensity: 0.8,
+    envMapIntensity: 1.2,
     attenuationColor: new THREE.Color('#ffffff'),
-    attenuationDistance: 40,
-    side: THREE.DoubleSide,    // see both the near and far interior surfaces through the shape
+    attenuationDistance: 30,
+    side: THREE.DoubleSide, // see both the near and far interior surfaces through the shape
   });
-
-  // Real transmission only ever shifts the sampled point sideways — it can never magnify.
-  // To get an actual "seen through a lens" zoom, sample the fixed backdrop word ourselves,
-  // in world space (so it's tied to where the glass really is, not baked onto its own UVs),
-  // scaled in toward the mark's own center.
-  material.onBeforeCompile = (shader) => {
-    shader.uniforms.uZoomMap = { value: null };
-    shader.uniforms.uZoomFactor = { value: 1.15 }; // slightly smaller than the real backdrop scale (size ~ 1/factor)
-    shader.uniforms.uBackdropSize = { value: backdropVisibleSize };
-    shader.uniforms.uZoomStrength = { value: 0.55 }; // how strongly the letters pull toward the swatch's word color
-    shader.uniforms.uWordColor = { value: new THREE.Color(currentWordHex) }; // same hex as the background word — kept in sync in updateBackdrop
-    shader.uniforms.uEdgeDispersion = { value: 0.4 };       // rainbow rim strength at the mark's own grazing-angle silhouette
-
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vZoomWorldPos;')
-      .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvZoomWorldPos = worldPosition.xyz;');
-
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
-        '#include <common>',
-        `#include <common>
-        varying vec3 vZoomWorldPos;
-        uniform sampler2D uZoomMap;
-        uniform float uZoomFactor;
-        uniform vec2 uBackdropSize;
-        uniform float uZoomStrength;
-        uniform vec3 uWordColor;
-        uniform float uEdgeDispersion;
-        vec3 dispersionRainbow(float t) {
-          return 0.5 + 0.5 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67)));
-        }`,
-      )
-      .replace(
-        '#include <dithering_fragment>',
-        `
-        {
-          // Pulls the glass's own already-lit color toward the swatch's word color where a
-          // letter stroke falls — the exact same uWordColor driving the plain background
-          // word, so the "zoomed" letters read as that brand color, not a generic shadow.
-          vec2 zUv = (vZoomWorldPos.xy / uBackdropSize) * uZoomFactor + 0.5;
-          vec4 zoomSample = texture2D(uZoomMap, zUv);
-          gl_FragColor.rgb = mix(gl_FragColor.rgb, uWordColor, zoomSample.a * uZoomStrength);
-
-          // A thin rainbow rim at the mark's own silhouette, brightest at grazing angles —
-          // light splitting into a spectrum right at the glass's own edge, not on the type.
-          float rim = pow(1.0 - clamp(abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0), 4.0);
-          float hue = atan(normal.y, normal.x) / 6.28318;
-          gl_FragColor.rgb += dispersionRainbow(hue) * rim * uEdgeDispersion;
-        }
-        #include <dithering_fragment>`,
-      );
-
-    material.userData.zoomShader = shader;
-  };
 
   const content = new THREE.Group();
 
@@ -486,8 +184,8 @@ function buildMark() {
       const geometry = new THREE.ExtrudeGeometry(shape, {
         depth: 70,
         bevelEnabled: true,
-        bevelThickness: 34,   // bevel now covers most of the depth -> the face is a proper dome/lens,
-        bevelSize: 30,        // not a flat disc with a rounded edge, so refraction bends visibly everywhere
+        bevelThickness: 34, // bevel covers most of the depth -> a proper dome/lens face, not a flat disc
+        bevelSize: 30,
         bevelSegments: 18,
         curveSegments: 32,
       });
@@ -510,22 +208,10 @@ function buildMark() {
   pivot.add(content);
 }
 
-// ---------- build the swatch row ----------
-const swatchRow = document.getElementById('swatch-row');
-SWATCHES.forEach((swatch, i) => {
-  const btn = document.createElement('button');
-  btn.className = 'swatch';
-  btn.type = 'button';
-  btn.dataset.name = swatch.name;
-  btn.style.backgroundColor = swatch.hex;
-  btn.addEventListener('click', () => applySwatch(i));
-  swatchRow.appendChild(btn);
-});
-
-buildMark();
 buildBackdrop();
+buildMark();
 document.fonts.load('260px Ovo').catch(() => {}).finally(() => {
-  applySwatch(0);
+  refreshBackdropTexture();
   document.getElementById('loading').remove();
 });
 
@@ -548,31 +234,23 @@ function resize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  updateBackdrop(currentHex, currentWordHex);
+  refreshBackdropTexture();
 }
 window.addEventListener('resize', resize);
 
 function animate() {
   requestAnimationFrame(animate);
   idle += 0.0035;
-  updateDissolve();
 
   targetRot.x = -mouse.y * 0.55;
-  targetRot.y = mouse.x * 0.7;
+  targetRot.y = mouse.x * 0.7 + Math.sin(idle) * 0.08;
   targetPos.x = mouse.x * 1.4;
-  targetPos.y = -mouse.y * 0.9;
+  targetPos.y = -mouse.y * 0.9 + Math.sin(idle * 1.3) * 0.15;
 
   pivot.rotation.x += (targetRot.x - pivot.rotation.x) * 0.06;
-  pivot.rotation.y += (targetRot.y + Math.sin(idle) * 0.08 - pivot.rotation.y) * 0.06;
+  pivot.rotation.y += (targetRot.y - pivot.rotation.y) * 0.06;
   pivot.position.x += (targetPos.x - pivot.position.x) * 0.08;
-  pivot.position.y += (targetPos.y + Math.sin(idle * 1.3) * 0.15 - pivot.position.y) * 0.08;
-
-  // Track the mark's translation (not its rotation) so the flat backdrop patch that feeds
-  // transmission always sits directly behind it, without following it all the way round.
-  if (backdropMesh) {
-    backdropMesh.position.x = pivot.position.x;
-    backdropMesh.position.y = pivot.position.y;
-  }
+  pivot.position.y += (targetPos.y - pivot.position.y) * 0.08;
 
   keyLight.position.x = 6 + mouse.x * 2;
   keyLight.position.y = 7 - mouse.y * 2;
