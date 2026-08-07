@@ -104,11 +104,11 @@ const keyLight = new THREE.PointLight(0xffffff, 110, 60, 2);
 keyLight.position.set(6, 7, 8);
 scene.add(keyLight);
 
-const pinkLight = new THREE.PointLight(0xff0077, 70, 60, 2);
+const pinkLight = new THREE.PointLight(0xffffff, 70, 60, 2);
 pinkLight.position.set(-7, -3, 6);
 scene.add(pinkLight);
 
-const goldLight = new THREE.PointLight(0xffc27a, 40, 60, 2);
+const goldLight = new THREE.PointLight(0xffffff, 40, 60, 2);
 goldLight.position.set(4, -6, 5);
 scene.add(goldLight);
 
@@ -155,42 +155,42 @@ const THEMES = {
   blush: {
     env: buildEnvironment({
       backdropStops: [
-        [0, '#FFE3EE'],
-        [0.35, '#FF6FB0'],
-        [0.7, '#C24FE0'],
-        [1, '#5461C8'],
+        [0, '#ffffff'],
+        [0.35, '#dfe1e6'],
+        [0.7, '#aab0bd'],
+        [1, '#6b7280'],
       ],
       panels: [
-        { color: '#FFD37A', pos: [35, 8, 0], rot: [0, -Math.PI / 2, 0] },
-        { color: '#B98CFF', pos: [-35, -8, 0], rot: [0, Math.PI / 2, 0] },
-        { color: '#FFFFFF', pos: [0, 35, 4], rot: [Math.PI / 2, 0, 0] },
-        { color: '#5461C8', pos: [0, -35, 4], rot: [-Math.PI / 2, 0, 0] },
-        { color: '#3A1030', pos: [0, 0, 35], rot: [0, Math.PI, 0] },
+        { color: '#f2f2f2', pos: [35, 8, 0], rot: [0, -Math.PI / 2, 0] },
+        { color: '#c7cad1', pos: [-35, -8, 0], rot: [0, Math.PI / 2, 0] },
+        { color: '#ffffff', pos: [0, 35, 4], rot: [Math.PI / 2, 0, 0] },
+        { color: '#8a8f99', pos: [0, -35, 4], rot: [-Math.PI / 2, 0, 0] },
+        { color: '#2b2e35', pos: [0, 0, 35], rot: [0, Math.PI, 0] },
       ],
     }),
     attenuationColor: '#ffffff',
     attenuationDistance: 40,
-    lights: { key: '#ffffff', pink: '#ff0077', gold: '#ffc27a', keyI: 110, pinkI: 70, goldI: 40 },
+    lights: { key: '#ffffff', pink: '#ffffff', gold: '#ffffff', keyI: 110, pinkI: 70, goldI: 40 },
   },
   black: {
     env: buildEnvironment({
       backdropStops: [
         [0, '#000000'],
-        [0.55, '#0c0509'],
-        [0.82, '#3a0a22'],
-        [1, '#FF0077'],
+        [0.55, '#141414'],
+        [0.82, '#3a3a3a'],
+        [1, '#ffffff'],
       ],
       panels: [
-        { color: '#FF0077', pos: [35, 8, 0], rot: [0, -Math.PI / 2, 0] },
+        { color: '#e6e6e6', pos: [35, 8, 0], rot: [0, -Math.PI / 2, 0] },
         { color: '#000000', pos: [-35, -8, 0], rot: [0, Math.PI / 2, 0] },
-        { color: '#FFFFFF', pos: [0, 35, 4], rot: [Math.PI / 2, 0, 0] },
-        { color: '#12070d', pos: [0, -35, 4], rot: [-Math.PI / 2, 0, 0] },
+        { color: '#ffffff', pos: [0, 35, 4], rot: [Math.PI / 2, 0, 0] },
+        { color: '#1a1a1a', pos: [0, -35, 4], rot: [-Math.PI / 2, 0, 0] },
         { color: '#000000', pos: [0, 0, 35], rot: [0, Math.PI, 0] },
       ],
     }),
     attenuationColor: '#ffffff',
     attenuationDistance: 40,
-    lights: { key: '#ffffff', pink: '#ff0077', gold: '#ff2f8f', keyI: 70, pinkI: 110, goldI: 20 },
+    lights: { key: '#ffffff', pink: '#ffffff', gold: '#ffffff', keyI: 70, pinkI: 110, goldI: 20 },
   },
 };
 
