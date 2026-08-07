@@ -302,28 +302,23 @@ function buildBackdropTexture(hex, isDark) {
   return tex;
 }
 
-// A bolder-contrast rendering of the same word, sampled by the mark's custom zoom shader
-// (see applyZoomShader below) — needs more ink than the subtle backdrop watermark so the
-// magnified crop actually reads clearly.
-function buildMagnifyTexture(hex, isDark) {
+// A pure letter-shape mask sampled by the mark's custom zoom shader (see buildMark below).
+// Only alpha is read there — it multiplies down whatever color the glass is already
+// showing, so the "zoomed" letters are always the exact same color as their surroundings,
+// just a shade darker, instead of injecting an independent color that could mismatch.
+function buildMagnifyTexture() {
   const width = 1600;
   const height = Math.round(width / camera.aspect);
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
-  // Left transparent everywhere except the letters — otherwise a flat, fully-opaque fill
-  // would blend over the glass's own reflections uniformly and flatten the whole look.
-  // Same subtle tone/opacity as the fixed backdrop watermark — this should read as the
-  // same word, just barely larger, not a bolder graphic.
-  ctx.fillStyle = isDark ? 'rgba(255,255,255,0.11)' : 'rgba(0,0,0,0.09)';
+  ctx.fillStyle = 'rgba(0,0,0,1)';
   ctx.font = `${Math.round(width * 0.16)}px Ovo, serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('HUMAN', width / 2, height / 2);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+  return new THREE.CanvasTexture(canvas);
 }
 
 // Scales the plane so it exactly fills the camera's frustum at its depth — no oversized margin.
@@ -360,7 +355,7 @@ function updateBackdrop(hex, isDark) {
   if (markMaterial && markMaterial.userData.zoomShader) {
     const shader = markMaterial.userData.zoomShader;
     const oldZoom = shader.uniforms.uZoomMap.value;
-    shader.uniforms.uZoomMap.value = buildMagnifyTexture(hex, isDark);
+    shader.uniforms.uZoomMap.value = buildMagnifyTexture();
     shader.uniforms.uBackdropSize.value.copy(backdropVisibleSize);
     if (oldZoom) oldZoom.dispose();
   }
@@ -398,7 +393,7 @@ function buildMark() {
   const material = markMaterial = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
     metalness: 0,
-    roughness: 0.32,   // blurs what real transmission shows of the backdrop (incl. its text) into an indistinct soft glow, so it doesn't compete with our own crisp zoomed text sample below
+    roughness: 0.46,   // blurs what real transmission shows of the backdrop (incl. its text) into an indistinct soft glow, so it doesn't compete with our own crisp zoomed text sample below
     transmission: 1,
     thickness: 3.5,           // this is what makes it angle-sensitive — bigger thickness = bigger sample shift per degree of tilt
     ior: 1.6,
@@ -419,6 +414,7 @@ function buildMark() {
     shader.uniforms.uZoomMap = { value: null };
     shader.uniforms.uZoomFactor = { value: 0.97 }; // ~3% larger than the real backdrop scale — subtle, not a dramatic zoom
     shader.uniforms.uBackdropSize = { value: backdropVisibleSize };
+    shader.uniforms.uZoomStrength = { value: 0.22 }; // how much the letters darken the glass locally — "a tiny shade darker"
 
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vZoomWorldPos;')
@@ -427,15 +423,18 @@ function buildMark() {
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        '#include <common>\nvarying vec3 vZoomWorldPos;\nuniform sampler2D uZoomMap;\nuniform float uZoomFactor;\nuniform vec2 uBackdropSize;',
+        '#include <common>\nvarying vec3 vZoomWorldPos;\nuniform sampler2D uZoomMap;\nuniform float uZoomFactor;\nuniform vec2 uBackdropSize;\nuniform float uZoomStrength;',
       )
       .replace(
         '#include <dithering_fragment>',
         `
         {
+          // Darkens the glass's own already-lit color where a letter stroke falls — never
+          // injects an independent color, so the "zoomed" letters can never mismatch the
+          // glass's actual tone (matching the real, unshifted word underneath by construction).
           vec2 zUv = (vZoomWorldPos.xy / uBackdropSize) * uZoomFactor + 0.5;
           vec4 zoomSample = texture2D(uZoomMap, zUv);
-          gl_FragColor.rgb = mix(gl_FragColor.rgb, zoomSample.rgb, zoomSample.a);
+          gl_FragColor.rgb *= (1.0 - zoomSample.a * uZoomStrength);
         }
         #include <dithering_fragment>`,
       );
