@@ -206,15 +206,25 @@ function buildMark() {
   // light splitting into a spectrum at the glass's edge, same as real dispersion in a prism.
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uEdgeDispersion = { value: 0.55 };
+    // Three ties the transmitted image's blur directly to material.roughness — but that's also
+    // what controls the surface's own reflections, and we want those crisp (for the edge
+    // highlight "strokes") while the word seen THROUGH the glass is soft, like real frosted
+    // glass. Patching the transmission call to read a separate uniform decouples the two.
+    shader.uniforms.uTransmissionRoughness = { value: 0.22 };
 
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
         `#include <common>
         uniform float uEdgeDispersion;
+        uniform float uTransmissionRoughness;
         vec3 dispersionRainbow(float t) {
           return 0.5 + 0.5 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67)));
         }`,
+      )
+      .replace(
+        'n, v, material.roughness, material.diffuseColor, material.specularColor, material.specularF90,',
+        'n, v, uTransmissionRoughness, material.diffuseColor, material.specularColor, material.specularF90,',
       )
       .replace(
         '#include <dithering_fragment>',
