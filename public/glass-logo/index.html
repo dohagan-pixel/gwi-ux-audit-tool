@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>GWI — interactive glass mark</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  html, body { margin:0; padding:0; height:100%; overflow:hidden; background:#0d0710; }
+  body{
+    background:
+      radial-gradient(circle at 30% 25%, #2a1a2e 0%, #150a17 45%, #0a060c 100%);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  canvas{ display:block; width:100%; height:100%; touch-action:none; }
+  #label{
+    position:fixed; left:28px; bottom:26px; color:#fff3f7; opacity:0.55;
+    font-size:11px; letter-spacing:0.14em; text-transform:uppercase; font-weight:600;
+    pointer-events:none; mix-blend-mode:screen;
+  }
+  #label b{color:#FF6FA8;}
+  #loading{
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#fff; opacity:0.4; font-size:12px; letter-spacing:0.08em; text-transform:uppercase;
+    font-family: inherit; pointer-events:none;
+  }
+
+  #theme-switch{
+    position:fixed; right:28px; bottom:24px; display:flex; align-items:center; gap:10px;
+    font-size:10.5px; letter-spacing:0.12em; font-weight:700; text-transform:uppercase;
+    color:#fff; opacity:0.65; user-select:none;
+  }
+  #theme-switch .opt{cursor:pointer; transition:opacity 0.25s;}
+  #theme-switch .opt.active{opacity:1;}
+  #theme-switch .opt:not(.active){opacity:0.4;}
+  #theme-switch .track{
+    position:relative; width:44px; height:24px; border-radius:12px; cursor:pointer;
+    background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.25);
+    transition:background 0.3s;
+  }
+  #theme-switch .knob{
+    position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%;
+    background:#FF0077; box-shadow:0 0 8px rgba(255,0,119,0.7);
+    transition:transform 0.3s cubic-bezier(.4,0,.2,1), background 0.3s;
+  }
+  #theme-switch.is-black .knob{ transform:translateX(20px); background:#fff; box-shadow:0 0 8px rgba(255,255,255,0.5); }
+</style>
+</head>
+<body>
+<div id="loading">loading glass mark…</div>
+<div id="label">GWI <b>·</b> interactive glass mark</div>
+<div id="theme-switch">
+  <span class="opt active" data-theme="blush">Blush</span>
+  <div class="track"><div class="knob"></div></div>
+  <span class="opt" data-theme="black">Black</span>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
+
+const SVG_SOURCE = `
+<svg width="650" height="650" viewBox="0 0 650 650" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M415.906 300.644C395.114 223.049 421.457 177.366 499.085 156.565C576.719 135.763 622.376 162.154 643.168 239.749C663.958 317.343 637.613 363.025 559.979 383.827C482.352 404.626 436.697 378.236 415.906 300.644Z" fill="#FF0077"/>
+<path d="M6.83408 410.251C-13.957 332.657 12.388 286.975 90.0221 266.173C91.7985 265.697 93.558 265.246 95.3009 264.82C119.572 258.884 142.716 245.671 154.549 223.663C165.444 203.399 164.822 179.122 158.295 157.06C157.701 155.049 157.124 153.001 156.565 150.917C135.763 73.2823 162.155 27.6255 239.749 6.83408C317.344 -13.957 363.025 12.3879 383.827 90.0221C404.627 167.65 378.237 213.304 300.644 234.096C299.986 234.272 299.331 234.445 298.678 234.614C273.685 241.099 249.93 254.934 237.702 277.677C226.459 298.588 226.886 323.602 233.302 346.461C233.57 347.418 233.835 348.383 234.096 349.356C234.195 349.726 234.293 350.095 234.39 350.463C241.017 375.646 255.009 399.564 277.944 411.895C299.027 423.231 324.235 422.852 347.304 416.464C347.984 416.275 348.668 416.089 349.356 415.904C426.951 395.113 472.634 421.455 493.435 499.084C514.237 576.718 487.846 622.375 410.251 643.166C332.657 663.957 286.975 637.612 266.173 559.978C265.62 557.915 265.101 555.875 264.615 553.858C258.815 529.771 245.754 506.783 223.933 495.05C203.832 484.241 179.739 484.909 157.877 491.462C155.605 492.143 153.285 492.8 150.917 493.435C73.2823 514.237 27.6255 487.846 6.83408 410.251Z" fill="#FF0077"/>
+</svg>`;
+
+// ---------- renderer / scene / camera ----------
+const canvas = document.createElement('canvas');
+document.body.appendChild(canvas);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.setClearColor(0x000000, 0);
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(36, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 0, 12);
+
+// ---------- lights ----------
+scene.add(new THREE.AmbientLight(0xffffff, 0.06));
+
+const keyLight = new THREE.PointLight(0xffffff, 110, 60, 2);
+keyLight.position.set(6, 7, 8);
+scene.add(keyLight);
+
+const pinkLight = new THREE.PointLight(0xff0077, 70, 60, 2);
+pinkLight.position.set(-7, -3, 6);
+scene.add(pinkLight);
+
+const goldLight = new THREE.PointLight(0xffc27a, 40, 60, 2);
+goldLight.position.set(4, -6, 5);
+scene.add(goldLight);
+
+const sparkleLight = new THREE.PointLight(0xffffff, 35, 20, 2);
+sparkleLight.position.set(1.5, 2, 6);
+scene.add(sparkleLight);
+
+// ---------- custom colourful environment (baked to PMREM) ----------
+function gradientTexture(stops, size = 512) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  const g = ctx.createLinearGradient(0, 0, size * 0.35, size);
+  stops.forEach(([offset, color]) => g.addColorStop(offset, color));
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function buildEnvironment({ backdropStops, panels }) {
+  const envScene = new THREE.Scene();
+  const geo = new THREE.PlaneGeometry(60, 60);
+
+  const backdrop = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: gradientTexture(backdropStops) }));
+  backdrop.position.set(0, 0, -35);
+  envScene.add(backdrop);
+
+  panels.forEach(p => {
+    const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: p.color }));
+    mesh.position.set(...p.pos);
+    mesh.rotation.set(...p.rot);
+    envScene.add(mesh);
+  });
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  pmrem.compileEquirectangularShader();
+  const rt = pmrem.fromScene(envScene, 0.1);
+  pmrem.dispose();
+  return rt.texture;
+}
+
+const THEMES = {
+  blush: {
+    env: buildEnvironment({
+      backdropStops: [
+        [0, '#FFE3EE'],
+        [0.35, '#FF6FB0'],
+        [0.7, '#C24FE0'],
+        [1, '#5461C8'],
+      ],
+      panels: [
+        { color: '#FFD37A', pos: [35, 8, 0], rot: [0, -Math.PI / 2, 0] },
+        { color: '#B98CFF', pos: [-35, -8, 0], rot: [0, Math.PI / 2, 0] },
+        { color: '#FFFFFF', pos: [0, 35, 4], rot: [Math.PI / 2, 0, 0] },
+        { color: '#5461C8', pos: [0, -35, 4], rot: [-Math.PI / 2, 0, 0] },
+        { color: '#3A1030', pos: [0, 0, 35], rot: [0, Math.PI, 0] },
+      ],
+    }),
+    attenuationColor: '#ffb8d9',
+    attenuationDistance: 2.2,
+    lights: { key: '#ffffff', pink: '#ff0077', gold: '#ffc27a', keyI: 110, pinkI: 70, goldI: 40 },
+  },
+  black: {
+    env: buildEnvironment({
+      backdropStops: [
+        [0, '#000000'],
+        [0.55, '#0c0509'],
+        [0.82, '#3a0a22'],
+        [1, '#FF0077'],
+      ],
+      panels: [
+        { color: '#FF0077', pos: [35, 8, 0], rot: [0, -Math.PI / 2, 0] },
+        { color: '#000000', pos: [-35, -8, 0], rot: [0, Math.PI / 2, 0] },
+        { color: '#FFFFFF', pos: [0, 35, 4], rot: [Math.PI / 2, 0, 0] },
+        { color: '#12070d', pos: [0, -35, 4], rot: [-Math.PI / 2, 0, 0] },
+        { color: '#000000', pos: [0, 0, 35], rot: [0, Math.PI, 0] },
+      ],
+    }),
+    attenuationColor: '#ff9dc4',
+    attenuationDistance: 2.0,
+    lights: { key: '#ffffff', pink: '#ff0077', gold: '#ff2f8f', keyI: 70, pinkI: 110, goldI: 20 },
+  },
+};
+
+let currentTheme = 'blush';
+function applyTheme(name) {
+  const t = THEMES[name];
+  scene.environment = t.env;
+  scene.background = t.env;
+  scene.backgroundBlurriness = 0.35;
+  scene.backgroundIntensity = 0.9;
+  keyLight.color.set(t.lights.key);
+  pinkLight.color.set(t.lights.pink);
+  goldLight.color.set(t.lights.gold);
+  keyLight.intensity = t.lights.keyI;
+  pinkLight.intensity = t.lights.pinkI;
+  goldLight.intensity = t.lights.goldI;
+  if (markMaterial) {
+    markMaterial.attenuationColor.set(t.attenuationColor);
+    markMaterial.attenuationDistance = t.attenuationDistance;
+  }
+  currentTheme = name;
+}
+
+// ---------- build the glass mark from the SVG ----------
+const pivot = new THREE.Group();
+scene.add(pivot);
+let markMaterial = null;
+
+function buildMark() {
+  const loader = new SVGLoader();
+  const svgData = loader.parse(SVG_SOURCE);
+
+  const material = markMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xffffff,
+    metalness: 0,
+    roughness: 0.015,
+    transmission: 1,
+    thickness: 1.8,
+    ior: 1.45,
+    clearcoat: 1,
+    clearcoatRoughness: 0.03,
+    specularIntensity: 1,
+    envMapIntensity: 2.6,
+    attenuationColor: new THREE.Color('#ffb8d9'),
+    attenuationDistance: 2.2,
+  });
+
+  const content = new THREE.Group();
+
+  svgData.paths.forEach(path => {
+    const shapes = SVGLoader.createShapes(path);
+    shapes.forEach(shape => {
+      const geometry = new THREE.ExtrudeGeometry(shape, {
+        depth: 70,
+        bevelEnabled: true,
+        bevelThickness: 22,
+        bevelSize: 20,
+        bevelSegments: 10,
+        curveSegments: 32,
+      });
+      geometry.computeVertexNormals();
+      const mesh = new THREE.Mesh(geometry, material);
+      content.add(mesh);
+    });
+  });
+
+  // center the mark on its own local origin
+  const box = new THREE.Box3().setFromObject(content);
+  const center = box.getCenter(new THREE.Vector3());
+  content.children.forEach(m => m.position.sub(center));
+
+  // fit to a consistent on-screen size regardless of source units
+  const size = box.getSize(new THREE.Vector3());
+  const scale = 3.6 / Math.max(size.x, size.y);
+  content.scale.set(scale, -scale, scale); // flip Y: SVG space -> GL space
+
+  pivot.add(content);
+}
+
+buildMark();
+applyTheme('blush');
+document.getElementById('loading').remove();
+
+// ---------- theme toggle ----------
+const switchEl = document.getElementById('theme-switch');
+switchEl.addEventListener('click', () => {
+  const next = currentTheme === 'blush' ? 'black' : 'blush';
+  applyTheme(next);
+  switchEl.classList.toggle('is-black', next === 'black');
+  switchEl.querySelectorAll('.opt').forEach(el => el.classList.toggle('active', el.dataset.theme === next));
+});
+
+// ---------- mouse-driven motion ----------
+const mouse = new THREE.Vector2(0, 0);
+const targetRot = new THREE.Vector2(0, 0);
+const targetPos = new THREE.Vector2(0, 0);
+let idle = 0;
+
+function onPointerMove(x, y) {
+  mouse.x = (x / window.innerWidth) * 2 - 1;
+  mouse.y = (y / window.innerHeight) * 2 - 1;
+}
+window.addEventListener('pointermove', e => onPointerMove(e.clientX, e.clientY));
+window.addEventListener('touchmove', e => {
+  if (e.touches[0]) onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+}, { passive: true });
+
+function resize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+window.addEventListener('resize', resize);
+
+function animate() {
+  requestAnimationFrame(animate);
+  idle += 0.0035;
+
+  targetRot.x = -mouse.y * 0.55;
+  targetRot.y = mouse.x * 0.7;
+  targetPos.x = mouse.x * 1.4;
+  targetPos.y = -mouse.y * 0.9;
+
+  pivot.rotation.x += (targetRot.x - pivot.rotation.x) * 0.06;
+  pivot.rotation.y += (targetRot.y + Math.sin(idle) * 0.08 - pivot.rotation.y) * 0.06;
+  pivot.position.x += (targetPos.x - pivot.position.x) * 0.08;
+  pivot.position.y += (targetPos.y + Math.sin(idle * 1.3) * 0.15 - pivot.position.y) * 0.08;
+
+  keyLight.position.x = 6 + mouse.x * 2;
+  keyLight.position.y = 7 - mouse.y * 2;
+
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
