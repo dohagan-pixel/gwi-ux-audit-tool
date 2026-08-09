@@ -81,11 +81,11 @@ camera.position.set(0, 0, 12);
 // underneath, regardless of how transparent the material itself is set to be.
 scene.add(new THREE.AmbientLight(0xffffff, 0.08));
 
-const keyLight = new THREE.PointLight(0xffffff, 130, 60, 2);
+const keyLight = new THREE.PointLight(0xffffff, 190, 60, 2); // up from 130, for stronger corner/edge highlights
 keyLight.position.set(3, 11, 6); // mostly overhead — this is what carves out a top ridge highlight
 scene.add(keyLight);
 
-const fillLight = new THREE.PointLight(0xffffff, 10, 60, 2); // just enough to keep the underside from going pure black
+const fillLight = new THREE.PointLight(0xffffff, 16, 60, 2); // up from 10, enough for the underside's corners to still read
 fillLight.position.set(-6, -8, 5);
 scene.add(fillLight);
 
@@ -294,8 +294,9 @@ function buildMark() {
     clearcoat: 0.6,
     clearcoatRoughness: 0.04,
     specularIntensity: 0.65,
-    envMapIntensity: 1.15, // the environment itself now carries the bright-top/dark-side
-                            // contrast, so it's worth showing clearly rather than muting it
+    envMapIntensity: 1.5, // up from 1.15 — reflections are mostly environment-driven on a
+                           // low-roughness surface like this, so this is the main lever for
+                           // making the corners/edges read clearly, more so than the point lights
     attenuationColor: new THREE.Color('#ffffff'),
     attenuationDistance: 60, // was 30 — even less color absorption, for maximum clarity
     side: THREE.DoubleSide, // see both the near and far interior surfaces through the shape
