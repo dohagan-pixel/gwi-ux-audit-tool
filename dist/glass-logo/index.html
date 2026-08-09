@@ -15,10 +15,24 @@
     color:rgba(0,0,0,0.35); font:12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     letter-spacing:0.08em; text-transform:uppercase; pointer-events:none;
   }
+  #scheme-toggle {
+    position:fixed; z-index:10; right:24px; bottom:24px; display:flex; align-items:center; gap:8px;
+    padding:7px 14px 7px 8px; border-radius:20px; cursor:pointer; border:1px solid rgba(0,0,0,0.12);
+    background:rgba(255,255,255,0.7); backdrop-filter:blur(6px);
+    font:600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing:0.06em; text-transform:uppercase; color:rgba(0,0,0,0.55);
+    transition:background 0.2s, border-color 0.2s;
+  }
+  #scheme-toggle:hover { border-color:rgba(0,0,0,0.25); }
+  #scheme-toggle .dot {
+    width:16px; height:16px; border-radius:50%; border:1px solid rgba(0,0,0,0.15);
+    transition:background-color 0.3s;
+  }
 </style>
 </head>
 <body>
 <div id="loading">loading glass mark…</div>
+<button id="scheme-toggle" type="button" title="Switch color scheme"><span class="dot"></span>Colors</button>
 
 <script type="importmap">
 {
@@ -123,10 +137,14 @@ function buildEnvironment() {
 }
 scene.environment = buildEnvironment();
 
-// ---------- backdrop: white plane with "HUMAN" in black, filling the whole frustum ----------
-// There's only one fixed background this time (no per-page color switching), so the plane can
-// safely cover the entire view — there's nothing behind it anywhere that ever needs to show
-// through, which is what caused edge-artifact problems the last time this was built.
+// ---------- backdrop: a page background + "HUMAN" in a matching type color, filling the whole
+// frustum. The colors are switchable (see SCHEMES/applyScheme) via the "Colors" button.
+const SCHEMES = [
+  { bg: '#F7F6F7', type: '#191B1E' },
+  { bg: '#EDFFB8', type: '#729508' },
+];
+let schemeIndex = 0;
+
 let backdropMesh = null;
 let backdropSafetyMesh = null;
 const BACKDROP_Z = -3; // close behind the (thin) mark, so refraction bends the word without missing it
@@ -145,15 +163,16 @@ function fitHumanFont(ctx, width) {
 }
 
 function buildBackdropTexture() {
+  const scheme = SCHEMES[schemeIndex];
   const width = 1600;
   const height = Math.round(width / camera.aspect);
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#F7F6F7';
+  ctx.fillStyle = scheme.bg;
   ctx.fillRect(0, 0, width, height);
-  ctx.fillStyle = '#191B1E';
+  ctx.fillStyle = scheme.type;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   fitHumanFont(ctx, width);
@@ -170,16 +189,17 @@ function buildBackdropTexture() {
 // actual blurred bitmap via canvas filter and substituting it in for the transmitted color
 // (below, in onBeforeCompile) gives a real, continuously tunable blur radius instead.
 function buildBlurredBackdropTexture() {
+  const scheme = SCHEMES[schemeIndex];
   const width = 1600;
   const height = Math.round(width / camera.aspect);
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#F7F6F7';
+  ctx.fillStyle = scheme.bg;
   ctx.fillRect(0, 0, width, height);
   ctx.filter = 'blur(18px)';
-  ctx.fillStyle = '#191B1E';
+  ctx.fillStyle = scheme.type;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   fitHumanFont(ctx, width);
@@ -214,7 +234,7 @@ function fitBackdropToView() {
 
 function buildBackdrop() {
   const safetyGeo = new THREE.PlaneGeometry(1, 1);
-  const safetyMat = new THREE.MeshBasicMaterial({ color: 0xF7F6F7, toneMapped: false });
+  const safetyMat = new THREE.MeshBasicMaterial({ color: SCHEMES[schemeIndex].bg, toneMapped: false });
   backdropSafetyMesh = new THREE.Mesh(safetyGeo, safetyMat);
   backdropSafetyMesh.position.set(0, 0, BACKDROP_Z - 0.01);
   scene.add(backdropSafetyMesh);
@@ -242,6 +262,17 @@ function refreshBackdropTexture() {
     shader.uniforms.uBackdropSize.value.copy(backdropVisibleSize);
     if (oldBlur) oldBlur.dispose();
   }
+}
+
+function applyScheme(index) {
+  schemeIndex = index;
+  const scheme = SCHEMES[schemeIndex];
+  document.body.style.backgroundColor = scheme.bg;
+  scene.background.set(scheme.bg);
+  if (backdropSafetyMesh) backdropSafetyMesh.material.color.set(scheme.bg);
+  const dot = document.querySelector('#scheme-toggle .dot');
+  if (dot) dot.style.backgroundColor = SCHEMES[(schemeIndex + 1) % SCHEMES.length].bg; // previews the NEXT scheme, since clicking advances to it
+  refreshBackdropTexture();
 }
 
 // ---------- build the glass mark from the exact SVG shape ----------
@@ -380,8 +411,12 @@ function buildMark() {
 
 buildBackdrop();
 buildMark();
+document.getElementById('scheme-toggle').addEventListener('click', () => {
+  applyScheme((schemeIndex + 1) % SCHEMES.length);
+});
+
 document.fonts.load('260px Ovo').catch(() => {}).finally(() => {
-  refreshBackdropTexture();
+  applyScheme(0);
   document.getElementById('loading').remove();
 });
 
@@ -424,8 +459,9 @@ function animate() {
 
   // A tiny parallax drift for the word itself — much smaller than the mark's own movement, so
   // it still reads as "fixed" relative to the glass, just gently alive rather than static.
-  // Safe to shift off its exact frustum-filling position because the page background is the
-  // same #F7F6F7 as the backdrop's own fill, so any sliver revealed at the edge is seamless.
+  // Safe to shift off its exact frustum-filling position because backdropSafetyMesh (see
+  // buildBackdrop) sits just behind it, oversized and always the current scheme's bg color —
+  // any sliver revealed at the edge is seamless regardless of which scheme is active.
   if (backdropMesh) {
     const targetBackdropX = mouse.x * 0.12;
     const targetBackdropY = -mouse.y * 0.08;
