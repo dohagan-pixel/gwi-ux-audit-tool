@@ -453,10 +453,14 @@ function animate() {
   targetPos.x = mouse.x * 1.4;
   targetPos.y = -mouse.y * 0.9 + Math.sin(idle * 1.3) * 0.15;
 
-  pivot.rotation.x += (targetRot.x - pivot.rotation.x) * 0.06;
-  pivot.rotation.y += (targetRot.y - pivot.rotation.y) * 0.06;
-  pivot.position.x += (targetPos.x - pivot.position.x) * 0.08;
-  pivot.position.y += (targetPos.y - pivot.position.y) * 0.08;
+  // This is a fixed-percentage catch-up (lerp), not a fixed speed: each frame closes the same
+  // fraction of whatever gap remains, so a big push starts with a bigger gap and visibly takes
+  // more frames to settle even though the rate itself never changes. Raised from 0.06/0.08 so
+  // that lag is much less noticeable on large mouse movements, while staying smooth (not snapped).
+  pivot.rotation.x += (targetRot.x - pivot.rotation.x) * 0.11;
+  pivot.rotation.y += (targetRot.y - pivot.rotation.y) * 0.11;
+  pivot.position.x += (targetPos.x - pivot.position.x) * 0.14;
+  pivot.position.y += (targetPos.y - pivot.position.y) * 0.14;
 
   // A tiny parallax drift for the word itself — much smaller than the mark's own movement, so
   // it still reads as "fixed" relative to the glass, just gently alive rather than static.
