@@ -3358,8 +3358,8 @@ function LandingPage({setView,onSignIn,isPreview}:{setView?:(v:string)=>void,onS
         <iframe srcDoc={_particleBg} title="bg" sandbox="allow-scripts" style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none",pointerEvents:"none",zIndex:0}}/>
         <div style={{position:"relative",zIndex:1,textAlign:"center",padding:"100px 24px 80px",maxWidth:760,margin:"0 auto"}}>
           <div style={{display:"inline-block",background:"rgba(255,0,119,0.15)",border:"1px solid rgba(255,0,119,0.4)",borderRadius:99,padding:"5px 16px",fontSize:11,fontWeight:700,color:C.pink,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:28}}>OKR: Build a high-performing team</div>
-          <h1 style={{fontSize:"clamp(32px,5vw,60px)",fontWeight:900,color:"#fff",lineHeight:1.1,margin:"0 0 24px",letterSpacing:"-0.03em"}}>Built to prove what AI can do here</h1>
-          <p style={{fontSize:"clamp(15px,2vw,19px)",color:"rgba(255,255,255,0.65)",lineHeight:1.7,margin:"0 0 40px",maxWidth:560,marginLeft:"auto",marginRight:"auto"}}>Internal tools and experiments, built with AI, that show the team what's possible.</p>
+          <h1 style={{fontSize:"clamp(32px,5vw,60px)",fontWeight:900,color:"#fff",lineHeight:1.1,margin:"0 0 24px",letterSpacing:"-0.03em"}}>The AI playground built to improve workflows</h1>
+          <p style={{fontSize:"clamp(15px,2vw,19px)",color:"rgba(255,255,255,0.65)",lineHeight:1.7,margin:"0 0 40px",maxWidth:560,marginLeft:"auto",marginRight:"auto"}}>Internal tools and experiments, built with AI.</p>
           <button onClick={function(){if(!_isPreview&&onSignIn)onSignIn();}} style={{background:C.pink,color:"#fff",border:"none",borderRadius:10,padding:"16px 36px",fontSize:16,fontWeight:700,cursor:_isPreview?"default":"pointer",letterSpacing:"0.01em",boxShadow:"0 4px 32px rgba(255,0,119,0.4)"}}>Sign in with Google →</button>
           <div style={{marginTop:16,fontSize:12,color:"rgba(255,255,255,0.3)"}}>Access restricted to @gwi.com accounts</div>
         </div>
