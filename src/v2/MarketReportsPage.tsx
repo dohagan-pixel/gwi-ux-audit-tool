@@ -18,9 +18,8 @@ const COUNTRIES = [
 ];
 
 // Google Drive file IDs from the shared "Market Trends" folder, one PDF per country.
-// NOTE: the Drive file behind "Spain" is actually named "spain-korea.pdf" in that folder —
-// mapped here by its alphabetical position (between south-korea and taiwan) since that
-// matches the country list, but worth double-checking the PDF's actual content is Spain's.
+// IDs are stable across renames (confirmed: the Spain file was originally named
+// "spain-korea.pdf" and has since been renamed to "spain.pdf" in Drive — same ID throughout).
 const COUNTRY_PDF_IDS: Record<string, string> = {
   Australia: "1kOCn6vWPYAmkK4rydr8RLH2PD8q2Qub8",
   Brazil: "1wtdF6rIK067W_u3lG5Twpr89lBU4YM9j",
