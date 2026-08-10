@@ -1,0 +1,328 @@
+/* ============================================================
+   GWI Design System — Colors & Type tokens
+   Sourced from GWI Design system 2025.fig (Design-System/Colour
+   page) and GWI Analyst Template 2025.pptx theme1.xml.
+   ============================================================ */
+
+/* ---------- FONT FACE ----------
+   Faktum (René Bieder) is the brand typeface — full family is
+   loaded from /fonts. */
+
+@font-face { font-family: "Faktum"; font-weight: 100; font-style: normal;  src: url("fonts/Rene_Bieder_-_Faktum_Thin.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Thin.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum"; font-weight: 100; font-style: italic;  src: url("fonts/Rene_Bieder_-_Faktum_Thin_Italic.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Thin_Italic.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum"; font-weight: 200; font-style: normal;  src: url("fonts/Rene_Bieder_-_Faktum_ExtraLight.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_ExtraLight.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum"; font-weight: 200; font-style: italic;  src: url("fonts/Rene_Bieder_-_Faktum_ExtraLight_Italic.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_ExtraLight_Italic.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum"; font-weight: 300; font-style: normal;  src: url("fonts/Rene_Bieder_-_Faktum_Light.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Light.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum"; font-weight: 300; font-style: italic;  src: url("fonts/Rene_Bieder_-_Faktum_Light_Italic.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Light_Italic.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum"; font-weight: 400; font-style: normal;  src: url("fonts/Rene_Bieder_-_Faktum_Regular.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Regular.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum"; font-weight: 400; font-style: italic;  src: url("fonts/Rene_Bieder_-_Faktum_Regular_Italic.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Regular_Italic.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum"; font-weight: 500; font-style: normal;  src: url("fonts/Rene_Bieder_-_Faktum_Medium.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Medium.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum"; font-weight: 500; font-style: italic;  src: url("fonts/Rene_Bieder_-_Faktum_Medium_Italic.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Medium_Italic.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum"; font-weight: 600; font-style: normal;  src: url("fonts/Rene_Bieder_-_Faktum_SemiBold.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_SemiBold.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum"; font-weight: 600; font-style: italic;  src: url("fonts/Rene_Bieder_-_Faktum_SemiBold_Italic.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_SemiBold_Italic.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum"; font-weight: 700; font-style: normal;  src: url("fonts/Rene_Bieder_-_Faktum_Bold.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Bold.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum"; font-weight: 700; font-style: italic;  src: url("fonts/Rene_Bieder_-_Faktum_Bold_Italic.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Bold_Italic.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum"; font-weight: 800; font-style: normal;  src: url("fonts/Rene_Bieder_-_Faktum_ExtraBold.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_ExtraBold.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum"; font-weight: 800; font-style: italic;  src: url("fonts/Rene_Bieder_-_Faktum_ExtraBold_Italic.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_ExtraBold_Italic.otf") format("opentype"); font-display: swap; }
+
+/* Faktum Wide — used for posters / large display moments */
+@font-face { font-family: "Faktum Wide"; font-weight: 300; font-style: normal; src: url("fonts/Rene_Bieder_-_Faktum_Wide_Light.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Wide_Light.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum Wide"; font-weight: 400; font-style: normal; src: url("fonts/Rene_Bieder_-_Faktum_Wide_Regular.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Wide_Regular.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum Wide"; font-weight: 500; font-style: normal; src: url("fonts/Rene_Bieder_-_Faktum_Wide_Medium.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Wide_Medium.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum Wide"; font-weight: 600; font-style: normal; src: url("fonts/Rene_Bieder_-_Faktum_Wide_SemiBold.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Wide_SemiBold.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum Wide"; font-weight: 700; font-style: normal; src: url("fonts/Rene_Bieder_-_Faktum_Wide_Bold.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Wide_Bold.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum Wide"; font-weight: 800; font-style: normal; src: url("fonts/Rene_Bieder_-_Faktum_Wide_ExtraBold.otf") format("opentype"), url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Wide_ExtraBold.otf") format("opentype"); font-display: swap; }
+
+/* Faktum Condensed — tight headlines, eyebrows */
+@font-face { font-family: "Faktum Con"; font-weight: 400; font-style: normal; src: url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Con_Regular.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum Con"; font-weight: 500; font-style: normal; src: url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Con_Medium.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum Con"; font-weight: 600; font-style: normal; src: url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Con_SemiBold.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum Con"; font-weight: 700; font-style: normal; src: url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Con_Bold.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Faktum Con"; font-weight: 800; font-style: normal; src: url("https://cdn.jsdelivr.net/gh/ssiamptanis/gwi-design-system@main/fonts/Rene_Bieder_-_Faktum_Con_ExtraBold.otf") format("opentype"); font-display: swap; }
+
+:root {
+  /* ============ FONT STACKS ============ */
+  --font-display: "Faktum", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-body:    "Faktum", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-wide:    "Faktum Wide", "Faktum", sans-serif;
+  --font-con:     "Faktum Con", "Faktum", sans-serif;
+  --font-mono:    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* ============ PRIMARY PALETTE ============ */
+  /* Hot pink is THE brand color */
+  --c-hot-pink:        #FF0077;
+  --c-hot-pink-extra-dark: #B8275B;
+  --c-hot-pink-dark:   #DC1F69;
+  --c-hot-pink-2:      #FFD2DF;
+  --c-hot-pink-3:      #FFCAEA;  /* fig hot-pink-bg variant */
+  --c-hot-pink-4:      #FF9FBD;
+  --c-hot-pink-5:      #FF80A9;
+  --c-hot-pink-6:      #FF5993;
+  --c-hot-pink-bg:     #FFE8EE;
+
+  /* Greys */
+  --c-black:           #000000;
+  --c-off-black:       #101720;   /* Off Black — primary dark surface */
+  --c-grey-8:          #2A3447;
+  --c-grey-7:          #526482;
+  --c-grey-6:          #7989A6;
+  --c-grey-5:          #ABB8CF;
+  --c-grey-4:          #CED9EB;
+  --c-grey-3:          #DFE7F5;
+  --c-grey-2:          #EBF1FB;
+  --c-grey-1:          #F7FAFF;   /* Product UI primary BG */
+  --c-white:           #FFFFFF;
+
+  /* ============ SECONDARY PALETTE ============ */
+  /* Violet (the Faktum-blue family) */
+  --c-violet-dark:     #333688;
+  --c-violet-medium:   #5461C8;
+  --c-violet-light:    #9BA0E2;
+  --c-violet-bg:       #BFBFEF;
+
+  /* Blue */
+  --c-blue-dark:       #003C71;
+  --c-blue-medium:     #007CB6;
+  --c-blue-light:      #7BCCF1;
+  --c-blue-bg:         #B9E1F9;
+
+  /* Teal */
+  --c-teal-dark:       #154B5B;
+  --c-teal-medium:     #008291;
+  --c-teal-light:      #78D5E1;
+  --c-teal-bg:         #B9E9ED;
+
+  /* Purple (an additional secondary that appears in icon sets) */
+  --c-purple-medium:   #963CBD;
+
+  /* ============ ACCESSORY ============ */
+  --c-action-green:    #00FF88;   /* CTAs only */
+  --c-green-success:   #008851;   /* success / confirmation state */
+
+  /* ============ NOTIFICATION ============ */
+  --c-orange-medium:   #DA3441;
+  --c-yellow-medium:   #F6C26D;
+  --c-success:         #6DA544;   /* derived from green-medium fig usage */
+
+  /* ============ DEEP / EDITORIAL ============ */
+  --c-deep-burgundy:   #641B34;   /* heavy use in editorial / hero bgs */
+  --c-deep-red:        #A2001D;
+
+  /* ============ DATA-VIZ PALETTE ============ */
+  /* Direct from the Colour page "Data visualisation palette" set */
+  --dv-1:  #FF0077;
+  --dv-2:  #5461C8;
+  --dv-3:  #000000;
+  --dv-4:  #963CBD;
+  --dv-5:  #ABB8CF;
+  --dv-6:  #FF9FBD;
+
+  /* ============ SEMANTIC TOKENS ============ */
+  --bg:             var(--c-white);
+  --bg-soft:        var(--c-grey-1);
+  --bg-muted:       var(--c-grey-2);
+  --bg-inverse:     var(--c-off-black);
+  --bg-brand:       var(--c-hot-pink);
+
+  --fg:             var(--c-off-black);
+  --fg-strong:      var(--c-black);
+  --fg-muted:       var(--c-grey-7);
+  --fg-subtle:      var(--c-grey-6);
+  --fg-on-brand:    var(--c-white);
+  --fg-on-inverse:  var(--c-white);
+  --fg-link:        var(--c-hot-pink);
+
+  --border:         var(--c-grey-3);
+  --border-strong:  var(--c-grey-5);
+  --border-inverse: var(--c-grey-8);
+
+  --focus:          var(--c-hot-pink);
+  --selection:      var(--c-hot-pink-bg);
+
+  /* ============ SPACING (4-pt baseline) ============ */
+  --s-0:  0; /* @kind spacing */
+  --s-1:  4px;
+  --s-2:  8px;
+  --s-3:  12px;
+  --s-4:  16px;
+  --s-5:  20px;
+  --s-6:  24px;
+  --s-8:  32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --s-16: 64px;
+  --s-20: 80px;
+  --s-24: 96px;
+  --s-32: 128px;
+
+  /* ============ RADII ============ */
+  /* Brand UI is mostly square or lightly rounded. Slide pills/chips
+     use ~4px; product UI cards use 8–12px; the famous "frame" device
+     and brand posters are razor-sharp 0px corners. */
+  --r-0:    0; /* @kind radius */
+  --r-xs:   2px;
+  --r-sm:   4px;
+  --r-md:   8px;
+  --r-lg:   12px;
+  --r-xl:   16px;
+  --r-2xl:  24px;
+  --r-pill: 999px;
+  --r-card: 15px;   /* large hero cards */
+
+  /* ============ TYPE — RAW SCALE ============ */
+  /* Scale is derived from the "Typography" page — heading-01..05,
+     subheading-1/2, body 1/2, eyebrow, intro. Display sizes
+     (120/100/80/60) come from the slide template Body/Title slides. */
+  --fs-display-2xl: 120px;
+  --fs-display-xl:  100px;
+  --fs-display-lg:  80px;
+  --fs-display-md:  60px;
+  --fs-display-sm:  48px;
+
+  --fs-h1:          50px;  /* heading-01 — Faktum Bold 50/50 */
+  --fs-h2:          36px;  /* heading-02 — Faktum Bold 36/36 */
+  --fs-h3:          26px;  /* heading-03 — Faktum Bold 26/48 */
+  --fs-h4:          24px;  /* heading-04 — Faktum Bold 24/30 */
+  --fs-h5:          20px;  /* heading-05 — Faktum Bold 20/32 */
+
+  --fs-subhead-1:   20px;
+  --fs-subhead-2:   18px;
+
+  --fs-body-1:      16px;  /* Body 1 — Faktum Regular 16/24 */
+  --fs-body-2:      14px;  /* Body 2 — 14/20 */
+  --fs-body-3:      12px;  /* Body 3 — 12/18 (eyebrow / caption) */
+  --fs-caption:     10px;
+
+  /* Line heights & tracking */
+  --lh-tight:    1.0;  /* @kind font */
+  --lh-snug:     1.15; /* @kind font */
+  --lh-normal:   1.4;  /* @kind font */
+  --lh-relaxed:  1.5;  /* @kind font */
+  --lh-loose:    1.6;  /* @kind font */
+
+  --tr-tight:   -0.02em; /* @kind font */
+  --tr-snug:    -0.01em; /* @kind font */
+  --tr-normal:   0;      /* @kind font */
+  --tr-wide:     0.04em; /* @kind font */ /* eyebrows / labels */
+
+  /* Font weights — Faktum has Thin/ExtraLight/Light/Regular/Medium/SemiBold/Bold/ExtraBold */
+  --fw-thin:        100; /* @kind font */
+  --fw-extralight:  200; /* @kind font */
+  --fw-light:       300; /* @kind font */
+  --fw-regular:     400; /* @kind font */
+  --fw-medium:      500; /* @kind font */
+  --fw-semibold:    600; /* @kind font */
+  --fw-bold:        700; /* @kind font */
+  --fw-extrabold:   800; /* @kind font */
+}
+
+/* ============================================================
+   SEMANTIC TYPE STYLES
+   ============================================================ */
+
+html, body { font-family: var(--font-body); color: var(--fg); background: var(--bg); }
+body { font-size: var(--fs-body-1); line-height: var(--lh-relaxed); }
+
+::selection { background: var(--selection); color: var(--c-hot-pink-extra-dark); }
+
+.gwi-display-2xl,
+.gwi-display-xl,
+.gwi-display-lg,
+.gwi-display-md,
+.gwi-display-sm,
+.gwi-h1, .gwi-h2, .gwi-h3, .gwi-h4, .gwi-h5,
+.gwi-subhead-1, .gwi-subhead-2 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tr-tight);
+  line-height: var(--lh-tight);
+  color: var(--fg);
+  text-wrap: balance;
+}
+
+.gwi-display-2xl { font-size: var(--fs-display-2xl); font-weight: var(--fw-extrabold); }
+.gwi-display-xl  { font-size: var(--fs-display-xl);  font-weight: var(--fw-extrabold); }
+.gwi-display-lg  { font-size: var(--fs-display-lg);  }
+.gwi-display-md  { font-size: var(--fs-display-md);  }
+.gwi-display-sm  { font-size: var(--fs-display-sm);  }
+
+.gwi-h1 { font-size: var(--fs-h1); line-height: 1.0; }
+.gwi-h2 { font-size: var(--fs-h2); line-height: 1.0; }
+.gwi-h3 { font-size: var(--fs-h3); line-height: 1.2; }
+.gwi-h4 { font-size: var(--fs-h4); line-height: 1.25; }
+.gwi-h5 { font-size: var(--fs-h5); line-height: 1.3; }
+
+.gwi-subhead-1 { font-size: var(--fs-subhead-1); font-weight: var(--fw-semibold); line-height: 1.4; }
+.gwi-subhead-2 { font-size: var(--fs-subhead-2); font-weight: var(--fw-semibold); line-height: 1.4; }
+
+.gwi-intro { font-family: var(--font-display); font-size: 24px; line-height: 1.4; font-weight: var(--fw-regular); color: var(--fg); text-wrap: pretty; }
+
+.gwi-body-1 { font-family: var(--font-body); font-size: var(--fs-body-1); line-height: var(--lh-relaxed); font-weight: var(--fw-regular); }
+.gwi-body-2 { font-family: var(--font-body); font-size: var(--fs-body-2); line-height: 1.45; font-weight: var(--fw-regular); }
+.gwi-body-3 { font-family: var(--font-body); font-size: var(--fs-body-3); line-height: 1.5;  font-weight: var(--fw-regular); }
+
+.gwi-eyebrow {
+  font-family: var(--font-display);
+  font-size: var(--fs-body-3);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tr-wide);
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--fg);
+  display: inline-block;
+  width: fit-content;
+  align-self: flex-start;
+}
+
+.gwi-caption { font-family: var(--font-body); font-size: var(--fs-caption); font-weight: var(--fw-regular); line-height: 1.4; color: var(--fg-muted); }
+
+/* Quote styling — used heavily across the brand */
+.gwi-quote {
+  font-family: var(--font-display);
+  font-size: 32px;
+  line-height: 1.25;
+  font-weight: var(--fw-regular);
+  color: var(--fg);
+}
+.gwi-quote::before { content: "\201C"; }
+.gwi-quote::after  { content: "\201D"; }
+
+/* ============================================================
+   THE FRAME
+   GWI's signature "frame" device — a thick hot-pink rectangular
+   border that crops content like a viewfinder. Use sparingly.
+   ============================================================ */
+.gwi-frame {
+  border: 16px solid var(--c-hot-pink);
+  display: block;
+}
+.gwi-frame--sm  { border-width: 8px; }
+.gwi-frame--lg  { border-width: 24px; }
+
+/* ============================================================
+   THE DOT — accent device, often seen as a magenta circle
+   ============================================================ */
+.gwi-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--c-hot-pink);
+  vertical-align: middle;
+}
+/* ============================================================
+   Eyebrow chip — hugs its text. Never full-bleed.
+   See SKILL.md "Eyebrow chips hug their text" house rule.
+   ============================================================ */
+.gwi-eyebrow {
+  display: inline-block;
+  width: fit-content;
+  align-self: flex-start;
+  font-family: 'Faktum', -apple-system, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--c-hot-pink);
+}
