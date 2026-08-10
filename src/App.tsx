@@ -81,6 +81,11 @@ const CONTENT_ITEMS = [
   {id:"plan-vs-seo-geo",label:"Plan vs SEO/GEO"},
 ];
 
+const TOOLS_ITEMS = [
+  {id:"glass-logo",label:"Glass Logo"},
+  {id:"market-reports",label:"Market Reports"},
+];
+
 const INIT_STAGES = [
   {id:"awareness",label:"Awareness",highlight:false,signupRole:"owned",signupNote:"The website is the only tool here. SEO, paid, social — all roads lead to a landing page.",gwi_goal:"Attract prospects to the website.",hmw:"How might we support professionals in their search for affordable alternatives to custom or industry reports?",push:"A need to understand their market",pull:"Globally significant answers on demand",habit:"Grabbing free data from existing reports",anxiety:"Cost is prohibitive"},
   {id:"evaluation",label:"Evaluation",highlight:false,signupRole:"owned",signupNote:"The website must answer is this legit and relevant to me fast.",gwi_goal:"Agree to a Demo with a member of GWI staff.",hmw:"How might we show professionals that quarterly syndicated data has the coverage and depth they need?",push:"Need to understand what strategy to choose",pull:"Industry and coverage is right, more up to date than others",habit:"Overcoming grabbing something from existing sources during time pressure",anxiety:"Cost will be prohibitive and the sales person might waste my time"},
@@ -4515,8 +4520,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
           <button onClick={function(){setView("qa-walkthrough");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="qa-walkthrough"?C.pink:"transparent",color:view==="qa-walkthrough"?C.white:C.grey7,flexShrink:0}}>QA Walkthrough</button>
           <button onClick={function(){setView("content-hub");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="content-hub"?C.pink:"transparent",color:view==="content-hub"?C.white:C.grey7,flexShrink:0}}>Content Hub</button>
           <Dropdown label="Content" items={CONTENT_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("content-plan");}} forceActive={view==="content-plan"||view==="content-refresh"||view==="content-geo-seo"||view==="plan-vs-seo-geo"}/>
-          <button onClick={function(){setView("glass-logo");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="glass-logo"?C.pink:"transparent",color:view==="glass-logo"?C.white:C.grey7,flexShrink:0}}>Glass Logo</button>
-          <button onClick={function(){setView("market-reports");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="market-reports"?C.pink:"transparent",color:view==="market-reports"?C.white:C.grey7,flexShrink:0}}>Market Reports</button>
+          <Dropdown label="Tools" items={TOOLS_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("glass-logo");}} forceActive={view==="glass-logo"||view==="market-reports"}/>
           <div style={{flex:1}}/>
           {(view==="personas"||view==="persona-detail"||view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows")&&(
             <button onClick={function(){var t=(view==="personas"||view==="persona-detail")?"personas":(view==="mapping"||view==="lifecycle")?"mapping":(view==="affinity")?"affinity":(view==="flows")?"flows":"journeys";_shareReport(t);}} disabled={_reportSharing} title="Share a public read-only report" style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:700,border:"none",cursor:_reportSharing?"wait":"pointer",background:_reportSharing?"#888":"rgba(255,0,119,0.18)",color:_reportSharing?C.grey6:C.pink,flexShrink:0,transition:"background 0.15s"}} onMouseEnter={function(e){if(!_reportSharing)(e.currentTarget as HTMLElement).style.background="rgba(255,0,119,0.28)";}} onMouseLeave={function(e){(e.currentTarget as HTMLElement).style.background=_reportSharing?"#888":"rgba(255,0,119,0.18)";}}><Share2 size={13}/>{_reportSharing?"Sharing…":"Share report"}</button>
