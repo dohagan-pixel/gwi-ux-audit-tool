@@ -7,9 +7,9 @@ const C = {
   grey4: "#DFE7F5", grey3: "#EBF1FB", grey2: "#F7FAFF",
 };
 
-// Matches the 30 "<Country> Market Report.dc.html" / "-print.dc.html" pairs under
-// public/market-reports/ — each deck already has its own internal slide nav + thumbnail
-// rail (see public/market-reports/README.txt), this just switches between countries.
+// Matches the 30 "<Country> Market Report.dc.html" pairs under public/market-reports/ —
+// each deck already has its own internal slide nav + thumbnail rail (see
+// public/market-reports/README.txt), this just switches between countries.
 const COUNTRIES = [
   "Australia", "Brazil", "Canada", "Chile", "China", "Czech Republic", "Egypt", "France",
   "Germany", "Greece", "Hong Kong", "Hungary", "Indonesia", "Italy", "Japan", "Malaysia",
@@ -17,10 +17,48 @@ const COUNTRIES = [
   "South Korea", "Spain", "Taiwan", "Thailand", "UAE", "UK", "USA", "Vietnam",
 ];
 
+// Google Drive file IDs from the shared "Market Trends" folder, one PDF per country.
+// NOTE: the Drive file behind "Spain" is actually named "spain-korea.pdf" in that folder —
+// mapped here by its alphabetical position (between south-korea and taiwan) since that
+// matches the country list, but worth double-checking the PDF's actual content is Spain's.
+const COUNTRY_PDF_IDS: Record<string, string> = {
+  Australia: "1kOCn6vWPYAmkK4rydr8RLH2PD8q2Qub8",
+  Brazil: "1wtdF6rIK067W_u3lG5Twpr89lBU4YM9j",
+  Canada: "1xUF-fgqFuRd9y1twpZft1IrLIUO0EAsm",
+  Chile: "1AGmN23L6qYY3PzYvuM-YnUsV189r0ILY",
+  China: "1hjuggU69hU3HscGAFF-cxiqpqtmhEAOt",
+  "Czech Republic": "1ZXSgQ7pSmYkPJ6p4xHEfpn58bMTvHroU",
+  Egypt: "1Fi9qSrPKemNGU-yxrRYHO9RbaZgZzxyj",
+  France: "1UzpEmbBj9XC0EYA34rhKcSZaGhXeg89O",
+  Germany: "126dIKGu_Al6gltyp9RAeNrwHPeH5Injc",
+  Greece: "149j9MIVofswKhFShQ7AKCsa6fsFw2rf8",
+  "Hong Kong": "1mlRMWSQRcXQShcrVpa0J5qGEzWn7sWuw",
+  Hungary: "1PeE8FkTwamaV8-HMS_M-da4XOBYPeNUB",
+  Indonesia: "124l5T5YTg2e6jTZfZDAvM2hbctmDQzqc",
+  Italy: "1bQp0JMjBJv4KDSEi0YQUaAa5ucaU76bH",
+  Japan: "1zIMIWj0_LtrbsSrH2nbIGTia7A9wOLKy",
+  Malaysia: "1v7pY5xDCGSW1dUDV9wOOdTT3Zu3EX-CB",
+  Morocco: "1PcLZIwi7o19X0n9Fycfwurmcw62Qk0Vm",
+  "New Zealand": "1lNFSHxN2pYgxGm59bUG7_sXRlF8SeGTk",
+  Norway: "1l9rDW5PTwP6VR2FLqgdPeEOdM6UdXJwI",
+  Philippines: "1UDC82Nj_UWQEeHCH1n-wGcnbLuC89wX4",
+  "Saudi Arabia": "1jqqq2NiU8r48xoM8QGPnaThnAicBJqf6",
+  "South Africa": "18THZy0BINx3t8jmgzVGyPgbaZk0Q3LPQ",
+  "South Korea": "1NXmdL2lJGTlivfcZccIYsDNtfnT0qxua",
+  Spain: "1wJY-A5l8fWF4UJhLEGCroUQdTZTgzYmL",
+  Taiwan: "1IrD9tNiv8prWQHdJr8zzenppdBtzTFLG",
+  Thailand: "1hvcBD-SwIUC4v6bAW3iomHr_-Y3BdRQJ",
+  UAE: "14DBMn10bKPbu2LqT4hl2zeF2-vylTSsR",
+  UK: "1PCZMvyP3RH-UfnuxTRb-8udLTswufbmN",
+  USA: "1bxCauG_4gBCyoc4dSx1CFxWgDSOu4UPG",
+  Vietnam: "1AzoIiKxDWE3y6cI1cv7lRanE2rGxIXhW",
+};
+
 export function MarketReportsPage() {
   const [country, setCountry] = useState(COUNTRIES[0]);
-  const [printMode, setPrintMode] = useState(false);
-  const src = `/market-reports/${country} Market Report${printMode ? "-print" : ""}.dc.html`;
+  const src = `/market-reports/${country} Market Report.dc.html`;
+  const pdfId = COUNTRY_PDF_IDS[country];
+  const pdfHref = pdfId ? `https://drive.google.com/uc?export=download&id=${pdfId}` : undefined;
 
   return (
     <div style={{ display: "flex", height: "100%", overflow: "hidden", fontFamily: FF }}>
@@ -50,10 +88,20 @@ export function MarketReportsPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: "1px solid " + C.grey4, flexShrink: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: C.black }}>{country} Market Report</div>
           <div style={{ flex: 1 }} />
-          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.grey7, cursor: "pointer" }}>
-            <input type="checkbox" checked={printMode} onChange={function (e) { setPrintMode(e.target.checked); }} />
-            Print version
-          </label>
+          {pdfHref && (
+            <a
+              href={pdfHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700,
+                color: C.white, background: C.pink, padding: "7px 14px", borderRadius: 8,
+                textDecoration: "none",
+              }}
+            >
+              Download PDF
+            </a>
+          )}
         </div>
         <iframe key={src} src={src} title={country + " Market Report"} style={{ flex: 1, border: "none", display: "block", width: "100%" }} />
       </div>
