@@ -3302,7 +3302,7 @@ function MobileNav({view,setView}){
   return(
     <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,flexShrink:0,position:"relative",zIndex:50}}>
       <div style={{padding:"0 16px",height:52,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <img src="/gwi-logo-on-black.svg" alt="GWI" height={22} style={{cursor:"pointer",display:"block"}} onClick={function(){setView("dashboard");setMenuOpen(false);}}/>
+        <img src="/gwi-lockup-logo.svg" alt="GWI" height={22} style={{cursor:"pointer",display:"block"}} onClick={function(){setView("dashboard");setMenuOpen(false);}}/>
         <button onClick={function(){setMenuOpen(!menuOpen);}} style={{background:"transparent",border:"none",cursor:"pointer",color:C.white,fontSize:13,fontWeight:600,padding:"4px 8px"}}>{menuOpen?"Close":"Menu"}</button>
       </div>
       {menuOpen&&(
@@ -3341,7 +3341,7 @@ function LandingPage({setView,onSignIn,isPreview}:{setView?:(v:string)=>void,onS
     {n:"02",title:"Run an AI audit",desc:"Claude analyses each page against your full context — personas, lifecycle stages, verticals, clients, and case studies — and returns structured recommendations."},
     {n:"03",title:"Build wireframes, track progress",desc:"Turn findings into designed wireframes instantly. Mark actions as in progress or done and watch your audit score improve in real time."},
   ];
-  var GwiLogoWhite=(<svg viewBox="0 0 230 71" fill="none" style={{width:90,height:"auto",display:"block"}}><path fillRule="evenodd" clipRule="evenodd" d="M230 54.2105C230 43.7102 225.129 38.8339 214.623 38.8339C204.119 38.8339 199.248 43.7102 199.248 54.2105C199.248 64.7107 204.119 69.5871 214.623 69.5871C225.129 69.5871 230 64.7107 230 54.2105Z" fill="#FF0077"/><path fillRule="evenodd" clipRule="evenodd" d="M176.341 69.2236H191.612V1.95935H176.341V69.2236Z" fill="white"/><path fillRule="evenodd" clipRule="evenodd" d="M148.954 69.2236H131.472L118.484 24.3824L105.359 69.2236H88.0286L67.2642 1.95935H84.4376L84.5125 2.23484L96.8212 47.6343L109.642 1.95935H127.359L140.518 47.7687L152.864 1.95935H169.797L148.954 69.2236Z" fill="white"/><path fillRule="evenodd" clipRule="evenodd" d="M32.5803 70.6778C22.7079 70.6778 14.7182 67.5206 8.83175 61.2943C2.96903 54.9939 0 46.4408 0 35.8647C0 25.3963 3.20293 16.8049 9.52069 10.3297C15.8664 3.81068 24.2783 0.504883 34.5232 0.504883C47.7936 0.504883 58.3726 6.4687 64.3131 17.2975L64.8781 18.3276L53.5652 27.5345L52.7116 26.2328C48.1861 19.3266 42.0415 15.8248 34.4491 15.8248C28.6982 15.8248 24.0876 17.6396 20.7467 21.2194C17.3287 24.8807 15.6671 29.6421 15.6671 35.774C15.6671 41.8194 17.3002 46.6228 20.5195 50.0522C23.7692 53.5132 28.2291 55.2678 33.7753 55.2678C40.2 55.2678 45.9467 52.1574 50.0281 46.4907H34.8379V31.9933H66.9006V69.3999H54.0525V60.9138C51.5634 63.9329 48.5603 66.2981 45.112 67.9516C41.3416 69.7609 37.1253 70.6778 32.5803 70.6778Z" fill="white"/></svg>);
+  var GwiLogoWhite=(<img src="/gwi-lockup-logo.svg" alt="GWI" style={{width:90,height:"auto",display:"block"}}/>);
   return(
     <div style={{fontFamily:FF,background:"#fff",minHeight:"100vh"}}>
       {/* Fixed nav */}
@@ -3357,9 +3357,9 @@ function LandingPage({setView,onSignIn,isPreview}:{setView?:(v:string)=>void,onS
       <div style={{position:"relative",minHeight:"100vh",background:"#000",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
         <iframe srcDoc={_particleBg} title="bg" sandbox="allow-scripts" style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none",pointerEvents:"none",zIndex:0}}/>
         <div style={{position:"relative",zIndex:1,textAlign:"center",padding:"100px 24px 80px",maxWidth:760,margin:"0 auto"}}>
-          <div style={{display:"inline-block",background:"rgba(255,0,119,0.15)",border:"1px solid rgba(255,0,119,0.4)",borderRadius:99,padding:"5px 16px",fontSize:11,fontWeight:700,color:C.pink,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:28}}>UX intelligence platform</div>
-          <h1 style={{fontSize:"clamp(32px,5vw,60px)",fontWeight:900,color:"#fff",lineHeight:1.1,margin:"0 0 24px",letterSpacing:"-0.03em"}}>Where UX insights become your next ideas.</h1>
-          <p style={{fontSize:"clamp(15px,2vw,19px)",color:"rgba(255,255,255,0.65)",lineHeight:1.7,margin:"0 0 40px",maxWidth:560,marginLeft:"auto",marginRight:"auto"}}>AI-powered recommendations, wireframe generation, and lifecycle context — all in one place. From first click to completed audit in minutes.</p>
+          <div style={{display:"inline-block",background:"rgba(255,0,119,0.15)",border:"1px solid rgba(255,0,119,0.4)",borderRadius:99,padding:"5px 16px",fontSize:11,fontWeight:700,color:C.pink,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:28}}>OKR: Build a high-performing team</div>
+          <h1 style={{fontSize:"clamp(32px,5vw,60px)",fontWeight:900,color:"#fff",lineHeight:1.1,margin:"0 0 24px",letterSpacing:"-0.03em"}}>Built to prove what AI can do here</h1>
+          <p style={{fontSize:"clamp(15px,2vw,19px)",color:"rgba(255,255,255,0.65)",lineHeight:1.7,margin:"0 0 40px",maxWidth:560,marginLeft:"auto",marginRight:"auto"}}>Internal tools and experiments, built with AI, that show the team what's possible.</p>
           <button onClick={function(){if(!_isPreview&&onSignIn)onSignIn();}} style={{background:C.pink,color:"#fff",border:"none",borderRadius:10,padding:"16px 36px",fontSize:16,fontWeight:700,cursor:_isPreview?"default":"pointer",letterSpacing:"0.01em",boxShadow:"0 4px 32px rgba(255,0,119,0.4)"}}>Sign in with Google →</button>
           <div style={{marginTop:16,fontSize:12,color:"rgba(255,255,255,0.3)"}}>Access restricted to @gwi.com accounts</div>
         </div>
@@ -3996,7 +3996,7 @@ function ReportPage({shareId}:{shareId:string}){
       <style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style>
       {/* Header */}
       <div style={{background:C.black,padding:"0 20px",height:52,display:"flex",alignItems:"center",gap:16,flexShrink:0,zIndex:10}}>
-        <img src="/gwi-logo-on-black.svg" alt="GWI" height={22} style={{display:"block",flexShrink:0}}/>
+        <img src="/gwi-lockup-logo.svg" alt="GWI" height={22} style={{display:"block",flexShrink:0}}/>
         <div style={{height:20,width:1,background:"rgba(255,255,255,0.15)",flexShrink:0}}/>
         <span style={{fontSize:13,fontWeight:600,color:C.grey6,flexShrink:0}}>UX Audit Report</span>
         <div style={{flex:1}}/>
@@ -4514,7 +4514,7 @@ getDocs(collection(_db,"users",u.uid,"feedback")).then(function(snap){var arr=sn
         <MobileNav view={view} setView={setView}/>
       ):(
         <div style={{background:C.black,borderBottom:"1px solid "+C.offBlack,padding:"0 24px",height:56,display:"flex",alignItems:"center",gap:4,position:"fixed",top:0,left:0,right:0,zIndex:100,boxSizing:"border-box"}}>
-          <img src="/gwi-logo-on-black.svg" alt="GWI" height={22} style={{cursor:"pointer",display:"block",flexShrink:0,marginRight:24}} onClick={function(){setView("dashboard");}}/>
+          <img src="/gwi-lockup-logo.svg" alt="GWI" height={22} style={{cursor:"pointer",display:"block",flexShrink:0,marginRight:24}} onClick={function(){setView("dashboard");}}/>
           <button onClick={function(){setView("dashboard");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="dashboard"?C.pink:"transparent",color:view==="dashboard"?C.white:C.grey7,flexShrink:0}}>Home</button>
           <Dropdown label="UX Audit" items={UX_AUDIT_ITEMS} activeView={view} setView={setView} onLabelClick={function(){setView("summary");}} forceActive={view==="summary"||view==="generated-audits"||view==="audit"||view==="wireframes"||view==="personas"||view==="persona-detail"||view==="mapping"||view==="journey"||view==="lifecycle"||view==="affinity"||view==="flows"||view==="analytics"||view==="screenshots"}/>
           <button onClick={function(){setView("qa-walkthrough");}} style={{padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",background:view==="qa-walkthrough"?C.pink:"transparent",color:view==="qa-walkthrough"?C.white:C.grey7,flexShrink:0}}>QA Walkthrough</button>
