@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GWI Agentic — Illustrative Demo</title>
+<style>
+:root{
+ --bg:#FAF9F5; --surface:#FFFFFF; --panel:#F0EEE6; --panel2:#EBE8DD;
+ --bd:#E3E1D6; --bd2:#D6D3C4;
+ --tx:#141413; --tx2:#63625B; --tx3:#8C8A80;
+ --clay:#C96442; --clayD:#A64D30; --clayL:#E8CDBF; --clayXL:#FBEFE9;
+ --sans:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;
+ --serif:Georgia,'Iowan Old Style','Times New Roman',serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);-webkit-font-smoothing:antialiased;padding-bottom:2rem}
+.wrap{max-width:720px;margin:0 auto;padding:0 1.25rem}
+.topbar{position:sticky;top:0;z-index:20;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.125rem 0 .875rem;border-bottom:1px solid var(--bd);margin-bottom:3rem}
+.tb-brand{display:flex;align-items:center;gap:.5rem;flex-shrink:0}
+.mark{width:20px;height:20px;border-radius:5px;background:var(--clay);flex-shrink:0}
+.topbar .nm{font-size:.875rem;font-weight:600;color:var(--tx2)}
+.chat{display:flex;flex-direction:column;gap:1.5rem}
+.turn{opacity:0;transform:translateY(6px);animation:fi .45s ease forwards;scroll-margin-top:96px}
+@keyframes fi{to{opacity:1;transform:translateY(0)}}
+.u{display:flex;justify-content:flex-end}
+.u span{background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:.6875rem .9375rem;font-size:.9375rem;line-height:1.55;max-width:80%;color:var(--tx)}
+.u.echo{margin-bottom:1.5rem}
+.a{font-family:var(--serif);font-size:1rem;line-height:1.72;color:var(--tx)}
+.a p{margin-bottom:.75rem}
+.a p:last-child{margin-bottom:0}
+.a h3{font-family:var(--serif);font-size:1.1875rem;font-weight:700;margin:0 0 .5rem;letter-spacing:-.01em}
+.a h4{font-family:var(--serif);font-size:1rem;font-weight:700;margin:1.375rem 0 .375rem}
+.a ul{margin:.5rem 0 .75rem;padding-left:1.125rem}
+.a li{margin-bottom:.3125rem;line-height:1.65}
+.a strong{font-weight:700}
+.opts{display:flex;flex-direction:column;gap:7px;margin-top:.875rem;font-family:var(--sans)}
+.opt{display:flex;justify-content:space-between;align-items:baseline;gap:10px;text-align:left;background:var(--surface);border:1px solid var(--bd2);border-radius:10px;padding:.75rem .9375rem;cursor:pointer;font-family:var(--sans);transition:border-color .15s,background .15s}
+.opt:hover{border-color:var(--clayL);background:var(--clayXL)}
+.opt .l{font-size:.875rem;font-weight:600;color:var(--tx)}
+.opt .r{font-size:.75rem;color:var(--tx3);flex-shrink:0}
+.opt:disabled{opacity:.45;cursor:default}
+.think{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:.875rem 1rem;font-family:var(--sans)}
+.thead{display:flex;align-items:center;gap:.5rem;font-size:.8125rem;font-weight:600;color:var(--tx2)}
+.tsp{width:12px;height:12px;border:2px solid var(--bd2);border-top-color:var(--clay);border-radius:50%;animation:sp .8s linear infinite;flex-shrink:0}
+@keyframes sp{to{transform:rotate(360deg)}}
+.tdone{color:var(--tx3);font-weight:500}
+.tsteps{margin-top:.75rem}
+.tstep{padding:0 0 .75rem 0;font-size:.8125rem}
+.tstep:last-child{padding-bottom:0}
+.tst{font-weight:600;color:var(--tx2);margin-bottom:.1875rem}
+.tstep.on .tst{color:var(--tx)}
+.tstep.ok .tst{color:var(--tx3);font-weight:500}
+.txp{color:var(--tx3);line-height:1.55}
+.tsub{color:var(--tx3);line-height:1.5;padding:.1875rem 0 0 .875rem;opacity:0;transform:translateY(-3px);transition:.4s}
+.tsub.in{opacity:1;transform:translateY(0)}
+.tsub .d{color:var(--bd2);margin-right:.375rem}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.75rem;background:var(--panel2);padding:1px 5px;border-radius:4px;color:#5A574D}
+.dots{display:inline-flex;gap:3px;margin-left:2px}
+.dots i{width:3px;height:3px;border-radius:50%;background:var(--clay);animation:tk 1.2s ease infinite}
+.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+@keyframes tk{0%,60%,100%{opacity:.25}30%{opacity:1}}
+.viz{margin:.875rem 0 .25rem;font-family:var(--sans)}
+.vcap{font-size:.75rem;color:var(--tx3);text-align:center;line-height:1.5;margin-top:.5rem}
+.vleg{display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;margin-top:.5rem}
+.vleg span{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--tx2)}
+.vd{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.vcir{transform:scale(.5);transform-origin:center;opacity:0;transition:transform .9s cubic-bezier(.34,1.3,.64,1),opacity .6s}
+.vcir.in{transform:scale(1);opacity:1}
+.vlab{opacity:0;transition:opacity .5s ease .5s}
+.vlab.in{opacity:1}
+.ch{margin:.75rem 0 .25rem;font-family:var(--sans)}
+.chh{font-size:.75rem;font-weight:600;color:var(--tx2);margin-bottom:.125rem}
+.chu{font-size:.6875rem;color:var(--tx3);margin-bottom:.5rem}
+.chr{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.chn{font-size:.75rem;color:var(--tx2);width:150px;flex-shrink:0;line-height:1.3}
+.chb{flex:1;height:12px;background:var(--panel2);border-radius:3px;overflow:hidden}
+.chf{height:100%;background:var(--clay);border-radius:3px;width:0;transition:width .9s cubic-bezier(.3,0,.2,1)}
+.chv{font-size:.75rem;color:var(--tx3);width:42px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+.cta{border:1px solid var(--bd2);border-radius:12px;background:var(--surface);padding:1.25rem;margin-top:1.5rem;font-family:var(--sans)}
+.cta h5{font-family:var(--serif);font-size:1.0625rem;font-weight:700;margin-bottom:.375rem}
+.cta p{font-size:.8125rem;color:var(--tx2);line-height:1.6;margin-bottom:1rem}
+.btn{background:var(--clay);color:#fff;border:none;padding:.75rem 1.25rem;font-size:.875rem;font-weight:600;border-radius:9px;cursor:pointer;font-family:var(--sans);transition:background .15s}
+.btn:hover{background:var(--clayD)}
+.btn2{background:none;border:none;color:var(--tx3);font-size:.8125rem;cursor:pointer;font-family:var(--sans);text-decoration:underline;margin-left:.875rem}
+.btn2:hover{color:var(--tx2)}
+.foot{max-width:720px;margin:1.75rem auto 0;padding:0 1.25rem;text-align:center;font-size:.6875rem;color:var(--tx3);line-height:1.5}
+.prog{display:flex;align-items:center;gap:.5rem;font-family:var(--sans);flex-shrink:0}
+.progbar{flex:0 0 72px;height:4px;background:var(--panel2);border-radius:2px;overflow:hidden}
+.progf{display:block;height:100%;background:var(--clay);border-radius:2px;transition:width .3s ease}
+.progl{font-size:.75rem;color:var(--tx3);font-weight:600;white-space:nowrap}
+.splash-h{font-family:var(--serif);font-size:1.5rem;font-weight:700;line-height:1.32;margin:0 0 .625rem;letter-spacing:-.01em;color:var(--tx)}
+.splash-p{font-family:var(--sans);font-size:.9375rem;color:var(--tx2);line-height:1.6;margin-bottom:1.625rem;max-width:560px}
+.splash-label{font-family:var(--serif);font-size:1rem;line-height:1.72;color:var(--tx);margin-bottom:.75rem}
+.scards{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.5rem}
+.scard{display:flex;align-items:flex-start;gap:.75rem;text-align:left;background:var(--surface);border:1px solid var(--bd2);border-radius:12px;padding:1rem 1.125rem;cursor:pointer;font-family:var(--sans);transition:border-color .15s,background .15s,transform .15s}
+.scard:hover{border-color:var(--clayL);background:var(--clayXL);transform:translateY(-1px)}
+.scard:focus-visible{outline:2px solid var(--clay);outline-offset:2px}
+.slogo{width:60px;height:60px;border-radius:9px;flex-shrink:0;object-fit:cover}
+.stext{flex:1;min-width:0}
+.scard .sb{font-size:.9375rem;font-weight:700;color:var(--tx);margin-bottom:.1875rem}
+.scard .sc{font-size:.8125rem;color:var(--tx2);margin-bottom:.5625rem}
+.scard .ss{font-size:.6875rem;color:var(--tx3)}
+.scard:disabled{opacity:.45;cursor:default;pointer-events:none}
+.stage{min-height:calc(100vh - 202px);display:flex;flex-direction:column;justify-content:center;padding:1.5rem 0}
+.think-stage{min-height:100vh;padding:1.5rem 0}
+.hid{display:none!important}
+@media(max-width:560px){.scards{grid-template-columns:1fr}.progbar{flex:0 0 44px}.topbar .nm{font-size:.8125rem}.nm-sub{display:none}}
+@media(max-width:560px){.chn{width:104px}.a{font-size:.9375rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+   <div class="tb-brand"><div class="mark"></div><div class="nm">GWI Agentic<span class="nm-sub"> &middot; illustrative demo</span></div></div>
+   <div class="prog"><div class="progbar"><span class="progf" id="progf" style="width:33%"></span></div><div class="progl" id="progl">Step 1 of 3</div></div>
+  </div>
+  <div id="splash" class="stage">
+   <h1 class="splash-h" tabindex="-1">Build a data-backed pitch in seconds</h1>
+   <p class="splash-p">GWI Agentic turns a seller and a prospect brand into an audience-backed pitch &mdash; overlap, profile and narrative, drawn from GWI&rsquo;s global consumer data. This walkthrough uses simulated brands and figures to show how it works.</p>
+   <div class="splash-label">First, which platform do you sell ad space for?</div>
+   <div class="scards" id="scards"></div>
+  </div>
+  <div class="chat" id="chat" role="log" aria-live="polite" aria-relevant="additions text"></div>
+</div>
+<div class="foot">Simulated output for demonstration only. Not a representation of the product interface.</div>
+<script>
+const SELL=[
+ {id:'scrollr',cat:'Short-form video & creators',brand:'Scrollr',sa:'Scrollr Users',sz:255.0,pop:'11%',samp:'84,210',
+  say:'I sell ad space for a short-form video and creator platform.',logo:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjMyIiBoZWlnaHQ9IjYzMiIgdmlld0JveD0iMCAwIDYzMiA2MzIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MzIiIGhlaWdodD0iNjMyIiBmaWxsPSJibGFjayIvPgo8cGF0aCBkPSJNMjg0LjYzNSAzNzQuOEMyODYuNzI2IDM3NS45NjUgMjg5LjA0IDM3Ni41NDggMjkxLjM1MyAzNzYuNTQ4QzI5My44MzkgMzc2LjU0OCAyOTYuMjkgMzc1Ljg4IDI5OC41MDEgMzc0LjU0M0wzNzUuMDY1IDMyNy45MjFDMzc5LjE0NSAzMjUuNDM2IDM4MS42MyAzMjAuOTk3IDM4MS42MyAzMTYuMjE0QzM4MS42MyAzMTEuNDMyIDM3OS4xMjcgMzA2Ljk5MyAzNzUuMDY1IDMwNC41MDdMMjk4LjUwMSAyNTcuODg2QzI5NC4yNSAyNTUuMzE1IDI4OC45NzEgMjU1LjIyOSAyODQuNjM0IDI1Ny42NDZDMjgwLjMzMiAyNjAuMDggMjc3LjY0MSAyNjQuNjM5IDI3Ny42NDEgMjY5LjYxVjM2Mi44NTNDMjc3LjY0MSAzNjcuODA2IDI4MC4zMTUgMzcyLjM2NiAyODQuNjM0IDM3NC44MTdMMjg0LjYzNSAzNzQuOFpNMzA1LjA2NSAyOTQuMDAxTDM0MS41NTcgMzE2LjIxNUwzMDUuMDY1IDMzOC40NDZWMjk0LjAwMVoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0yMDguMDE3IDQ4OC43MjdDMjA4LjAxNyA0OTYuMzAzIDIxNC4xNTMgNTAyLjQzOSAyMjEuNzI5IDUwMi40MzlDMjI5LjMwNSA1MDIuNDM5IDIzNS40NDEgNDk2LjMwMyAyMzUuNDQxIDQ4OC43MjdWNDE5Ljk2QzI0MS4wODEgNDIyLjQ0NSAyNDcuMjY4IDQyMy44NjggMjUzLjgxNiA0MjMuODY4SDI3MC43MTZWNDYxLjI4NUMyNzAuNzE2IDQ2OC44NjEgMjc2Ljg1MiA0NzQuOTk3IDI4NC40MjggNDc0Ljk5N0MyOTIuMDA0IDQ3NC45OTcgMjk4LjE0IDQ2OC44NjEgMjk4LjE0IDQ2MS4yODVWNDIzLjg2OEgzMzMuMjYxVjQ3NC45OTZDMzMzLjI2MSA0ODIuNTcyIDMzOS4zOTcgNDg4LjcwOCAzNDYuOTczIDQ4OC43MDhDMzU0LjU0OSA0ODguNzA4IDM2MC42ODUgNDgyLjU3MiAzNjAuNjg1IDQ3NC45OTZWNDIzLjg2OEgzNzcuNTg1QzM4NC4xMzMgNDIzLjg2OCAzOTAuMzIgNDIyLjQ0NSAzOTUuOTYgNDE5Ljk2VjQ0Ny41OUMzOTUuOTYgNDU1LjE2NiA0MDIuMDk2IDQ2MS4zMDIgNDA5LjY3MiA0NjEuMzAyQzQxNy4yNDggNDYxLjMwMiA0MjMuMzg0IDQ1NS4xNjYgNDIzLjM4NCA0NDcuNTlWMzc4LjEzOFYzNzguMTA0VjM3OC4wN0w0MjMuMzY3IDE0My43MTJDNDIzLjM2NyAxMzYuMTM2IDQxNy4yMzEgMTMwIDQwOS42NTUgMTMwQzQwMi4wNzkgMTMwIDM5NS45NDMgMTM2LjEzNiAzOTUuOTQzIDE0My43MTJWMjEyLjQ5N0MzOTUuMzI2IDIxMi4yMjMgMzk0Ljc2IDIxMS44OCAzOTQuMTI2IDIxMS42NEMzODguNzc4IDIwOS41ODMgMzgzLjIwNyAyMDguNTIgMzc3LjU2OCAyMDguNTJIMzYwLjY2OFYxNzEuMTM4QzM2MC42NjggMTYzLjU2MSAzNTQuNTMyIDE1Ny40MjUgMzQ2Ljk1NiAxNTcuNDI1QzMzOS4zOCAxNTcuNDI1IDMzMy4yNDQgMTYzLjU2MSAzMzMuMjQ0IDE3MS4xMzhWMjA4LjUySDI5OC4xMjNWMTU3LjQyM0MyOTguMTIzIDE0OS44NDcgMjkxLjk4NyAxNDMuNzExIDI4NC40MTEgMTQzLjcxMUMyNzYuODM1IDE0My43MTEgMjcwLjY5OSAxNDkuODQ3IDI3MC42OTkgMTU3LjQyM1YyMDguNTJIMjUzLjc5OUMyNDguMTQyIDIwOC41MiAyNDIuNTg5IDIwOS41ODMgMjM3LjI3NiAyMTEuNjIzQzIzNi42MjQgMjExLjg2MyAyMzYuMDU5IDIxMi4yMjMgMjM1LjQyNCAyMTIuNDk3VjE4NC44NUMyMzUuNDI0IDE3Ny4yNzMgMjI5LjI4OCAxNzEuMTM3IDIyMS43MTIgMTcxLjEzN0MyMTQuMTM2IDE3MS4xMzcgMjA4IDE3Ny4yNzMgMjA4IDE4NC44NVYzNzguMDcxVjM3OC4xMDVWMzc4LjEzOVY0ODguNzI3TDIwOC4wMTcgNDg4LjcyN1pNMjM1LjQ0MSAyNTQuMzE3QzIzNS40NDEgMjQ2Ljc3NSAyNDAuMTM4IDIzOS45MDIgMjQ3LjE0OCAyMzcuMjExQzI0OS4zMDggMjM2LjM3MSAyNTEuNTUzIDIzNS45NDMgMjUzLjc5OCAyMzUuOTQzSDI4NC4xMkMyODQuMjIzIDIzNS45NDMgMjg0LjMwOCAyMzUuOTk0IDI4NC40MjggMjM1Ljk5NEMyODQuNTMxIDIzNS45OTQgMjg0LjYxNyAyMzUuOTQzIDI4NC43MzcgMjM1Ljk0M0gzNDYuNjgxQzM0Ni43ODQgMjM1Ljk0MyAzNDYuODY5IDIzNS45OTQgMzQ2Ljk4OSAyMzUuOTk0QzM0Ny4wOTIgMjM1Ljk5NCAzNDcuMTc4IDIzNS45NDMgMzQ3LjI5OCAyMzUuOTQzSDM3Ny42MTlDMzc5Ljg2NCAyMzUuOTQzIDM4Mi4xMSAyMzYuMzcxIDM4NC4zMDQgMjM3LjIxMUMzOTEuMjc5IDIzOS45MDIgMzk1Ljk5MyAyNDYuNzc1IDM5NS45OTMgMjU0LjMxN1YzNzguMDY5QzM5NS45OTMgMzg4LjE5OCAzODcuNzQ5IDM5Ni40NiAzNzcuNjE5IDM5Ni40NkgyNTMuODE0QzI0My42ODUgMzk2LjQ2IDIzNS40NCAzODguMTk4IDIzNS40NCAzNzguMDY5TDIzNS40NDEgMjU0LjMxN1oiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo='},
+ {id:'streamly',cat:'Ad-supported streaming & TV',brand:'Streamly',sa:'Streamly Viewers',sz:412.0,pop:'18%',samp:'126,470',
+  say:'I sell ad space for an ad-supported streaming and TV platform.',logo:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjMyIiBoZWlnaHQ9IjYzMiIgdmlld0JveD0iMCAwIDYzMiA2MzIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MzIiIGhlaWdodD0iNjMyIiBmaWxsPSJibGFjayIvPgo8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTMxNS44MjMgMjc2Ljg0N0MzMzcuNjY4IDI3Ni44NDcgMzU1LjM5IDI5NC41NjkgMzU1LjM5IDMxNi40MTNDMzU1LjM5IDMzOC4yNTggMzM3LjY2OCAzNTUuOTggMzE1LjgyMyAzNTUuOThDMjkzLjk3OSAzNTUuOTggMjc2LjI1NyAzMzguMjU4IDI3Ni4yNTcgMzE2LjQxM0MyNzYuMjU3IDI5NC41NjkgMjkzLjk3OSAyNzYuODQ3IDMxNS44MjMgMjc2Ljg0N1pNMzE1LjgyMyAzMDMuMjI1QzMwOC41MzYgMzAzLjIyNSAzMDIuNjM0IDMwOS4xMjYgMzAyLjYzNCAzMTYuNDEzQzMwMi42MzQgMzIzLjcwMSAzMDguNTM2IDMyOS42MDIgMzE1LjgyMyAzMjkuNjAyQzMyMy4xMSAzMjkuNjAyIDMyOS4wMTIgMzIzLjcwMSAzMjkuMDEyIDMxNi40MTNDMzI5LjAxMiAzMDkuMTI2IDMyMy4xMSAzMDMuMjI1IDMxNS44MjMgMzAzLjIyNVpNMzg2LjY4MSAyMzYuNzUyQzM4MS41MzcgMjMxLjYwOCAzODEuNTM3IDIyMy4yNSAzODYuNjgxIDIxOC4xMDZDMzkxLjgyNCAyMTIuOTYzIDQwMC4xODMgMjEyLjk2MyA0MDUuMzI3IDIxOC4xMDZDNDMwLjUwMSAyNDMuMjgxIDQ0Ni4wOCAyNzguMDUgNDQ2LjA4IDMxNi40M0M0NDYuMDggMzU0LjgxMSA0MzAuNTAxIDM4OS41NzkgNDA1LjMyNyA0MTQuNzU0QzQwMC4xODMgNDE5Ljg5OCAzOTEuODI0IDQxOS44OTggMzg2LjY4MSA0MTQuNzU0QzM4MS41MzcgNDA5LjYxIDM4MS41MzcgNDAxLjI1MiAzODYuNjgxIDM5Ni4xMDhDNDA3LjA3NCAzNzUuNzE1IDQxOS43MDIgMzQ3LjUzOSA0MTkuNzAyIDMxNi40NDdDNDE5LjcwMiAyODUuMzU0IDQwNy4wNzQgMjU3LjE3OSAzODYuNjgxIDIzNi43ODZWMjM2Ljc1MlpNMzczLjU0MSAzODIuOTUzQzM2OC4zOTcgMzg4LjA5NyAzNjAuMDM5IDM4OC4wOTcgMzU0Ljg5NSAzODIuOTUzQzM0OS43NTEgMzc3LjgwOSAzNDkuNzUxIDM2OS40NTEgMzU0Ljg5NSAzNjQuMjkxQzM2Ny4xNjEgMzUyLjAyNSAzNzQuNzQ0IDMzNS4xMSAzNzQuNzQ0IDMxNi40MTRDMzc0Ljc0NCAyOTcuNzE4IDM2Ny4xNjEgMjgwLjc4NyAzNTQuODk1IDI2OC41MzdDMzQ5Ljc1MSAyNjMuMzkzIDM0OS43NTEgMjU1LjAzNSAzNTQuODk1IDI0OS44NzVDMzYwLjAzOSAyNDQuNzMxIDM2OC4zOTcgMjQ0LjczMSAzNzMuNTQxIDI0OS44NzVDMzkwLjU3MSAyNjYuOTA1IDQwMS4xMjMgMjkwLjQ0NyA0MDEuMTIzIDMxNi40MTRDNDAxLjEyMyAzNDIuMzgyIDM5MC41ODggMzY1LjkwNyAzNzMuNTQxIDM4Mi45NTNaTTQxOC45MTEgMjA0LjUyNUM0MTMuNzY3IDE5OS4zODEgNDEzLjc2NyAxOTEuMDIzIDQxOC45MTEgMTg1Ljg3OUM0MjQuMDU1IDE4MC43MzUgNDMyLjQxMyAxODAuNzM1IDQzNy41NTcgMTg1Ljg3OUM0NzAuOTkxIDIxOS4yOTcgNDkxLjY2MyAyNjUuNDczIDQ5MS42NjMgMzE2LjQzNUM0OTEuNjYzIDM2Ny4zOTIgNDcwLjk3MyA0MTMuNTU2IDQzNy41NTcgNDQ2Ljk5QzQzMi40MTMgNDUyLjEzNCA0MjQuMDU1IDQ1Mi4xMzQgNDE4LjkxMSA0NDYuOTlDNDEzLjc2NyA0NDEuODQ2IDQxMy43NjcgNDMzLjQ4OCA0MTguOTExIDQyOC4zNDRDNDQ3LjU2NCAzOTkuNjkxIDQ2NS4yODUgMzYwLjEyNSA0NjUuMjg1IDMxNi40NTFDNDY1LjI4NSAyNzIuNzc4IDQ0Ny41NDYgMjMzLjE5NSA0MTguOTExIDIwNC41NTlWMjA0LjUyNVpNMjQ0Ljk5OSAzOTYuMDk2QzI1MC4xNDIgNDAxLjI0IDI1MC4xNDIgNDA5LjU5OCAyNDQuOTk5IDQxNC43NDJDMjM5Ljg1NSA0MTkuODg2IDIzMS40OTcgNDE5Ljg4NiAyMjYuMzM2IDQxNC43NDJDMjAxLjE2MiAzODkuNTY3IDE4NS41ODMgMzU0Ljc5OSAxODUuNTgzIDMxNi40MThDMTg1LjU4MyAyNzguMDM3IDIwMS4xNjIgMjQzLjI2OSAyMjYuMzM2IDIxOC4wOTRDMjMxLjQ4IDIxMi45NSAyMzkuODM4IDIxMi45NSAyNDQuOTk5IDIxOC4wOTRDMjUwLjE0MiAyMjMuMjM4IDI1MC4xNDIgMjMxLjU5NiAyNDQuOTk5IDIzNi43NEMyMjQuNjA1IDI1Ny4xMzMgMjExLjk3NyAyODUuMzA5IDIxMS45NzcgMzE2LjQwMUMyMTEuOTc3IDM0Ny40OTQgMjI0LjYwNSAzNzUuNjY5IDI0NC45OTkgMzk2LjA2MlYzOTYuMDk2Wk0yNTguMTIyIDI0OS44OTVDMjYzLjI2NiAyNDQuNzUxIDI3MS42MjQgMjQ0Ljc1MSAyNzYuNzY4IDI0OS44OTVDMjgxLjkxMiAyNTUuMDM5IDI4MS45MTIgMjYzLjM5NyAyNzYuNzY4IDI2OC41NTdDMjY0LjUxOSAyODAuODIzIDI1Ni45MTggMjk3LjczOCAyNTYuOTE4IDMxNi40MzRDMjU2LjkxOCAzMzUuMTMgMjY0LjUxOSAzNTIuMDYxIDI3Ni43NjggMzY0LjMxMUMyODEuOTEyIDM2OS40NTUgMjgxLjkxMiAzNzcuODEzIDI3Ni43NjggMzgyLjk3M0MyNzEuNjI0IDM4OC4xMTcgMjYzLjI2NiAzODguMTE3IDI1OC4xMjIgMzgyLjk3M0MyNDEuMDkxIDM2NS45NDMgMjMwLjU0IDM0Mi40MDEgMjMwLjU0IDMxNi40MzRDMjMwLjU0IDI5MC40NjcgMjQxLjA3NSAyNjYuOTQxIDI1OC4xMjIgMjQ5Ljg5NVpNMjEyLjc2OSA0MjguMzIzQzIxNy45MTMgNDMzLjQ2NyAyMTcuOTEzIDQ0MS44MjUgMjEyLjc2OSA0NDYuOTY5QzIwNy42MjUgNDUyLjExMyAxOTkuMjY3IDQ1Mi4xMTMgMTk0LjEwNiA0NDYuOTY5QzE2MC42ODkgNDEzLjU1MSAxNDAgMzY3LjM3NSAxNDAgMzE2LjQxM0MxNDAgMjY1LjQ1MSAxNjAuNjkgMjE5LjI5MiAxOTQuMTA2IDE4NS44NThDMTk5LjI1IDE4MC43MTQgMjA3LjYwOCAxODAuNzE0IDIxMi43NjkgMTg1Ljg1OEMyMTcuOTEzIDE5MS4wMDIgMjE3LjkxMyAxOTkuMzYgMjEyLjc2OSAyMDQuNTA0QzE4NC4xMTYgMjMzLjE1NyAxNjYuMzk0IDI3Mi43MjMgMTY2LjM5NCAzMTYuMzk3QzE2Ni4zOTQgMzYwLjA3IDE4NC4xMTcgMzk5LjY1NCAyMTIuNzY5IDQyOC4yODlWNDI4LjMyM1oiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo='},
+ {id:'wanderly',cat:'Travel booking & discovery',brand:'Wanderly',sa:'Wanderly Bookers',sz:168.0,pop:'7%',samp:'52,880',
+  say:'I sell ad space for a travel booking and discovery platform.',logo:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjMyIiBoZWlnaHQ9IjYzMiIgdmlld0JveD0iMCAwIDYzMiA2MzIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMF8yXzIwKSI+CjxyZWN0IHdpZHRoPSI2MzIiIGhlaWdodD0iNjMyIiBmaWxsPSJibGFjayIvPgo8cGF0aCBkPSJNMzE1Ljg5NSAxMzFDMjI1LjEwNiAxMzEgMTUxIDIwNS4xMDYgMTUxIDI5NS44OTRDMTUxIDM3NS44MiAyMDguMDM0IDQ0Mi41NTQgMjgzLjY5MiA0NTcuNjg1VjQ1Ni41MjFMMjc0LjM4IDQzNy4xMjJDMjEzLjA3OCA0MTkuMjc0IDE2OC40NTkgMzYyLjYyOCAxNjguNDU5IDI5NS44OTRDMTY4LjQ1OSAyMTQuODA1IDIzNC40MTcgMTQ4LjQ1OSAzMTUuODk1IDE0OC40NTlDMzk3LjM3MiAxNDguNDU5IDQ2My4zMyAyMTQuNDE3IDQ2My4zMyAyOTUuODk0QzQ2My4zMyAzMTcuNjIyIDQ1OC42NzQgMzM4LjE4NSA0NDkuNzUgMzU3Ljk3MkM0NDcuODEgMzYyLjI0IDQ0OS43NSAzNjcuNjcyIDQ1NC4wMTggMzY5LjYxMkM0NTguMjg2IDM3MS41NTIgNDYzLjcxOCAzNjkuNjEyIDQ2NS42NTggMzY1LjM0NEM0NzUuNzQ1IDM0My42MTcgNDgwLjc4OSAzMjAuMzM4IDQ4MC43ODkgMjk1Ljg5NEM0ODAuNzg5IDIwNS4xMDYgNDA2LjY4MyAxMzEgMzE1Ljg5NSAxMzFaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMzczLjcwNSAzODcuNDU5QzQwMy45NjggMzY4LjA2IDQyNC4xNDMgMzM0LjMwNSA0MjQuMTQzIDI5NS44OTRDNDI0LjE0MyAyMzYuMTQ0IDM3NS42NDUgMTg3LjI1OCAzMTUuNTA3IDE4Ny4yNThDMjU1Ljc1NyAxODcuMjU4IDIwNi44NzEgMjM2LjE0NCAyMDYuODcxIDI5NS44OTRDMjA2Ljg3MSAzNTQuNDggMjUzLjQyOSA0MDIuNTkxIDMxMi4wMTUgNDA0LjE0M0wzMDQuMjU1IDM5NC4wNTVDMzAwLjM3NSAzODkuMzk5IDI5OS4yMTIgMzgzLjE5MiAzMDEuMTUxIDM3Ny4zNzJDMzAxLjUzOSAzNzUuODIgMzAyLjMxNSAzNzQuMjY4IDMwMy4wOTEgMzcyLjcxNkMyOTkuOTg3IDM2Ni41MDggMjk3LjI3MiAzNTguMzYgMjk0Ljk0NCAzNDguMjczQzMwMS41MzkgMzQ3LjQ5NyAzMDguNTIzIDM0Ni43MjEgMzE1LjUwNyAzNDYuNzIxQzMyMi40OTEgMzQ2LjcyMSAzMjkuMDg2IDM0Ny4xMDkgMzM1LjY4MiAzNDguMjczQzMzNC45MDYgMzUyLjE1MyAzMzMuNzQyIDM1NS42NDQgMzMyLjk2NiAzNTkuMTM2QzMzNC41MTggMzU4Ljc0OCAzMzUuNjgyIDM1OC4zNiAzMzcuMjM0IDM1OC4zNkMzNDEuODkgMzU4LjM2IDM0Ni41NDYgMzYwLjMgMzUwLjAzOCAzNjMuNDA0QzM1MS4yMDIgMzU5LjkxMiAzNTIuMzY2IDM1Ni4wMzIgMzUzLjE0MiAzNTEuNzY1QzM2MS42NzcgMzU0LjQ4IDM2OS44MjUgMzU3Ljk3MiAzNzcuMTk3IDM2Mi4yNEMzNzIuMTUzIDM2Ni44OTYgMzY2LjcyMSAzNzAuNzc2IDM2MC45MDEgMzc0LjI2OEwzNzMuNzA1IDM4Ny40NTlaTTQwNi4yOTYgMjg2Ljk3MUgzNTkuMzVDMzU4Ljk2MiAyNzYuNDk1IDM1OC4xODYgMjY2LjQwNyAzNTYuNjM0IDI1Ni4zMkMzNjguNjYxIDI1Mi44MjggMzc5LjUyNSAyNDguMTcyIDM4OS4yMjQgMjQxLjk2NEMzOTguNTM2IDI1NS4xNTYgNDA0Ljc0NCAyNzAuMjg3IDQwNi4yOTYgMjg2Ljk3MVpNMzE1Ljg5NSAyMDQuNzE3QzMyMS4zMjcgMjA0LjcxNyAzMzAuNjM4IDIxNy45MDkgMzM2LjA3IDI0My4xMjhDMzI5LjQ3NSAyNDMuOTA0IDMyMi40OTEgMjQ0LjY4IDMxNS44OTUgMjQ0LjY4QzMwOC45MTEgMjQ0LjY4IDMwMi4zMTUgMjQzLjkwNCAyOTUuMzMyIDI0My4xMjhDMzAxLjE1MSAyMTguMjk3IDMxMC40NjMgMjA0LjcxNyAzMTUuODk1IDIwNC43MTdaTTI0Mi41NjUgMjQyLjM1MkMyNTIuMjY1IDI0OC41NiAyNjMuMTI5IDI1My4yMTYgMjc1LjE1NiAyNTYuNzA4QzI3My42MDQgMjY2LjQwNyAyNzIuODI4IDI3Ni44ODMgMjcyLjQ0IDI4Ny4zNTlIMjI1LjQ5NEMyMjcuMDQ2IDI3MC4yODcgMjMzLjI1NCAyNTUuMTU2IDI0Mi41NjUgMjQyLjM1MlpNMjI1LjQ5NCAzMDQuODE4SDI3Mi44MjhDMjczLjIxNiAzMTUuMjk0IDI3My45OTIgMzI1LjM4MSAyNzUuNTQ0IDMzNS40NjlDMjYzLjUxNyAzMzguOTYxIDI1Mi42NTMgMzQzLjYxNyAyNDIuOTUzIDM0OS44MjVDMjMzLjI1NCAzMzYuNjMzIDIyNy4wNDYgMzIxLjUwMiAyMjUuNDk0IDMwNC44MThaTTI1NC41OTMgMzYyLjYyOEMyNjEuOTY1IDM1OC4zNiAyNjkuNzI1IDM1NC44NjggMjc4LjY0OCAzNTIuMTUzQzI4MS4zNjQgMzYzLjc5MiAyODQuODU2IDM3NC4yNjggMjg5LjEyNCAzODIuNDE2QzI3NS45MzIgMzc4LjkyNCAyNjQuMjkzIDM3MS41NTIgMjU0LjU5MyAzNjIuNjI4Wk0yNzguMjYgMjM5LjI0OEMyNjkuNzI0IDIzNi41MzIgMjYxLjU3NyAyMzMuMDQxIDI1NC4yMDUgMjI4Ljc3M0MyNjMuOTA1IDIxOS44NDkgMjc1LjU0NCAyMTIuODY1IDI4OC43MzYgMjA4LjU5N0MyODQuNDY4IDIxNy41MjEgMjgwLjk3NiAyMjcuNjA5IDI3OC4yNiAyMzkuMjQ4Wk0zMzkuNTYyIDMzMS4yMDFDMzMxLjgwMiAzMzAuMDM3IDMyNC4wNDMgMzI5LjI2MSAzMTUuODk1IDMyOS4yNjFDMzA3Ljc0NyAzMjkuMjYxIDI5OS45ODcgMzMwLjAzNyAyOTIuMjI4IDMzMS4yMDFDMjkxLjA2NCAzMjMuMDU0IDI5MC4yODggMzE0LjEzIDI4OS45IDMwNC40M0gzNDEuMTE0QzM0MS4xMTQgMzE0LjUxOCAzNDAuMzM4IDMyMy40NDEgMzM5LjU2MiAzMzEuMjAxWk0yOTAuMjg4IDI4Ni45NzFDMjkwLjY3NiAyNzcuMjcxIDI5MS40NTIgMjY4LjM0NyAyOTIuNjE2IDI2MC4yQzMwMC4zNzUgMjYxLjM2NCAzMDguMTM1IDI2Mi4xNCAzMTYuMjgzIDI2Mi4xNEMzMjQuNDMxIDI2Mi4xNCAzMzIuMTkgMjYxLjM2NCAzMzkuOTUgMjYwLjJDMzQxLjExNCAyNjguMzQ3IDM0MS44OSAyNzcuMjcxIDM0Mi4yNzggMjg2Ljk3MUgyOTAuMjg4Wk0zNDMuMDU0IDIwOC45ODVDMzU2LjI0NiAyMTIuODY1IDM2Ny44ODUgMjE5Ljg0OSAzNzcuNTg1IDIyOS4xNjFDMzcwLjYwMSAyMzMuNDI5IDM2Mi40NTMgMjM2LjkyIDM1My41MyAyMzkuNjM2QzM1MC44MTQgMjI3LjYwOSAzNDcuMzIyIDIxNy41MjEgMzQzLjA1NCAyMDguOTg1Wk0zNTYuNjM0IDMzNS4wODFDMzU4LjE4NiAzMjUuMzgxIDM1OC45NjIgMzE0LjkwNiAzNTkuMzUgMzA0LjQzSDQwNi42ODRDNDA1LjEzMiAzMjEuMTE0IDM5OC45MjQgMzM2LjYzMyAzODkuNjEyIDM0OS40MzdDMzc5LjUyNSAzNDMuMjI5IDM2OC42NjEgMzM4LjU3MyAzNTYuNjM0IDMzNS4wODFaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNNDAzLjU4MSA0MDEuNDI3TDM3NC40ODIgNDEwLjczOUwzMzkuNTYzIDM3NS40MzJDMzM4Ljc4NyAzNzQuNjU2IDMzOC4wMTEgMzc0LjY1NiAzMzYuODQ3IDM3NC42NTZMMzE4LjIyNCAzODAuNDc2QzMxNi42NzIgMzgwLjg2NCAzMTUuODk2IDM4My4xOTEgMzE3LjA2IDM4NC4zNTVMMzQ1LjM4MyA0MjAuNDM4TDMxNS44OTYgNDMyLjg1NEwzMDYuMTk2IDQyMS45OUMzMDUuNDIgNDIxLjIxNCAzMDQuNjQ0IDQyMC44MjYgMzAzLjQ4IDQyMS4yMTRMMjg5LjkwMSA0MjUuNDgyQzI4OC4zNDkgNDI1Ljg3IDI4Ny41NzMgNDI3LjgxIDI4OC4zNDkgNDI4Ljk3NEwyOTkuMjEyIDQ1MS44NjVMMzAzLjA5MiA0NzcuMDg0QzMwMy40OCA0NzguNjM2IDMwNS4wMzIgNDc5LjQxMiAzMDYuMTk2IDQ3OS4wMjRMMzE5Ljc3NiA0NzQuNzU2QzMyMC41NTIgNDc0LjM2OCAzMjEuMzI4IDQ3My41OTIgMzIxLjcxNiA0NzIuODE2TDMyMy42NTYgNDU4LjA3M0wzNTQuNjk1IDQ1MS40NzdMMzUxLjk3OSA0OTcuMjZDMzUxLjk3OSA0OTkuMiAzNTMuNTMxIDUwMC4zNjQgMzU1LjQ3MSA0OTkuOTc2TDM3NC4wOTQgNDkzLjc2OEMzNzQuODcgNDkzLjM4IDM3NS42NDYgNDkyLjYwNCAzNzYuMDM0IDQ5MS44MjhMMzg0LjU3IDQ0My4zMjlMNDE0LjQ0NSA0MzQuMDE4QzQyNC41MzIgNDMwLjkxNCA0MjkuNTc2IDQxOS4yNzQgNDI0LjE0NCA0MDkuNTc1QzQyMC4yNjQgNDAxLjgxNSA0MTEuMzQxIDM5OS4wOTkgNDAzLjU4MSA0MDEuNDI3WiIgZmlsbD0id2hpdGUiLz4KPC9nPgo8ZGVmcz4KPGNsaXBQYXRoIGlkPSJjbGlwMF8yXzIwIj4KPHJlY3Qgd2lkdGg9IjYzMiIgaGVpZ2h0PSI2MzIiIGZpbGw9IndoaXRlIi8+CjwvY2xpcFBhdGg+CjwvZGVmcz4KPC9zdmc+Cg=='},
+ {id:'apex',cat:'Live sport & league broadcasts',brand:'Apex League',sa:'Apex League Followers',sz:298.0,pop:'13%',samp:'96,440',
+  say:'I sell sponsorship and ad space for a sporting league.',logo:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjMyIiBoZWlnaHQ9IjYzMiIgdmlld0JveD0iMCAwIDYzMiA2MzIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MzIiIGhlaWdodD0iNjMyIiBmaWxsPSJibGFjayIvPgo8cGF0aCBkPSJNMjU1Ljk0NiA0MzcuMzc1SDE2OS4wNjdDMTUxLjkzNCA0MzcuMzc1IDEzOCA0MjMuNDQxIDEzOCA0MDYuMzA4VjIyNS41NTRDMTM4IDIwOC40MjEgMTUxLjkzNCAxOTQuNDg3IDE2OS4wNjcgMTk0LjQ4N0g0NDAuMTk3QzQ1Ny4zMyAxOTQuNDg3IDQ3MS4yNjQgMjA4LjQyMSA0NzEuMjY0IDIyNS41NTRWMjczLjY3OEM0NzEuMjY0IDI3OC4zNTYgNDY3LjQ2OSAyODIuMTUgNDYyLjc5MSAyODIuMTVDNDU4LjExMyAyODIuMTUgNDU0LjMxOCAyNzguMzU2IDQ1NC4zMTggMjczLjY3OFYyMjUuNTU0QzQ1NC4zMTggMjE3Ljc2NSA0NDcuOTg2IDIxMS40MzMgNDQwLjE5NyAyMTEuNDMzSDE2OS4wNjdDMTYxLjI3OCAyMTEuNDMzIDE1NC45NDYgMjE3Ljc2NSAxNTQuOTQ2IDIyNS41NTRWNDA2LjMwOEMxNTQuOTQ2IDQxNC4wOTcgMTYxLjI3OCA0MjAuNDI5IDE2OS4wNjcgNDIwLjQyOUgyNTUuOTQ2QzI2MC42MjQgNDIwLjQyOSAyNjQuNDE5IDQyNC4yMjQgMjY0LjQxOSA0MjguOTAyQzI2NC40MTkgNDMzLjU4IDI2MC42MjQgNDM3LjM3NSAyNTUuOTQ2IDQzNy4zNzVaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMjgyLjgzMiA0ODIuNTYzSDE4OC40OTVDMTc5LjI3MiA0ODIuNTYzIDE3MS4zMjkgNDc2LjI2NCAxNjkuMTg4IDQ2Ny4yNEwxNjAuODE1IDQzMC44QzE2MC4yMjkgNDI4LjI4NCAxNjAuODI2IDQyNS42NDMgMTYyLjQzNyA0MjMuNjIzQzE2NC4wNDggNDIxLjYwMyAxNjYuNDg2IDQyMC40MjkgMTY5LjA2NyA0MjAuNDI5SDI1NS45NDZDMjYwLjYyNCA0MjAuNDI5IDI2NC40MTkgNDI0LjIyNCAyNjQuNDE5IDQyOC45MDJDMjY0LjQxOSA0MzMuNTggMjYwLjYyNCA0MzcuMzc1IDI1NS45NDYgNDM3LjM3NUgxNzkuNzE0TDE4NS42ODIgNDYzLjM4M0MxODYuMDAyIDQ2NC43MTggMTg3LjExNyA0NjUuNjE3IDE4OC40OTUgNDY1LjYxN0gyODIuODMyQzI4Ny41MSA0NjUuNjE3IDI5MS4zMDUgNDY5LjQxMiAyOTEuMzA1IDQ3NC4wOUMyOTEuMzA1IDQ3OC43NjggMjg3LjUxIDQ4Mi41NjMgMjgyLjgzMiA0ODIuNTYzWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTMwNC42MzUgMjExLjQzMkMzMDIuNzcxIDIxMS40MzIgMzAwLjkwNiAyMTAuODI1IDI5OS4zMzkgMjA5LjU3M0MyOTUuNjg4IDIwNi42NDkgMjk1LjA5MSAyMDEuMzIgMjk4LjAxNSAxOTcuNjYzTDM0My4yMDUgMTQxLjE3OEMzNDYuMTUgMTM3LjUxNSAzNTEuNDY3IDEzNi45NDEgMzU1LjEyIDEzOS44NTlDMzU4Ljc3MSAxNDIuNzgzIDM1OS4zNjcgMTQ4LjExMiAzNTYuNDQ0IDE1MS43NjlMMzExLjI1NSAyMDguMjU0QzMwOS41NzkgMjEwLjM0NSAzMDcuMTE3IDIxMS40MzIgMzA0LjYzNSAyMTEuNDMyWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTMwNC42MzMgMjExLjQzM0MzMDIuMTUxIDIxMS40MzMgMjk5LjY5MSAyMTAuMzQ2IDI5OC4wMTQgMjA4LjI1NkwyNTIuODI2IDE1MS43N0MyNDkuOTAyIDE0OC4xMTQgMjUwLjQ5OCAxNDIuNzg1IDI1NC4xNSAxMzkuODYxQzI1Ny44MTMgMTM2Ljk0MyAyNjMuMTMgMTM3LjUxNyAyNjYuMDY1IDE0MS4xNzlMMzExLjI1MyAxOTcuNjY1QzMxNC4xNzcgMjAxLjMyMiAzMTMuNTgyIDIwNi42NTEgMzA5LjkyOSAyMDkuNTc0QzMwOC4zNjIgMjEwLjgyNiAzMDYuNDk4IDIxMS40MzMgMzA0LjYzMyAyMTEuNDMzWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTM4My43MjQgNDkzLjg2QzMyMi45OTEgNDkzLjg2IDI3My41NzcgNDQ0LjQ0NiAyNzMuNTc3IDM4My43MTNDMjczLjU3NyAzMjIuOTggMzIyLjk5MSAyNzMuNTY3IDM4My43MjQgMjczLjU2N0M0NDQuNDU3IDI3My41NjcgNDkzLjg3IDMyMi45OCA0OTMuODcgMzgzLjcxM0M0OTMuODcgNDQ0LjQ0NiA0NDQuNDU3IDQ5My44NiAzODMuNzI0IDQ5My44NlpNMzgzLjcyNCAyOTAuNTEyQzMzMi4zMzUgMjkwLjUxMiAyOTAuNTIzIDMzMi4zMjUgMjkwLjUyMyAzODMuNzEzQzI5MC41MjMgNDM1LjEwMSAzMzIuMzM1IDQ3Ni45MTQgMzgzLjcyNCA0NzYuOTE0QzQzNS4xMTIgNDc2LjkxNCA0NzYuOTI1IDQzNS4xMDEgNDc2LjkyNSAzODMuNzEzQzQ3Ni45MjUgMzMyLjMyNSA0MzUuMTEyIDI5MC41MTIgMzgzLjcyNCAyOTAuNTEyWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTM4My43MjMgNDI2LjA3N0MzODEuNTQ5IDQyNi4wNzcgMzc5LjM4NyA0MjUuMjUgMzc3LjczMiA0MjMuNTk1TDM0My44NDEgMzg5LjcwNEMzNDAuNTMxIDM4Ni4zOTQgMzQwLjUzMSAzODEuMDMyIDM0My44NDEgMzc3LjcyM0wzNzcuNzMyIDM0My44MzJDMzgxLjA0MiAzNDAuNTIyIDM4Ni40MDQgMzQwLjUyMiAzODkuNzEzIDM0My44MzJMNDIzLjYwNCAzNzcuNzIzQzQyNi45MTQgMzgxLjAzMyA0MjYuOTE0IDM4Ni4zOTUgNDIzLjYwNCAzODkuNzA0TDM4OS43MTMgNDIzLjU5NUMzODguMDU4IDQyNS4yNSAzODUuODk3IDQyNi4wNzcgMzgzLjcyMyA0MjYuMDc3Wk0zNjEuODEyIDM4My43MTNMMzgzLjcyMyA0MDUuNjI0TDQwNS42MzQgMzgzLjcxM0wzODMuNzIzIDM2MS44MDJMMzYxLjgxMiAzODMuNzEzWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTM4My43MjMgMzM2LjE0OEMzODEuNDYyIDMzNi4xNDggMzc5LjI4OCAzMzUuMjQ0IDM3Ny43IDMzMy42MzNMMzM5Ljg0OCAyOTUuMzRDMzM2LjU2IDI5Mi4wMDggMzM2LjU4MiAyODYuNjQ3IDMzOS45MTQgMjgzLjM1OUMzNDMuMjQ2IDI4MC4wNjYgMzQ4LjYwNyAyODAuMDk5IDM1MS44OTUgMjgzLjQyNkwzODMuNzIzIDMxNS42MjRMNDE1LjU0IDI4My40MjZDNDE4LjgyOCAyODAuMSA0MjQuMTg5IDI4MC4wNzIgNDI3LjUyMSAyODMuMzU1QzQzMC44NTIgMjg2LjY0OCA0MzAuODc1IDI5Mi4wMSA0MjcuNTg4IDI5NS4zNDFMMzg5Ljc0NyAzMzMuNjM0QzM4OC4xNTkgMzM1LjI0NSAzODUuOTg1IDMzNi4xNDggMzgzLjcyMyAzMzYuMTQ4WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTI4OS4zODYgNDMwLjAyN0MyODcuMjAxIDQzMC4wMjcgMjg1LjAxNyA0MjkuMTg4IDI4My4zNjIgNDI3LjUxMUMyODAuMDc1IDQyNC4xNzkgMjgwLjA5NiA0MTguODE4IDI4My40MjkgNDE1LjUyNUwzMTUuNjIxIDM4My43MTNMMjgzLjQyOSAzNTEuODlDMjgwLjA5OCAzNDguNjAzIDI4MC4wNzUgMzQzLjI0MSAyODMuMzYyIDMzOS45MUMyODYuNjUgMzM2LjU3OCAyOTIuMDExIDMzNi41NTYgMjk1LjM0MyAzMzkuODQzTDMzMy42MzYgMzc3LjY4OUMzMzUuMjQ2IDM3OS4yNzggMzM2LjE1MSAzODEuNDUxIDMzNi4xNTEgMzgzLjcxM0MzMzYuMTUxIDM4NS45OCAzMzUuMjQ2IDM4OC4xNDggMzMzLjYzNiAzODkuNzQyTDI5NS4zNDMgNDI3LjU4M0MyOTMuNjg4IDQyOS4yMSAyOTEuNTM3IDQzMC4wMjcgMjg5LjM4NiA0MzAuMDI3WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTM0NS44NzEgNDg2LjUxMkMzNDMuNzIgNDg2LjUxMiAzNDEuNTY4IDQ4NS42OTUgMzM5LjkxNCA0ODQuMDYzQzMzNi41ODIgNDgwLjc3NiAzMzYuNTYgNDc1LjQxNCAzMzkuODQ3IDQ3Mi4wODJMMzc3LjY5OSA0MzMuNzlDMzc5LjI4OCA0MzIuMTc5IDM4MS40NjEgNDMxLjI3NCAzODMuNzIzIDQzMS4yNzRDMzg1Ljk4NSA0MzEuMjc0IDM4OC4xNTggNDMyLjE3OSAzODkuNzQ3IDQzMy43OUw0MjcuNTg3IDQ3Mi4wODJDNDMwLjg3NSA0NzUuNDE0IDQzMC44NTMgNDgwLjc3NiA0MjcuNTIxIDQ4NC4wNjlDNDI0LjE4OSA0ODcuMzQ1IDQxOC44MjcgNDg3LjMyOSA0MTUuNTQgNDgzLjk5OEwzODMuNzIzIDQ1MS44TDM1MS44OTUgNDgzLjk5OEMzNTAuMjQgNDg1LjY3NCAzNDguMDU2IDQ4Ni41MTIgMzQ1Ljg3MSA0ODYuNTEyWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTQ3OC4wNDggNDMwLjAyN0M0NzUuODk3IDQzMC4wMjcgNDczLjc0NSA0MjkuMjEgNDcyLjA5MSA0MjcuNTg0TDQzMy43OTggMzg5Ljc0M0M0MzIuMTg3IDM4OC4xNDkgNDMxLjI4MiAzODUuOTgxIDQzMS4yODIgMzgzLjcxNEM0MzEuMjgyIDM4MS40NTIgNDMyLjE4NyAzNzkuMjc4IDQzMy43OTggMzc3LjY5TDQ3Mi4wOTEgMzM5Ljg0M0M0NzUuNDIyIDMzNi41NTYgNDgwLjc4NCAzMzYuNTc4IDQ4NC4wNzEgMzM5LjkxQzQ4Ny4zNTkgMzQzLjI0MyA0ODcuMzM3IDM0OC42MDMgNDg0LjAwNSAzNTEuODkxTDQ1MS44MTIgMzgzLjcxNEw0ODQuMDA1IDQxNS41MjVDNDg3LjMzNiA0MTguODE4IDQ4Ny4zNTkgNDI0LjE4IDQ4NC4wNzEgNDI3LjUxMUM0ODIuNDE2IDQyOS4xODggNDgwLjIzMiA0MzAuMDI3IDQ3OC4wNDggNDMwLjAyN1oiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0zODMuNzIzIDM1OC4yOTRDMzc5LjA0NSAzNTguMjk0IDM3NS4yNSAzNTQuNSAzNzUuMjUgMzQ5LjgyMVYzMjcuNjc1QzM3NS4yNSAzMjIuOTk2IDM3OS4wNDUgMzE5LjIwMiAzODMuNzIzIDMxOS4yMDJDMzg4LjQwMSAzMTkuMjAyIDM5Mi4xOTYgMzIyLjk5NiAzOTIuMTk2IDMyNy42NzVWMzQ5LjgyMUMzOTIuMTk2IDM1NC41IDM4OC40MDEgMzU4LjI5NCAzODMuNzIzIDM1OC4yOTRaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMzQ5LjgzMSAzOTIuMTg2SDMyNy42NzlDMzIzLjAwMSAzOTIuMTg2IDMxOS4yMDYgMzg4LjM5MiAzMTkuMjA2IDM4My43MTNDMzE5LjIwNiAzNzkuMDM1IDMyMy4wMDEgMzc1LjI0MSAzMjcuNjc5IDM3NS4yNDFIMzQ5LjgzMUMzNTQuNTA5IDM3NS4yNDEgMzU4LjMwNCAzNzkuMDM1IDM1OC4zMDQgMzgzLjcxM0MzNTguMzA0IDM4OC4zOTIgMzU0LjUwOSAzOTIuMTg2IDM0OS44MzEgMzkyLjE4NloiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik00MzkuNzU4IDM5Mi4xODZINDE3LjYxNUM0MTIuOTM3IDM5Mi4xODYgNDA5LjE0MyAzODguMzkyIDQwOS4xNDMgMzgzLjcxM0M0MDkuMTQzIDM3OS4wMzUgNDEyLjkzNyAzNzUuMjQxIDQxNy42MTUgMzc1LjI0MUg0MzkuNzU4QzQ0NC40MzYgMzc1LjI0MSA0NDguMjMgMzc5LjAzNSA0NDguMjMgMzgzLjcxM0M0NDguMjMgMzg4LjM5MiA0NDQuNDM2IDM5Mi4xODYgNDM5Ljc1OCAzOTIuMTg2WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTM4My43MjMgNDQ4LjIyQzM3OS4wNDUgNDQ4LjIyIDM3NS4yNSA0NDQuNDI1IDM3NS4yNSA0MzkuNzQ3VjQxNy42MDVDMzc1LjI1IDQxMi45MjcgMzc5LjA0NSA0MDkuMTMyIDM4My43MjMgNDA5LjEzMkMzODguNDAxIDQwOS4xMzIgMzkyLjE5NiA0MTIuOTI3IDM5Mi4xOTYgNDE3LjYwNVY0MzkuNzQ3QzM5Mi4xOTYgNDQ0LjQyNSAzODguNDAxIDQ0OC4yMiAzODMuNzIzIDQ0OC4yMloiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo='}];
+const PROS=[
+ {id:'fizzly',cat:'Soft drinks',brand:'Fizzly',sa:'Fizzly Drinkers (weekly)',sz:869.6,pop:'28%',samp:'241,900',
+  say:'I am pitching to a soft drinks brand.',
+  side:'<strong>18%</strong> of weekly Fizzly drinkers are more likely to buy when a product is recommended by creators on social.'},
+ {id:'glossy',cat:'Beauty & cosmetics',brand:'Glossy & Co',sa:'Glossy & Co Buyers',sz:486.0,pop:'16%',samp:'138,650',
+  say:'I am pitching to a beauty and cosmetics brand.',
+  side:'<strong>24%</strong> of Glossy &amp; Co buyers discover new products through creators before they ever search for them.'},
+ {id:'peak',cat:'Sportswear & activewear',brand:'Peak',sa:'Peak Buyers',sz:322.0,pop:'11%',samp:'94,120',
+  say:'I am pitching to a sportswear brand.',
+  side:'<strong>21%</strong> of Peak buyers say brand sponsorship of sport or fitness makes them more likely to try something new.'},
+ {id:'munchbox',cat:'Snacks & confectionery',brand:'Munchbox',sa:'Munchbox Buyers',sz:654.0,pop:'21%',samp:'187,300',
+  say:'I am pitching to a snacks and confectionery brand.',
+  side:'<strong>19%</strong> of Munchbox buyers say a brand appearing in content they already watch makes them more likely to buy.'}];
+const TOPICS=[
+ {id:'at',t:'Attitudes & interests',s:'What drives them',say:'Focus the narrative on attitudes and interests.'},
+ {id:'pb',t:'Purchase behaviors',s:'How they buy',say:'Focus the narrative on purchase behaviors.'},
+ {id:'sm',t:'Social media',s:'Where they spend time',say:'Focus the narrative on social media.'},
+ {id:'bd',t:'Brand discovery',s:'How they find brands',say:'Focus the narrative on brand discovery.'}];
+const OV={
+ scrollr:{fizzly:{ov:82.7,pct:'3%',idx:'1.4×'},glossy:{ov:71.4,pct:'2%',idx:'2.1×'},peak:{ov:48.6,pct:'2%',idx:'1.8×'},munchbox:{ov:74.2,pct:'3%',idx:'1.6×'}},
+ streamly:{fizzly:{ov:141.3,pct:'5%',idx:'1.3×'},glossy:{ov:96.8,pct:'3%',idx:'1.5×'},peak:{ov:71.5,pct:'2%',idx:'1.4×'},munchbox:{ov:127.4,pct:'4%',idx:'1.5×'}},
+ wanderly:{fizzly:{ov:46.2,pct:'2%',idx:'1.2×'},glossy:{ov:38.7,pct:'1%',idx:'1.7×'},peak:{ov:31.4,pct:'1%',idx:'1.9×'},munchbox:{ov:34.8,pct:'1%',idx:'1.3×'}},
+ apex:{fizzly:{ov:96.4,pct:'3%',idx:'1.5×'},glossy:{ov:44.8,pct:'2%',idx:'1.1×'},peak:{ov:88.2,pct:'3%',idx:'2.6×'},munchbox:{ov:82.6,pct:'3%',idx:'1.7×'}}};
+const SIG={
+ scrollr:{t:'Demographic profile',lead:'Scrollr Users have a young, culturally curious profile built for mass-reach brand building.',
+  st:[['34%','are aged 16&ndash;24'],['51%','identify as male'],['36%','have a low household income']],
+  ch:{t:'Age (groups)',u:'Audience %',r:[['16–24',34],['25–34',31],['35–44',18],['45–54',11]]}},
+ streamly:{t:'Media habits',lead:'Streamly Viewers spend more of their day with screen media than with any other channel.',
+  st:[['3h 12m','average daily TV and streaming'],['62%','watch on a connected TV'],['44%','watch with a second screen']],
+  ch:{t:'Daily media time',u:'Share of media day',r:[['Streaming / TV',41],['Social',24],['Music / audio',19],['Press / news',16]]}},
+ wanderly:{t:'Interest profile',lead:'Wanderly Bookers index high on experience-led interests and discretionary spend.',
+  st:[['58%','are interested in travel'],['46%','are interested in food and drink'],['39%','say experiences beat things']],
+  ch:{t:'Interests',u:'Audience %',r:[['Travel & tourism',58],['Food & drink',46],['Fitness & wellbeing',37],['Films & cinema',34]]}},
+ apex:{t:'Sponsorship receptivity',lead:'Apex League Followers reward brands that show up in the moments they already care about.',
+  st:[['26%','engage with brands that sponsor their team'],['44%','watch live with a second screen'],['31%','buy or wear team merchandise']],
+  ch:{t:'Sponsorship response',u:'Index vs market',r:[['Engages with team sponsors',146],['Recalls shirt sponsor',138],['Buys from sponsor brands',129],['Attends activations',118]]}}};
+const TOP={
+ scrollr:{
+  at:{lead:'Scrollr Users lean toward an identity shaped by ambition, technology and entertainment culture.',st:[['60%','say being successful matters to them'],['53%','are interested in technology'],['54%','are interested in films and cinema']],ch:{t:'Attitudes: values',u:'Index vs market',r:[['Being successful',139],['Having a positive attitude',124],['Being financially secure',118],['Spending time with family',103]]}},
+  pb:{lead:'Scrollr Users show active, digitally enabled purchasing that moves from attention into action.',st:[['27%','used a mobile wallet last month'],['35%','have used PayPal in the last month'],['33%','bought headphones in the last 3&ndash;6 months']],ch:{t:'Major purchases: electronics',u:'Index vs market',r:[['Headphones / earphones',126],['Smart TV',122],['Games console',119],['Laptop',110]]}},
+  sm:{lead:'Scrollr Users are heavy, creator-led social users who discover through feeds rather than search.',st:[['2h 41m','average daily time on social'],['58%','follow creators over brands'],['31%','have bought straight from a feed']],ch:{t:'Social behaviours',u:'Index vs market',r:[['Follows creators',148],['Watches short-form daily',141],['Shops in-feed',133],['Comments or shares weekly',117]]}},
+  bd:{lead:'Scrollr Users find new brands through creators and social recommendation, not advertising alone.',st:[['16%','buy on influencer recommendation'],['13%','try brand-sponsored activities'],['11%','engage via brand creators']],ch:{t:'Brand discovery channels',u:'Index vs market',r:[['Creator recommendations',144],['Social media ads',131],['Sponsored content',128],['Search engines',84]]}}},
+ streamly:{
+  at:{lead:'Streamly Viewers are entertainment-led, with a strong appetite for story and cultural moments.',st:[['64%','are interested in films and cinema'],['49%','say entertainment defines them'],['42%','are interested in music']],ch:{t:'Attitudes: values',u:'Index vs market',r:[['Enjoying entertainment',142],['Keeping up with culture',128],['Relaxing at home',121],['Being adventurous',98]]}},
+  pb:{lead:'Streamly Viewers convert on prompts they see while watching, especially food and drink.',st:[['38%','order food or drink while watching'],['29%','bought a product seen in a show'],['24%','used a QR code from a screen']],ch:{t:'Purchase triggers',u:'Index vs market',r:[['Product seen while watching',137],['Food delivery while watching',132],['QR / second-screen prompt',124],['In-store display',91]]}},
+  sm:{lead:'Streamly Viewers use social as a companion to viewing rather than a destination.',st:[['44%','use social while watching'],['36%','discuss shows on social'],['22%','follow show or platform accounts']],ch:{t:'Second-screen behaviours',u:'Index vs market',r:[['Social while watching',139],['Posts about shows',127],['Searches cast or soundtrack',118],['Watches clips / recaps',114]]}},
+  bd:{lead:'Streamly Viewers notice brands inside content &mdash; sponsorship and placement beat interruption.',st:[['31%','notice brands placed in shows'],['26%','recall sponsor idents'],['19%','searched a brand seen on screen']],ch:{t:'Brand discovery channels',u:'Index vs market',r:[['Brand placement in content',141],['TV / streaming ads',126],['Sponsorship idents',122],['Press',72]]}}},
+ wanderly:{
+  at:{lead:'Wanderly Bookers value experience, discovery and time over material ownership.',st:[['61%','say experiences matter more'],['52%','are interested in other cultures'],['44%','plan trips a year ahead']],ch:{t:'Attitudes: values',u:'Index vs market',r:[['Seeking new experiences',152],['Being adventurous',138],['Learning new things',124],['Status and image',86]]}},
+  pb:{lead:'Wanderly Bookers spend early and spend big, with long consideration windows.',st:[['47%','book more than 3 months ahead'],['39%','spend above average per trip'],['28%','add experiences at checkout']],ch:{t:'Travel purchase behaviours',u:'Index vs market',r:[['Books bundles / packages',134],['Adds experiences at checkout',128],['Pays for premium seating',122],['Books last minute',79]]}},
+  sm:{lead:'Wanderly Bookers use social as an inspiration engine at the very top of the funnel.',st:[['54%','get destination ideas from social'],['41%','save posts to plan trips'],['33%','follow travel creators']],ch:{t:'Social behaviours',u:'Index vs market',r:[['Saves travel content',146],['Follows travel creators',133],['Shares trip photos',126],['Live streams',88]]}},
+  bd:{lead:'Wanderly Bookers discover brands through reviews, lists and trusted recommendation.',st:[['49%','rely on reviews before booking'],['37%','use curated lists or guides'],['22%','discover via creator itineraries']],ch:{t:'Brand discovery channels',u:'Index vs market',r:[['Reviews and ratings',143],['Curated lists / guides',131],['Creator itineraries',119],['Cold advertising',77]]}}},
+ apex:{
+  at:{lead:'Apex League Followers build identity around loyalty, community and competition.',st:[['58%','say being part of a community matters'],['49%','are interested in fitness and sport'],['41%','say loyalty shapes their brand choices']],ch:{t:'Attitudes: values',u:'Index vs market',r:[['Belonging to a community',151],['Being competitive',142],['Supporting local',127],['Following trends',96]]}},
+  pb:{lead:'Apex League Followers spend around the fixture &mdash; food, drink and merchandise cluster on match days.',st:[['47%','buy food or drink while watching'],['31%','bought merchandise in the last 3&ndash;6 months'],['24%','upgraded a subscription for sport']],ch:{t:'Match-day purchases',u:'Index vs market',r:[['Food and drink on match day',144],['Team merchandise',136],['Sports subscription',128],['Ticketing / hospitality',112]]}},
+  sm:{lead:'Apex League Followers use social as a live companion to the fixture.',st:[['52%','follow the league or a club account'],['38%','check scores on social first'],['29%','post during matches']],ch:{t:'Match-day social behaviours',u:'Index vs market',r:[['Follows clubs or leagues',149],['Watches highlights on social',140],['Posts during matches',131],['Follows pundits',122]]}},
+  bd:{lead:'Apex League Followers discover brands through the game &mdash; sponsorship, players and pundits.',st:[['26%','engage with brands sponsoring their team'],['22%','discover brands via player endorsement'],['18%','notice broadcast and in-stadium branding']],ch:{t:'Brand discovery channels',u:'Index vs market',r:[['Team sponsorship',147],['Player endorsement',134],['Broadcast / in-stadium',126],['Search engines',81]]}}}};
+const NAR={
+ scrollr:{at:'Build the campaign around creators and cultural moments &mdash; this audience buys into ambition and identity, not features.',pb:'Lead with shoppable creator formats &mdash; this audience already moves from feed to checkout in a single session.',sm:'Go creator-first with short-form video &mdash; this audience discovers in the feed and rarely uses search.',bd:'Anchor the campaign on creator recommendation &mdash; sponsored content outperforms advertising with this audience.'},
+ streamly:{at:'Build the campaign around story and cultural moments &mdash; this audience engages with entertainment, not interruption.',pb:'Use in-content prompts and second-screen calls to action &mdash; this audience buys what it sees while watching.',sm:'Pair the buy with social clip distribution &mdash; this audience talks about what it watches while it watches.',bd:'Lead with brand placement and sponsorship idents &mdash; this audience notices brands inside content, not around it.'},
+ wanderly:{at:'Build the campaign around discovery and experience &mdash; this audience trades possessions for places.',pb:'Target the long consideration window with bundled offers &mdash; this audience commits early and spends above average.',sm:'Use social as the inspiration layer &mdash; this audience saves and plans long before it books.',bd:'Lead with reviews, lists and creator itineraries &mdash; this audience needs proof before it commits.'},
+ apex:{at:'Build the campaign around belonging and rivalry &mdash; this audience buys from brands that earn a place in the community.',pb:'Target the fixture window with food, drink and merchandise offers &mdash; this audience spends around the game, not between games.',sm:'Run the campaign live around the fixture &mdash; this audience is on social while the match is on.',bd:'Lead with team sponsorship and player-led creative &mdash; this audience discovers brands through the game itself.'}};
+if('scrollRestoration' in history){history.scrollRestoration='manual';}
+window.scrollTo(0,0);
+const A={a:null,b:null,c:null};
+let SKIP=false;
+const T={read:1200,readSubs:1200,sub:1000,settle:450,chip:500,handoff:600};
+const chat=document.getElementById('chat');
+const sleep=ms=>new Promise(r=>setTimeout(r,SKIP?0:ms));
+const gS=()=>SELL.find(x=>x.id===A.a),gP=()=>PROS.find(x=>x.id===A.b),gT=()=>TOPICS.find(x=>x.id===A.c),gO=()=>OV[A.a][A.b];
+function turn(cls,html){
+ const d=document.createElement('div');d.className='turn '+cls;d.innerHTML=html;chat.appendChild(d);return d;
+}
+function centerStage(el){el.scrollIntoView({behavior:SKIP?'auto':'smooth',block:'start'})}
+function setProgress(step){
+ document.getElementById('progf').style.width=Math.round(step/3*100)+'%';
+ document.getElementById('progl').textContent='Step '+step+' of 3';
+}
+function echoHTML(txt){return txt?'<div class="u echo"><span>'+txt+'</span></div>':''}
+function ask(intro,items,key,labelFn,subFn,next,step,echo){
+ setProgress(step);
+ const el=turn('a',echoHTML(echo)+'<p>'+intro+'</p><div class="opts"></div>');
+ el.classList.add('stage');
+ const box=el.querySelector('.opts');
+ items.forEach(it=>{
+  const b=document.createElement('button');
+  b.className='opt';
+  b.innerHTML='<span class="l">'+labelFn(it)+'</span><span class="r">'+subFn(it)+'</span>';
+  b.onclick=()=>{
+   box.querySelectorAll('.opt').forEach(x=>x.disabled=true);
+   A[key]=it.id; setTimeout(()=>next(it.say),420);
+  };
+  box.appendChild(b);
+ });
+ centerStage(el);
+}
+function buildSplash(){
+ setProgress(1);
+ const box=document.getElementById('scards');
+ box.innerHTML='';
+ SELL.forEach(it=>{
+  const b=document.createElement('button');
+  b.className='scard';
+  b.innerHTML='<img class="slogo" src="'+it.logo+'" alt="" width="60" height="60">'+
+   '<div class="stext"><div class="sb">'+it.brand+'</div><div class="sc">'+it.cat+'</div><div class="ss">'+it.sa+' &middot; '+it.sz+'M people</div></div>';
+  b.onclick=()=>{
+   box.querySelectorAll('.scard').forEach(x=>x.disabled=true);
+   A.a=it.id;
+   setTimeout(()=>q2(it.say),420);
+  };
+  box.appendChild(b);
+ });
+}
+function q2(echo){ask('Got it. Which kind of brand are you pitching to?',
+ PROS,'b',p=>p.cat,p=>p.brand,q3,2,echo)}
+function q3(echo){ask('Last one. Which topic should drive the pitch narrative?',
+ TOPICS,'c',t=>t.t,t=>t.s,runProc,3,echo)}
+function steps(){
+ const s=gS(),p=gP(),t=gT(),o=gO();
+ return[
+ {t:'Reading the brief',
+  xp:'Working out who is pitching to whom &mdash; the platform, the prospect category, and the angle to lead with.',
+  subs:[`Seller &mdash; <code>${s.cat}</code>`,`Prospect &mdash; <code>${p.cat}</code>`]},
+ {t:'Identifying the right audience segments',
+  xp:'Identifying the audience segments that match the brief &mdash; one for the platform, one for the brand being pitched to.',
+  subs:[`Matched <code>${s.sa}</code>`,`Matched <code>${p.sa}</code>`]},
+ {t:'Interpreting the audiences',
+  xp:'Checking sample size and what share of the population each audience represents, before any datapoints are selected.',
+  subs:[`${s.sa} &mdash; <code>${s.samp}</code> respondents, ${s.sz}M people, ${s.pop} of the population`,`${p.sa} &mdash; <code>${p.samp}</code> respondents, ${p.sz}M people, ${p.pop} of the population`]},
+ {t:'Sizing the overlap',
+  xp:'Cross-tabulating both audiences across GWI&rsquo;s 40BN+ annual data points to find the shared consumer base, then indexing it against the market to check it is a real signal.',
+  subs:['Indexing against the market average']},
+ {t:'Profiling and writing the pitch',
+  xp:`Pulling the evidence behind the chosen angle &mdash; ${t.t.toLowerCase()} for ${s.sa}, plus the profile that makes the case &mdash; then writing the narrative.`,
+  subs:[`Ranking datapoints on <code>${t.t}</code>`,'Selecting the strongest proof points']}];
+ }
+async function runProc(echo){
+ SKIP=false;
+ const ST=steps();
+ const el=turn('a',echoHTML(echo)+'<div class="think"><div class="thead" tabindex="-1"><div class="tsp"></div><span id="thl">Thinking</span></div><div class="tsteps" id="tsteps"></div></div>');
+ el.classList.add('think-stage');
+ const box=el.querySelector('#tsteps');centerStage(el);
+ el.querySelector('.thead').focus({preventScroll:true});
+ for(let i=0;i<ST.length;i++){
+  const st=ST[i];
+  const s=document.createElement('div');
+  s.className='tstep on';
+  s.innerHTML=`<div class="tst">${st.t}<span class="dots"><i></i><i></i><i></i></span></div><div class="txp">${st.xp}</div><div class="subs"></div>`;
+  box.appendChild(s);
+  await sleep(st.subs.length?T.readSubs:T.read);
+  const sw=s.querySelector('.subs');
+  for(const x of st.subs){
+   const d=document.createElement('div');d.className='tsub';
+   d.innerHTML='<span class="d">&#8735;</span>'+x;
+   sw.appendChild(d);requestAnimationFrame(()=>d.classList.add('in'));
+   await sleep(T.sub);
+  }
+  await sleep(T.settle);
+  s.classList.remove('on');s.classList.add('ok');
+  const dt=s.querySelector('.dots');if(dt)dt.remove();
+  await sleep(T.chip);
+ }
+ el.querySelector('.tsp').remove();
+ const hl=document.getElementById('thl');hl.textContent='Thought for 20 seconds';hl.parentElement.classList.add('tdone');
+ await sleep(T.handoff);
+ output();
+}
+function rad(v){return Math.max(64,Math.min(84,Math.round(22+Math.sqrt(v)*2.3)))}
+function venn(s,p,o){
+ const MINLENS=58,MINCRES=64,CY=106;
+ const rA=rad(s.sz),rB=rad(p.sz);
+ const share=Math.round(o.ov/Math.min(s.sz,p.sz)*100);
+ const lensT=Math.max(MINLENS,Math.round((rA+rB)*share/100*1.15));
+ const dist=Math.max(MINCRES+Math.abs(rB-rA),Math.min(rA+rB-MINLENS,rA+rB-lensT));
+ const cxA=200-Math.round(dist/2),cxB=200+Math.round(dist/2);
+ const xL=Math.round((cxA-rA+cxB-rB)/2),xR=Math.round((cxA+rA+cxB+rB)/2);
+ const mid=Math.round((cxA+rA+cxB-rB)/2);
+ return`<div class="viz">
+  <svg viewBox="0 0 400 218" width="100%" style="max-height:222px;display:block" role="img" aria-label="Venn diagram showing the audience overlap between ${s.sa} and ${p.sa}">
+   <defs><clipPath id="cpA"><circle cx="${cxA}" cy="${CY}" r="${rA}"/></clipPath></defs>
+   <g class="vcir" id="vc2" style="transition-delay:.14s"><circle cx="${cxB}" cy="${CY}" r="${rB}" fill="#EBE8DD" stroke="#D6D3C4" stroke-width="1.5"/></g>
+   <g class="vcir" id="vc1"><circle cx="${cxA}" cy="${CY}" r="${rA}" fill="#C96442"/></g>
+   <g class="vcir" id="vc3" style="transition-delay:.26s"><g clip-path="url(#cpA)"><circle cx="${cxB}" cy="${CY}" r="${rB}" fill="#8A3A20"/></g></g>
+   <g class="vlab" id="vl">
+    <text x="${xL}" y="${CY+2}" text-anchor="middle" font-size="16" font-weight="700" fill="#fff" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif">${s.sz}M</text>
+    <text x="${xL}" y="${CY+17}" text-anchor="middle" font-size="10" fill="#F2D9CD" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif">${s.pop}</text>
+    <text x="${xR}" y="${CY+2}" text-anchor="middle" font-size="16" font-weight="700" fill="#4A4840" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif">${p.sz}M</text>
+    <text x="${xR}" y="${CY+17}" text-anchor="middle" font-size="10" fill="#7E7C72" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif">${p.pop}</text>
+    <text x="${mid}" y="${CY+1}" text-anchor="middle" font-size="16" font-weight="700" fill="#fff" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif">${o.ov}M</text>
+    <text x="${mid}" y="${CY+16}" text-anchor="middle" font-size="10" font-weight="600" fill="#F2D9CD" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif">${o.pct} &middot; ${o.idx}</text>
+   </g>
+  </svg>
+  <div class="vleg">
+   <span><i class="vd" style="background:#C96442"></i>${s.sa}</span>
+   <span><i class="vd" style="background:#EBE8DD;border:1px solid #D6D3C4"></i>${p.sa}</span>
+   <span><i class="vd" style="background:#8A3A20"></i>Overlap</span>
+  </div>
+  <div class="vcap">Data set: GWI Core &middot; ${share}% of ${s.brand}&rsquo;s audience also sits in ${p.brand}&rsquo;s</div>
+ </div>`;
+}
+function chartHTML(ch){
+ const mx=Math.max(...ch.r.map(r=>r[1]));
+ return`<div class="ch"><div class="chh">${ch.t}</div><div class="chu">${ch.u}</div>
+ ${ch.r.map((r,i)=>`<div class="chr"><span class="chn">${r[0]}</span><div class="chb"><div class="chf" data-w="${Math.round(r[1]/mx*100)}" style="transition-delay:${i*90}ms"></div></div><span class="chv">${ch.u.startsWith('Index')?r[1]:r[1]+'%'}</span></div>`).join('')}</div>`;
+}
+function block(title,m){
+ return`<h4>${title}</h4><p>${m.lead}</p><ul>${m.st.map(x=>`<li><strong>${x[0]}</strong> ${x[1]}</li>`).join('')}</ul>${chartHTML(m.ch)}`;
+}
+function output(){
+ const s=gS(),p=gP(),t=gT(),o=gO();
+ const sig=SIG[s.id],top=TOP[s.id][t.id],nar=NAR[s.id][t.id];
+ const outEl=turn('a',`
+  <h3 tabindex="-1">Pitching ${s.brand} to ${p.brand}</h3>
+  <p>${p.side}</p>
+  <h4>Audience overlap</h4>
+  <p>${s.sa} against ${p.sa} &mdash; the shared consumer base that already sits between the two.</p>
+  ${venn(s,p,o)}
+  ${block(sig.t,sig)}
+  ${block(t.t,top)}
+  <h4>Pitch narrative</h4>
+  <p>${p.brand} gets more than reach from ${s.brand}: <strong>${o.ov}M people</strong> already sit in both audiences, indexing at <strong>${o.idx}</strong> against the market.<br>${nar}</p>
+  <div class="cta">
+   <h5>See this on real GWI data</h5>
+   <p>GWI Agentic runs inside Claude, ChatGPT and Copilot on real GWI data across 53 markets. The live output is built from your own audiences and will look different to this demo.</p>
+   <button class="btn">Book a demo</button>
+   <button class="btn2" onclick="restart()">Try another combination</button>
+  </div>`);
+ centerStage(outEl);
+ setTimeout(()=>{
+  ['vc1','vc2','vc3','vl'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add('in')});
+  document.querySelectorAll('.chf[data-w]').forEach(b=>{b.style.width=b.dataset.w+'%'});
+  outEl.querySelector('h3').focus({preventScroll:true});
+ },200);
+}
+function restart(){
+ A.a=A.b=A.c=null;chat.innerHTML='';
+ buildSplash();
+ window.scrollTo({top:0,behavior:'smooth'});
+ document.querySelector('#splash .splash-h').focus();
+}
+buildSplash();
+</script>
+</body>
+</html>
