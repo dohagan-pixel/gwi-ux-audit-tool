@@ -102,9 +102,8 @@ code{font-family:ui-monospace,Menlo,monospace;font-size:.75rem;background:var(--
 .scard .sc{font-size:.8125rem;color:var(--tx2);margin-bottom:.5625rem}
 .scard .ss{font-size:.6875rem;color:var(--tx3)}
 .scard:disabled{opacity:.45;cursor:default;pointer-events:none}
-.stage{min-height:calc(100vh - 202px);display:flex;flex-direction:column;justify-content:center;padding:1.5rem 0;transition:min-height .4s ease,padding .4s ease}
-.think-stage{min-height:100vh;padding:1.5rem 0;transition:min-height .4s ease,padding .4s ease}
-.stage.compact,.think-stage.compact{min-height:0;padding:.375rem 0}
+.stage{min-height:calc(100vh - 202px);display:flex;flex-direction:column;justify-content:center;padding:1.5rem 0}
+.think-stage{min-height:100vh;padding:1.5rem 0}
 .hid{display:none!important}
 @media(max-width:560px){.scards{grid-template-columns:1fr}.progbar{flex:0 0 44px}.topbar .nm{font-size:.8125rem}.nm-sub{display:none}}
 @media(max-width:560px){.chn{width:104px}.a{font-size:.9375rem}}
@@ -239,7 +238,7 @@ function ask(intro,items,key,labelFn,subFn,next,step,echo){
   b.innerHTML='<span class="l">'+labelFn(it)+'</span><span class="r">'+subFn(it)+'</span>';
   b.onclick=()=>{
    box.querySelectorAll('.opt').forEach(x=>x.disabled=true);
-   A[key]=it.id; el.classList.add('compact'); setTimeout(()=>next(it.say),420);
+   A[key]=it.id; setTimeout(()=>next(it.say),420);
   };
   box.appendChild(b);
  });
@@ -257,7 +256,6 @@ function buildSplash(){
   b.onclick=()=>{
    box.querySelectorAll('.scard').forEach(x=>x.disabled=true);
    A.a=it.id;
-   document.getElementById('splash').classList.add('compact');
    setTimeout(()=>q2(it.say),420);
   };
   box.appendChild(b);
@@ -315,7 +313,6 @@ async function runProc(echo){
  el.querySelector('.tsp').remove();
  const hl=document.getElementById('thl');hl.textContent='Thought for 20 seconds';hl.parentElement.classList.add('tdone');
  await sleep(T.handoff);
- el.classList.add('compact');
  output();
 }
 function rad(v){return Math.max(64,Math.min(84,Math.round(22+Math.sqrt(v)*2.3)))}
@@ -386,7 +383,6 @@ function output(){
 }
 function restart(){
  A.a=A.b=A.c=null;chat.innerHTML='';
- document.getElementById('splash').classList.remove('compact');
  buildSplash();
  window.scrollTo({top:0,behavior:'smooth'});
  document.querySelector('#splash .splash-h').focus();
