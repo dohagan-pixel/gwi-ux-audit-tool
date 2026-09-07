@@ -78,7 +78,7 @@ code{font-family:ui-monospace,Menlo,monospace;font-size:.75rem;background:var(--
 .chb{flex:1;height:12px;background:var(--panel2);border-radius:3px;overflow:hidden}
 .chf{height:100%;background:var(--clay);border-radius:3px;width:0;transition:width .9s cubic-bezier(.3,0,.2,1)}
 .chv{font-size:.75rem;color:var(--tx3);width:42px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
-.cta{border:1px solid var(--bd2);border-radius:12px;background:var(--surface);padding:1.25rem;margin-top:1.5rem;font-family:var(--sans)}
+.cta{border:1px solid var(--bd2);border-radius:12px;background:var(--surface);padding:1.25rem;margin-top:1.5rem;font-family:var(--sans);text-align:center}
 .cta h5{font-family:var(--serif);font-size:1.0625rem;font-weight:700;margin-bottom:.375rem}
 .cta p{font-size:.8125rem;color:var(--tx2);line-height:1.6;margin-bottom:1rem}
 .btn{background:var(--clay);color:#fff;border:none;padding:.75rem 1.25rem;font-size:.875rem;font-weight:600;border-radius:9px;cursor:pointer;font-family:var(--sans);transition:background .15s}
@@ -104,6 +104,19 @@ code{font-family:ui-monospace,Menlo,monospace;font-size:.75rem;background:var(--
 .scard .ss{font-size:.6875rem;color:var(--tx3)}
 .scard:disabled{opacity:.45;cursor:default;pointer-events:none}
 .scard:disabled.selected{opacity:1;border-color:var(--clayL);background:var(--clayXL)}
+.deck{display:flex;flex-direction:column;gap:1.25rem;margin:1.5rem 0}
+.a .slide{position:relative;aspect-ratio:16/9;background:var(--surface);border:1px solid var(--bd2);border-radius:16px;padding:1.5rem 1.75rem;display:flex;flex-direction:column;justify-content:center;gap:.5rem}
+.a .slide.cover{align-items:center;text-align:center;background:var(--panel)}
+.a .slide .slide-title{font-family:var(--serif);font-size:1.125rem;font-weight:700;color:var(--tx);letter-spacing:-.01em;margin:0}
+.a .slide.cover .slide-title{font-size:1.75rem}
+.a .slide p{margin:0;font-size:.9375rem;line-height:1.55}
+.a .slide.cover p{font-size:1rem;line-height:1.6;max-width:480px}
+.a .slide ul{margin:.25rem 0;padding-left:1.0625rem}
+.a .slide li{margin-bottom:.1875rem;line-height:1.4;font-size:.875rem}
+.a .slide .viz{margin:.375rem 0 0}
+.a .slide .ch{margin:.5rem 0 0}
+.a .slide .chr{margin-bottom:3px}
+.a .slide .chn,.a .slide .chh{font-size:.6875rem}
 .stage{min-height:calc(100vh - 202px);display:flex;flex-direction:column;justify-content:center;padding:1.5rem 0}
 .think-stage{min-height:100vh;padding:1.5rem 0}
 .hid{display:none!important}
@@ -357,22 +370,23 @@ function chartHTML(ch){
  return`<div class="ch"><div class="chh">${ch.t}</div><div class="chu">${ch.u}</div>
  ${ch.r.map((r,i)=>`<div class="chr"><span class="chn">${r[0]}</span><div class="chb"><div class="chf" data-w="${Math.round(r[1]/mx*100)}" style="transition-delay:${i*90}ms"></div></div><span class="chv">${ch.u.startsWith('Index')?r[1]:r[1]+'%'}</span></div>`).join('')}</div>`;
 }
-function block(title,m){
- return`<h4>${title}</h4><p>${m.lead}</p><ul>${m.st.map(x=>`<li><strong>${x[0]}</strong> ${x[1]}</li>`).join('')}</ul>${chartHTML(m.ch)}`;
+function blockBody(m){
+ return`<p>${m.lead}</p><ul>${m.st.map(x=>`<li><strong>${x[0]}</strong> ${x[1]}</li>`).join('')}</ul>${chartHTML(m.ch)}`;
+}
+function slide(title,inner,cls){
+ return`<div class="slide${cls?' '+cls:''}"><div class="slide-title" tabindex="-1">${title}</div>${inner}</div>`;
 }
 function output(){
  const s=gS(),p=gP(),t=gT(),o=gO();
  const sig=SIG[s.id],top=TOP[s.id][t.id],nar=NAR[s.id][t.id];
  const outEl=turn('a',`
-  <h3 tabindex="-1">Pitching ${s.brand} to ${p.brand}</h3>
-  <p>${p.side}</p>
-  <h4>Audience overlap</h4>
-  <p>${s.sa} against ${p.sa} &mdash; the shared consumer base that already sits between the two.</p>
-  ${venn(s,p,o)}
-  ${block(sig.t,sig)}
-  ${block(t.t,top)}
-  <h4>Pitch narrative</h4>
-  <p>${p.brand} gets more than reach from ${s.brand}: <strong>${o.ov}M people</strong> already sit in both audiences, indexing at <strong>${o.idx}</strong> against the market.<br>${nar}</p>
+  <div class="deck">
+   ${slide('Pitching '+s.brand+' to '+p.brand,'<p>'+p.side+'</p>','cover')}
+   ${slide('Audience overlap','<p>'+s.sa+' against '+p.sa+' &mdash; the shared consumer base that already sits between the two.</p>'+venn(s,p,o),'')}
+   ${slide(sig.t,blockBody(sig),'')}
+   ${slide(t.t,blockBody(top),'')}
+   ${slide('Pitch narrative','<p>'+p.brand+' gets more than reach from '+s.brand+': <strong>'+o.ov+'M people</strong> already sit in both audiences, indexing at <strong>'+o.idx+'</strong> against the market.</p><p>'+nar+'</p>','cover')}
+  </div>
   <div class="cta">
    <h5>See this on real GWI data</h5>
    <p>GWI Agentic runs inside Claude, ChatGPT and Copilot on real GWI data across 53 markets. The live output is built from your own audiences and will look different to this demo.</p>
@@ -382,7 +396,7 @@ function output(){
  centerStage(outEl);
  observeReveal(outEl);
  setTimeout(()=>{
-  outEl.querySelector('h3').focus({preventScroll:true});
+  outEl.querySelector('.slide-title').focus({preventScroll:true});
  },200);
 }
 function restart(){
